@@ -1,6 +1,7 @@
 # CLAUDE.md — RPGym
 
 > Repositorio: <https://github.com/danmelendo/RPGym> (público, rama `main`).
+> **Siguiente paso pendiente: [TODO.md](TODO.md)** — aplicar la migración de Supabase.
 > Los APK **no se versionan**: se publican como *GitHub Release* (`*.apk` está en `.gitignore`).
 
 Guía para agentes que trabajen en este repositorio. Resume el **estado real actual**, la arquitectura y lo pendiente, unificando los dos handoffs existentes (Copilot y Claude).
