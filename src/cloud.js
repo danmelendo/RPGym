@@ -307,6 +307,61 @@ export async function rutinasDeAmigos(){
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
+/* --- Entrenar juntos ------------------------------------------------------
+   Sin tiempo real: se consulta quién está entrenando al abrir la app. Del
+   entreno solo viaja el nombre de la rutina y el XP; el detalle no sale. */
+
+export async function abrirSesionConjunta(rutina){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { data, error } = await supabase.from("joint_sessions")
+      .insert({ created_by:user.id, rutina:String(rutina || "").slice(0,60) }).select().single();
+    if (error) return { ok:false, msg:traducir(error) };
+    await supabase.from("joint_members").insert({ session_id:data.id, user_id:user.id });
+    return { ok:true, sesion:data };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function unirseSesion(sessionId){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("joint_members")
+      .upsert({ session_id:sessionId, user_id:user.id }, { onConflict:"session_id,user_id" });
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function quienEntrenaAhora(){
+  if (!supabase) return sinNube;
+  try {
+    const { data, error } = await supabase.from("entrenando_ahora").select("*").limit(10);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, sesiones:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* Al terminar: registra tu aportación y, si la abriste tú, cierra la sesión. */
+export async function cerrarAportacion({ sessionId, xp, laAbriYo }){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    await supabase.from("joint_members")
+      .update({ xp:Math.max(0, Math.min(5000, Math.round(xp) || 0)) })
+      .eq("session_id", sessionId).eq("user_id", user.id);
+    if (laAbriYo) {
+      await supabase.from("joint_sessions").update({ ended_at:new Date().toISOString() }).eq("id", sessionId);
+    }
+    const { data } = await supabase.from("compañeros_sesion").select("*").eq("session_id", sessionId);
+    return { ok:true, companeros:(data || []).filter(c => c.id !== user.id) };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
 /* --- Copia de seguridad en la nube (cifrada en el móvil) ------------------
    El servidor solo ve bytes opacos: el cifrado y el descifrado ocurren en el
    dispositivo (ver cripto.js). Aquí solo se sube y se baja el bulto. */

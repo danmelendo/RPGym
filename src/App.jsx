@@ -2223,6 +2223,10 @@ const PRIVACY_URL = "";
    premia probar lo de otro, no repetirlo en bucle. */
 const XP_RUTINA_AMIGO = 75;
 
+/* XP extra por entrenar acompañado. FIJO y pequeño a propósito: si fuera
+   proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
+const XP_CONJUNTO = 60;
+
 const APP_VERSION_CODE = 1;
 const APP_VERSION_NAME = "1.0.0";
 
@@ -2487,6 +2491,8 @@ export default function App(){
   const [publicadas, setPublicadas] = useState([]);   // ids de mis rutinas visibles para amigos
   const [quedadas, setQuedadas] = useState([]);
   const [novedades, setNovedades] = useState([]);
+  const [entrenando, setEntrenando] = useState([]);   // amigos entrenando ahora mismo
+  const [sesionConjunta, setSesionConjunta] = useState(null);
   const [cargandoQuedadas, setCargandoQuedadas] = useState(false);
   const [draftIsNew, setDraftIsNew] = useState(false);
   const [toast, setToast] = useState(null);
@@ -2528,6 +2534,8 @@ export default function App(){
         const desde = await loadGlobal("gym:ultimaVisita", null);
         const nv = await cloud.novedades(desde);
         if(vivo && nv.ok) setNovedades(nv.novedades);
+        const ea = await cloud.quienEntrenaAhora();
+        if(vivo && ea.ok) setEntrenando(ea.sesiones);
         saveGlobal("gym:ultimaVisita", new Date().toISOString());
       }
       const v = await cloud.versionMasNueva(APP_VERSION_CODE);
@@ -2670,9 +2678,17 @@ export default function App(){
       }),
     });
     setResults(null); setTab("workout");
+
+    // Si ya te has unido al entreno de alguien, se respeta. Si no, se abre una
+    // sesión para que tus amigos puedan unirse mientras entrenas.
+    if(cloud.cloudEnabled && perfil && !sesionConjunta){
+      cloud.abrirSesionConjunta(routine.name).then(r=>{
+        if(r.ok) setSesionConjunta({ id:r.sesion.id, laAbriYo:true, con:null });
+      });
+    }
   }
 
-  function finishWorkout(){
+  async function finishWorkout(){
     let volume=0, xpBase=100, xpSets=0, xpPr=0, prs=0, seriesDone=0;
     const bests={ ...state.bests }, firstBests={ ...state.firstBests };
     let doubled=false; const prList=[];
@@ -2806,6 +2822,10 @@ export default function App(){
     WEEKLY_MISSIONS.forEach(mn=>{ if(claimed.includes(mn.id)) return; if(mn.check(ctx)){ claimed.push(mn.id); missionXp+=mn.xp; missionsDone.push(mn); } });
     const missions={ week:state.weekStart, claimed };
 
+    /* Entrenar acompañado: XP extra fijo. Se resuelve más abajo, tras conocer
+       si de verdad había alguien más en la sesión. */
+    let xpConjunto = 0, companeros = [];
+
     /* Primera vez que entrenas la rutina de un amigo: XP extra. Solo una vez por
        rutina, y el bonus es FIJO (no proporcional al volumen) para que no salga
        a cuenta inflarlo repitiendo la misma sesión. */
@@ -2821,7 +2841,14 @@ export default function App(){
     const newStreak=habitStreak(nlog, state.reminders?.days);
     const bestStreak=Math.max(state.bestStreak||0, newStreak);
 
-    const finalXp=state.xp+sessionXp+achXp+missionXp+xpAmigo; const finalLevel=levelFromXp(finalXp);
+    // ¿Había alguien más? El bonus solo cuenta si de verdad entrenasteis juntos.
+    if(cloud.cloudEnabled && sesionConjunta){
+      const r = await cloud.cerrarAportacion({ sessionId:sesionConjunta.id, xp:sessionXp+achXp+missionXp, laAbriYo:sesionConjunta.laAbriYo });
+      if(r.ok && r.companeros.length){ xpConjunto = XP_CONJUNTO; companeros = r.companeros; }
+      setSesionConjunta(null);
+    }
+
+    const finalXp=state.xp+sessionXp+achXp+missionXp+xpAmigo+xpConjunto; const finalLevel=levelFromXp(finalXp);
 
     const ns={ ...state, xp:finalXp, cheatTokens, totalWorkouts, weeklyCount, weekGoalMet, weekStreak,
       lastWorkoutDate:todayISO(), achievements:ach, bests, firstBests, routinesUsed, muscleXp,
@@ -2830,7 +2857,7 @@ export default function App(){
 
     setResults({
       routineName:session.routineName, dayName:session.dayName, durationMin, seriesDone,
-      volume:Math.round(volume), xpBase, xpSets, xpPr, xpGoal, missionXp, achXp, xpAmigo, amigoDe, sessionXp:sessionXp+achXp+missionXp+xpAmigo,
+      volume:Math.round(volume), xpBase, xpSets, xpPr, xpGoal, missionXp, achXp, xpAmigo, amigoDe, xpConjunto, companeros, sessionXp:sessionXp+achXp+missionXp+xpAmigo+xpConjunto,
       prs:prList, volDelta, unlocked, cheatEarned:goalJustMet, levelUp: finalLevel>prevLevel ? finalLevel : null,
       muscleLevelUps, mGains, progressed, missionsDone, newStreak, bestStreak, bestStreakBeat: newStreak>(state.bestStreak||0),
       rankName: rankFor(finalLevel).name,
@@ -2857,6 +2884,20 @@ export default function App(){
   function setActiveRoutine(id){ const ns={ ...state, activeRoutine:id }; setState(ns); persist(ns); }
   function saveMealPlan(mp){ setMealPlan(mp); saveKey("gym:mealplan", mp); }
   function setExcludes(next){ setExcludesState(next); saveKey("gym:excludes", next); }
+
+  async function refrescarEntrenando(){
+    if(!cloud.cloudEnabled || !perfil) return;
+    const r = await cloud.quienEntrenaAhora();
+    if(r.ok) setEntrenando(r.sesiones);
+  }
+  /* Unirse al entreno de un amigo que ya está en el gimnasio. */
+  async function unirmeAlEntreno(sesion){
+    const r = await cloud.unirseSesion(sesion.id);
+    if(!r.ok){ showToast({ title:"No se ha podido", sub:r.msg, icon:ShieldAlert }); return; }
+    setSesionConjunta({ id:sesion.id, laAbriYo:false, con:sesion.display_name || "@"+sesion.handle });
+    showToast({ title:"Entrenáis juntos", sub:`Al terminar os lleváis ${XP_CONJUNTO} XP extra.`, icon:Users });
+    refrescarEntrenando();
+  }
 
   async function refrescarQuedadas(){
     if(!cloud.cloudEnabled) return;
@@ -2990,10 +3031,10 @@ export default function App(){
       <Toast toast={toast}/>
       <div className="fh-shell">
         {tab==="home" && <HomeView {...{ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines,
-          cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), quedadas, novedades, onCerrarNovedades:()=>setNovedades([]) }}/>}
+          cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), quedadas, novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina }}/>}
         {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines }}/>}
-        {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests }}/>}
+        {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests, sesionConjunta }}/>}
         {tab==="results" && <ResultsView {...{ results, setTab, level, rank }}/>}
         {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines }}/>}
         {tab==="logros" && <AchievementsView {...{ state, level }}/>}
@@ -3332,6 +3373,35 @@ function CopiaNubePanel({ exportBackup, importBackup }){
       </div>
     </div>
   </>);
+}
+
+/* Amigos que están entrenando ahora mismo: la ocasión de unirse.
+   Sin tiempo real: se consulta al abrir la app, que para un grupo pequeño basta. */
+function EntrenandoAhora({ sesiones, onUnirme, setTab }){
+  const ajenas = (sesiones || []).filter(s => !s.estoy);
+  if (!ajenas.length) return null;
+  const s = ajenas[0];
+  const desde = Math.round((Date.now() - new Date(s.started_at)) / 60000);
+  return (
+    <div className="fh-card fh-pop" style={{ padding:14, marginTop:12, borderColor:"var(--jade)", display:"flex", gap:11, alignItems:"flex-start" }}>
+      <div style={{ width:34, height:34, borderRadius:10, flexShrink:0, background:"rgba(63,185,132,.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <Dumbbell size={17} color="var(--jade)"/>
+      </div>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ fontSize:12.5, color:"var(--txt)", lineHeight:1.45 }}>
+          <b>{s.display_name || "@"+s.handle}</b> está entrenando ahora
+          {s.rutina ? <> · {s.rutina}</> : null}
+        </div>
+        <div style={{ fontSize:11, color:"var(--faint)", marginTop:2 }}>
+          empezó hace {desde < 1 ? "nada" : desde + " min"}{s.cuantos > 1 ? ` · ya son ${s.cuantos}` : ""}
+        </div>
+        <button className="fh-btn" onClick={()=>{ onUnirme(s); setTab("rutinas"); }}
+          style={{ marginTop:9, background:"var(--jade)", padding:"9px 14px", fontSize:12.5, display:"inline-flex", alignItems:"center", gap:6 }}>
+          <Users size={14}/> Entrenar con {(s.display_name || s.handle).split(" ")[0]}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /* Novedades del círculo desde la última vez que abriste la app.
@@ -4385,7 +4455,7 @@ function CyclePhaseCard({ state, setTab }){
   );
 }
 
-function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas, novedades, onCerrarNovedades }){
+function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas, novedades, onCerrarNovedades, entrenando, onUnirme }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const RankIcon=rank.icon;
@@ -4445,6 +4515,7 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
         </div>
       </div>
 
+      {cloudEnabled && perfil && <EntrenandoAhora sesiones={entrenando} onUnirme={onUnirme} setTab={setTab}/>}
       {cloudEnabled && perfil && <NovedadesCard novedades={novedades} onCerrar={onCerrarNovedades} setTab={setTab}/>}
       {cloudEnabled && perfil && <ProximaQuedada quedadas={quedadas} setTab={setTab}/>}
 
@@ -5260,7 +5331,7 @@ function RoutineBuilderView({ draft, setDraft, onSave, onCancel, isNew }){
    ENTRENAMIENTO EN CURSO
    ========================================================================= */
 
-function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStart, bests }){
+function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStart, bests, sesionConjunta }){
   const [rest, setRest] = useState(null);
   const [howOpen, setHowOpen] = useState(null);
   if(!session){ setTab("rutinas"); return null; }
@@ -5461,6 +5532,12 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
         <Zap size={18}/> Terminar sesión
       </button>
 
+      {sesionConjunta?.con && (
+        <div className="fh-chip" style={{ position:"fixed", bottom:14, left:"50%", transform:"translateX(-50%)", background:"var(--jade)", color:"#0F131A", display:"flex", alignItems:"center", gap:6, zIndex:60, boxShadow:"0 4px 14px rgba(0,0,0,.4)" }}>
+          <Users size={12}/> Entrenando con {sesionConjunta.con}
+        </div>
+      )}
+
       {rest!=null && <RestTimer seconds={rest} onDone={()=>setRest(null)} isRecomp={isRecomp}/>}
     </div>
   );
@@ -5511,6 +5588,7 @@ function ResultsView({ results, setTab, level, rank }){
         <Row label={`Series completadas (${r.seriesDone})`} val={"+"+r.xpSets}/>
         {r.xpPr>0 && <Row label={`Récords personales (${r.prs.length})`} val={"+"+r.xpPr} color="var(--gold)"/>}
         {r.xpAmigo>0 && <Row label={`Estreno de la rutina de ${r.amigoDe?.displayName || "@"+r.amigoDe?.handle}`} val={"+"+r.xpAmigo} color="var(--jade)"/>}
+        {r.xpConjunto>0 && <Row label={`Entreno conjunto con ${r.companeros.map(c=>c.display_name || "@"+c.handle).join(", ")}`} val={"+"+r.xpConjunto} color="var(--jade)"/>}
         {r.xpGoal>0 && <Row label="Objetivo semanal" val={"+"+r.xpGoal} color="var(--jade)"/>}
         {r.missionXp>0 && <Row label="Misiones semanales" val={"+"+r.missionXp} color="var(--arcane)"/>}
         {r.achXp>0 && <Row label="Logros desbloqueados" val={"+"+r.achXp} color="var(--violet)"/>}

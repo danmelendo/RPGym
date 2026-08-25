@@ -56,6 +56,11 @@ rutina de un amigo → avisos → entrenar juntos.
 
 ## ✅ Hecho
 
+- **ROADMAP SOCIAL COMPLETO**: las seis fases implementadas y verificadas contra el
+  proyecto real. Ocho migraciones aplicadas, todas con RLS atacada desde fuera.
+- **Entreno conjunto**: ves quién entrena ahora, te unes, y +60 XP si había alguien más.
+- **Copia cifrada en el móvil**: el servidor guarda bytes que no puede leer.
+
 - **Nombres de ejercicios revisados**: corregidas traducciones literales ("elevación de
   gemelos" → "elevación de talones", que es el movimiento; "gemelos" es el músculo) y
   deshechos los nombres con barra que mezclaban dos ejercicios. Con migración

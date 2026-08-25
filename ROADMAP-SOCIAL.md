@@ -1,16 +1,19 @@
 # ROADMAP — RPGym social (backend Supabase)
 
-> **Estado: FASE 1 TERMINADA Y EN PRODUCCIÓN.** Cuentas, perfiles con usuario único,
-> keep-alive, clasificación y aviso de versión: implementado, desplegado y verificado
-> contra el proyecto real (`svmxsnvjjddxgolkjwjb`, eu-central-1).
-> Correo saliente por Brevo, llegando a bandeja de entrada. Texto de privacidad
-> reescrito. Pendiente solo pegar las plantillas de correo en español
-> ([supabase/email-templates/](supabase/email-templates/)) y compilar el APK — ver
-> **[TODO.md](TODO.md)**.
+> **Estado: ROADMAP COMPLETO.** Las seis fases están implementadas, desplegadas en
+> `svmxsnvjjddxgolkjwjb` (eu-central-1) y verificadas contra el proyecto real, atacando
+> las RLS con la anon key en cada una y borrando siempre los datos de prueba.
 >
-> **Fases 2-6 (sincronización, amigos, rutinas de amigos, avisos, entreno conjunto):
-> SIN EMPEZAR.** Nada de eso existe todavía en el código: en Supabase solo hay
-> `profiles`, `heartbeat` y `app_versions`.
+> Lo que hay: cuentas con usuario único · clasificaciones semanal/mensual/histórica, del
+> círculo o globales · amigos por código de invitación · rutinas compartidas con XP extra
+> al estrenarlas · quedadas con "Yo voy" · novedades del círculo al abrir · copia de
+> seguridad cifrada en el móvil · entreno conjunto.
+>
+> **Decisiones pendientes del usuario** (ninguna bloquea nada):
+> 1. **Push real con FCM** — suena con la app cerrada, pero mete Google Play Services.
+>    Hoy los avisos son locales al abrir.
+> 2. **Comparar récords entre amigos** ("te ha superado en press banca") — exigiría subir
+>    ejercicio y peso, que hoy no salen del móvil.
 >
 > **Contexto: uso privado.** Esto es para el círculo cercano, repartiendo el APK a mano.
 > **No entra en Google Play**, así que todo lo que sea política de tienda, cuestionario de
@@ -114,7 +117,7 @@ Empezar por ahí y meter FCM solo si se echa de menos de verdad.
 | **4. Hacer la rutina de un amigo** ✅ **HECHA** | Publicas una rutina con un interruptor (nunca automático), tus amigos la ven en Rutinas → De mis amigos, la copian con atribución y se llevan +75 XP la primera vez que la entrenan. | Reaprovechó `importRoutine` y el formato de `encodeRoutine` tal cual. |
 | **5. Avisos** ✅ **HECHA (versión local)** | Tarjeta "Mientras no estabas" al abrir: quién ha entrenado, quién ha batido récords, quedadas nuevas y gente que entra al círculo. Más el aviso de fin de descanso. | Sin FCM ni Google Play Services. **Falta decidir** si merece la pena el push real, que suena con la app cerrada pero mete Firebase. |
 | **6a. Quedadas** ✅ **HECHA** | Propones día, hora, sitio y nota; tus amigos la ven y contestan "Yo voy" / "No puedo", con el recuento de quién va. Tarjeta en Inicio con la próxima. | Lo que de verdad dinamiza: saber que va alguien más. |
-| **6b. Entrenar juntos en directo** | Sesión conjunta en tiempo real (Supabase Realtime). | Lo más caro y frágil: al final. |
+| **6b. Entrenar juntos** ✅ **HECHA** | Al empezar a entrenar se abre una sesión que tus amigos ven en Inicio ("Ana está entrenando ahora") y a la que pueden unirse. Al terminar, +60 XP si de verdad había alguien más. | **Sin tiempo real a propósito**: se consulta al abrir la app en vez de mantener websockets. Para un grupo de amigos es indistinguible y mucho menos frágil — si se cae la red, cada uno sigue entrenando en su móvil. |
 
 Al ser círculo cerrado, **la fase 3 puede ser muy simple**: un código de invitación de 6
 caracteres que se pasa por WhatsApp y da amistad directa, sin buscador de usuarios ni
