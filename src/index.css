@@ -1,0 +1,23 @@
+:root { color-scheme: dark; }
+
+* { -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #0C0E14;
+}
+
+body {
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Permite seleccionar/escribir en campos de texto y selects */
+input, select, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+#root { min-height: 100vh; }

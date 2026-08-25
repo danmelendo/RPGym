@@ -1,0 +1,22 @@
+node_modules/
+dist/
+
+# APK de reparto: es un artefacto de build (se publica en GitHub Releases)
+RPGym.apk
+*.apk
+.DS_Store
+*.log
+
+# Capacitor / Android (artefactos de build; el proyecto android/ sí se puede versionar)
+android/app/build/
+android/.gradle/
+android/local.properties
+android/app/release/
+
+# Firma de release: NUNCA subir la clave ni sus contraseñas al repositorio
+*.keystore
+*.jks
+android/keystore.properties
+
+# Credenciales de Supabase (la plantilla es .env.example)
+.env

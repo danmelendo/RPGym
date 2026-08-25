@@ -1,0 +1,35 @@
+{
+  "name": "rpgym",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "RPGym — app personal de gimnasio gamificada, empaquetada con Capacitor.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "sync": "npm run build && npx cap sync android",
+    "open:android": "npx cap open android",
+    "apk": "npm run build && npx cap sync android && android\\gradlew.bat -p android assembleDebug",
+    "apk:release": "npm run build && npx cap sync android && android\\gradlew.bat -p android assembleRelease",
+    "bundle": "npm run build && npx cap sync android && android\\gradlew.bat -p android bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor/local-notifications": "^7.0.7",
+    "@supabase/supabase-js": "^2.112.4",
+    "lucide-react": "^0.383.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^7.6.8",
+    "@capacitor/cli": "^7.6.8",
+    "@capacitor/core": "^7.6.8",
+    "@vitejs/plugin-react": "^5.0.0",
+    "vite": "^6.4.3"
+  },
+  "overrides": {
+    "esbuild": "^0.25.0"
+  }
+}

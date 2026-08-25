@@ -1,0 +1,8 @@
+{
+  "appId": "app.melendo.forjahabito",
+  "appName": "RPGym",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#0C0E14"
+  }
+}
