@@ -1960,6 +1960,31 @@ function nextRenewalDate(day){
   return isoOf(new Date(y, m, Math.min(day, dim)));
 }
 function daysUntil(iso){ return Math.round((parseISO(iso) - parseISO(todayISO())) / 864e5); }
+/* --- Aviso de fin de descanso ------------------------------------------------
+   El cronómetro de pantalla no basta: cuando sales de la app, el WebView congela
+   los temporizadores de JavaScript, así que ni avisa ni cuenta bien al volver.
+   Hay que programar una notificación REAL (solo funciona en el APK instalado).
+   El id va fuera del rango de los recordatorios (1-40) y de la cuota (30). */
+const REST_NOTIF_ID = 55;
+let permisoPedido = false;
+async function programarAvisoDescanso(segundos){
+  const ln = LN(); if (!ln || !(segundos > 0)) return;
+  if (!permisoPedido) { permisoPedido = true; try { await ensureNotifPerm(); } catch {} }
+  try {
+    await ln.cancel({ notifications: [{ id: REST_NOTIF_ID }] });
+    await ln.schedule({ notifications: [{
+      id: REST_NOTIF_ID,
+      title: "Descanso terminado 💪",
+      body: "A por la siguiente serie.",
+      schedule: { at: new Date(Date.now() + segundos * 1000) },
+    }] });
+  } catch {}
+}
+async function cancelarAvisoDescanso(){
+  const ln = LN(); if (!ln) return;
+  try { await ln.cancel({ notifications: [{ id: REST_NOTIF_ID }] }); } catch {}
+}
+
 async function scheduleAllReminders(reminders, sub){
   const ln = LN(); if (!ln) return;   // el aviso real solo funciona en la app instalada
   try { await ln.cancel({ notifications: Array.from({ length: 40 }, (_, i) => ({ id: i + 1 })) }); } catch {}
@@ -2220,10 +2245,36 @@ function Toast({ toast }){
 /* Temporizador de descanso: pop-up a pantalla completa que bloquea el avance */
 function RestTimer({ seconds, onDone, isRecomp }){
   const pool = isRecomp ? RECOMP_TIPS : TIPS;
+  const [endsAt, setEndsAt] = useState(() => Date.now() + seconds * 1000);
   const [left, setLeft] = useState(seconds);
   const [tip, setTip] = useState(() => pick(pool));
-  useEffect(()=>{ setLeft(seconds); setTip(pick(pool)); },[seconds]);
-  useEffect(()=>{ if(left<=0){ onDone&&onDone(); return; } const t=setTimeout(()=>setLeft(l=>l-1),1000); return ()=>clearTimeout(t); },[left]);
+
+  // Al abrir el descanso: fija la hora de fin y programa el aviso del sistema.
+  // Al cerrarlo (terminado o saltado) se cancela, para no avisar de más.
+  useEffect(()=>{
+    setEndsAt(Date.now() + seconds * 1000); setLeft(seconds); setTip(pick(pool));
+    programarAvisoDescanso(seconds);
+    return ()=>{ cancelarAvisoDescanso(); };
+  },[seconds]);
+
+  // El tiempo se calcula contra el RELOJ, no restando de uno en uno. Así, al volver
+  // de segundo plano —donde el WebView congela los temporizadores— el número es real
+  // en vez de haberse quedado parado donde lo dejaste.
+  useEffect(()=>{
+    const t=setInterval(()=>{
+      const q=Math.max(0, Math.round((endsAt - Date.now())/1000));
+      setLeft(q);
+      if(q<=0){ clearInterval(t); onDone && onDone(); }
+    }, 250);
+    return ()=>clearInterval(t);
+  },[endsAt]);
+
+  /* +15 s: mueve la hora de fin y reprograma el aviso. */
+  function mas15(){
+    const nuevo = endsAt + 15000;
+    setEndsAt(nuevo);
+    programarAvisoDescanso(Math.round((nuevo - Date.now())/1000));
+  }
   const mm=String(Math.floor(left/60)).padStart(2,"0"), ss=String(left%60).padStart(2,"0");
   const pct = seconds? left/seconds : 0;
   // Portal al root .fh: evita que un ancestro con transform (animación .fh-in) rompa el position:fixed.
@@ -2245,7 +2296,7 @@ function RestTimer({ seconds, onDone, isRecomp }){
           <div style={{ fontSize:13.5, lineHeight:1.5, color:"var(--txt)" }}>{tip}</div>
         </div>
         <div style={{ display:"flex", gap:8 }}>
-          <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--txt)", padding:13, border:"1px solid var(--line2)" }} onClick={()=>setLeft(l=>l+15)}>+15 s</button>
+          <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--txt)", padding:13, border:"1px solid var(--line2)" }} onClick={mas15}>+15 s</button>
           <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--muted)", padding:13, border:"1px solid var(--line2)" }} onClick={()=>setTip(pick(pool))}>Otro consejo</button>
           <button className="fh-btn" style={{ flex:1, background:"var(--ember)", color:"#fff", padding:13, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }} onClick={onDone}><SkipForward size={16}/> Saltar</button>
         </div>
