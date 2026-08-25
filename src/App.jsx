@@ -2411,6 +2411,8 @@ export default function App(){
   const [perfil, setPerfil] = useState(null);
   const [updateInfo, setUpdateInfo] = useState(null);
   const [publicadas, setPublicadas] = useState([]);   // ids de mis rutinas visibles para amigos
+  const [quedadas, setQuedadas] = useState([]);
+  const [cargandoQuedadas, setCargandoQuedadas] = useState(false);
   const [draftIsNew, setDraftIsNew] = useState(false);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
@@ -2444,6 +2446,8 @@ export default function App(){
         cloud.ping();                                   // keep-alive, sin esperar
         const pub = await cloud.misRutinasPublicadas();
         if(vivo && pub.ok) setPublicadas(pub.ids);
+        const q = await cloud.listarQuedadas();
+        if(vivo && q.ok) setQuedadas(q.quedadas);
       }
       const v = await cloud.versionMasNueva(APP_VERSION_CODE);
       if(vivo && v.ok && v.hayNueva) setUpdateInfo(v.version);
@@ -2769,6 +2773,14 @@ export default function App(){
   function saveMealPlan(mp){ setMealPlan(mp); saveKey("gym:mealplan", mp); }
   function setExcludes(next){ setExcludesState(next); saveKey("gym:excludes", next); }
 
+  async function refrescarQuedadas(){
+    if(!cloud.cloudEnabled) return;
+    setCargandoQuedadas(true);
+    const r = await cloud.listarQuedadas();
+    setCargandoQuedadas(false);
+    if(r.ok) setQuedadas(r.quedadas);
+  }
+
   /* Publicar / dejar de publicar una rutina para los amigos. Explícito: por
      defecto las rutinas no salen del móvil, y así lo dice la privacidad. */
   async function publicarRutina(routine){
@@ -2893,7 +2905,7 @@ export default function App(){
       <Toast toast={toast}/>
       <div className="fh-shell">
         {tab==="home" && <HomeView {...{ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines,
-          cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null) }}/>}
+          cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), quedadas }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina }}/>}
         {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines }}/>}
         {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests }}/>}
@@ -2904,7 +2916,8 @@ export default function App(){
         {tab==="editor" && <RoutineBuilderView {...{ draft:routineDraft, setDraft:setRoutineDraft, onSave:saveRoutineFromEditor, onCancel:closeEditor, isNew:draftIsNew }}/>}
         {tab==="ajustes" && <SettingsView {...{ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup }}/>}
         {tab==="cuenta" && <AccountView {...{ state, level, setTab, session:cloudSession, perfil,
-          onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onSalir:salirCuenta, onRefrescar:(p,soloAmigos)=>cloud.leaderboard(p, soloAmigos) }}/>}
+          onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onSalir:salirCuenta, onRefrescar:(p,soloAmigos)=>cloud.leaderboard(p, soloAmigos),
+          quedadas, onRefrescarQuedadas:refrescarQuedadas, cargandoQuedadas }}/>}
       </div>
 
       {tab!=="workout" && tab!=="results" && tab!=="editor" && (
@@ -3117,6 +3130,191 @@ function OnboardingWizard({ onDone, initial, importBackup }){
    y sin red la app entera sigue funcionando igual. Ver ROADMAP-SOCIAL.md.
    ========================================================================= */
 
+/* Fecha y hora de una quedada, en lenguaje normal: "hoy a las 19:00",
+   "mañana a las 8:30", "el viernes a las 19:00". */
+function cuandoTexto(iso){
+  const d = new Date(iso);
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const dia = new Date(d); dia.setHours(0,0,0,0);
+  const dias = Math.round((dia - hoy) / 864e5);
+  const hora = d.toLocaleTimeString("es-ES", { hour:"2-digit", minute:"2-digit" });
+  if (dias === 0) return `hoy a las ${hora}`;
+  if (dias === 1) return `mañana a las ${hora}`;
+  if (dias > 1 && dias < 7) return `el ${DAY_NAMES_ES[(d.getDay()+6)%7].toLowerCase()} a las ${hora}`;
+  return `${d.getDate()}/${d.getMonth()+1} a las ${hora}`;
+}
+
+/* Quedadas: proponer una y contestar a las de tus amigos. */
+function QuedadasPanel({ quedadas, onRefrescar, cargando }){
+  const [creando, setCreando] = useState(false);
+  const [f, setF] = useState(()=>{
+    const d = new Date(); d.setDate(d.getDate()+1); d.setHours(19,0,0,0);
+    return { fecha: isoOf(d), hora:"19:00", lugar:"", nota:"" };
+  });
+  const [msg, setMsg] = useState(null);
+  const [ocupado, setOcupado] = useState(false);
+  const [detalle, setDetalle] = useState(null);
+  const [gente, setGente] = useState([]);
+
+  const label = { padding:"0 2px 6px", fontSize:12, color:"var(--muted)", fontWeight:600 };
+  const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
+
+  async function proponer(){
+    setOcupado(true); setMsg(null);
+    const cuando = new Date(`${f.fecha}T${f.hora}:00`).toISOString();
+    const r = await cloud.crearQuedada({ cuando, lugar:f.lugar, nota:f.nota });
+    setOcupado(false);
+    if (!r.ok) { setMsg({ ok:false, t:r.msg }); return; }
+    setCreando(false); setF(p=>({ ...p, lugar:"", nota:"" }));
+    setMsg({ ok:true, t:"Quedada propuesta. Tus amigos ya la ven." });
+    onRefrescar();
+  }
+  async function responder(id, resp){
+    setOcupado(true);
+    await cloud.responderQuedada(id, resp);
+    setOcupado(false);
+    onRefrescar();
+  }
+  async function cancelar(id){
+    setOcupado(true);
+    await cloud.cancelarQuedada(id);
+    setOcupado(false);
+    setDetalle(null);
+    onRefrescar();
+  }
+  async function verGente(id){
+    if (detalle === id) { setDetalle(null); return; }
+    setDetalle(id); setGente([]);
+    const r = await cloud.asistentes(id);
+    if (r.ok) setGente(r.gente);
+  }
+
+  return (<>
+    <div style={sectionTitle}>QUEDADAS {quedadas.length > 0 && `· ${quedadas.length}`}</div>
+    <div className="fh-card" style={{ padding:16 }}>
+      {!quedadas.length && !creando && (
+        <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
+          No hay ninguna a la vista. Propón una: saber que va alguien más es lo que evita que os rajéis.
+        </p>
+      )}
+
+      {cargando && !quedadas.length && <Empty text="Buscando quedadas…"/>}
+
+      {quedadas.map((q,i)=>{
+        const voy = q.mi_respuesta === "voy";
+        const no  = q.mi_respuesta === "no";
+        return (
+          <div key={q.id} style={{ padding:"11px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div className="disp" style={{ fontSize:14.5, fontWeight:700 }}>{cuandoTexto(q.cuando)}</div>
+                <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:2 }}>
+                  {q.es_mia ? "la propones tú" : `la propone ${q.display_name || "@"+q.handle}`}
+                  {q.lugar ? ` · ${q.lugar}` : ""}
+                </div>
+                {q.nota && <div style={{ fontSize:12, color:"var(--muted)", marginTop:5, lineHeight:1.45 }}>{q.nota}</div>}
+              </div>
+              <button onClick={()=>verGente(q.id)} className="fh-chip"
+                style={{ background:q.van>1?"rgba(63,185,132,.15)":"var(--bg2)", color:q.van>1?"var(--jade)":"var(--faint)", border:"none", cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", gap:5 }}>
+                <Users size={12}/> {q.van}
+              </button>
+            </div>
+
+            {detalle === q.id && (
+              <div className="fh-in" style={{ marginTop:9, padding:"9px 11px", background:"var(--bg2)", borderRadius:10 }}>
+                <div style={{ fontSize:11, color:"var(--faint)", marginBottom:5 }}>Van:</div>
+                <div style={{ fontSize:12.5, color:"var(--txt)", lineHeight:1.5 }}>
+                  {gente.length ? gente.map(g=>g.display_name || "@"+g.handle).join(" · ") : "cargando…"}
+                </div>
+                {q.es_mia && (
+                  <button className="fh-btn" onClick={()=>cancelar(q.id)} disabled={ocupado}
+                    style={{ width:"100%", marginTop:10, background:"var(--card2)", color:"var(--crimson)", border:"1px solid var(--line2)", padding:9, fontSize:12 }}>
+                    Cancelar la quedada
+                  </button>
+                )}
+              </div>
+            )}
+
+            <div style={{ display:"flex", gap:8, marginTop:10 }}>
+              <button className="fh-btn" onClick={()=>responder(q.id, "voy")} disabled={ocupado}
+                style={{ flex:1.3, background:voy?"var(--jade)":"var(--card2)", color:voy?"#0F131A":"var(--txt)", border:voy?"none":"1px solid var(--line2)", padding:10, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                {voy && <Check size={14}/>} Yo voy
+              </button>
+              <button className="fh-btn" onClick={()=>responder(q.id, "no")} disabled={ocupado}
+                style={{ flex:1, background:no?"var(--card2)":"var(--card2)", color:no?"var(--ember)":"var(--faint)", border:`1px solid ${no?"var(--ember)":"var(--line2)"}`, padding:10, fontSize:12.5 }}>
+                No puedo
+              </button>
+            </div>
+          </div>
+        );
+      })}
+
+      {!creando ? (
+        <button className="fh-btn" onClick={()=>{ setCreando(true); setMsg(null); }}
+          style={{ width:"100%", marginTop:quedadas.length?13:0, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+          <CalendarDays size={15} color="var(--gold)"/> Proponer una quedada
+        </button>
+      ) : (
+        <div className="fh-in" style={{ marginTop:quedadas.length?13:0 }}>
+          <div style={{ display:"flex", gap:10 }}>
+            <div style={{ flex:1.4 }}>
+              <div style={label}>Día</div>
+              <input type="date" value={f.fecha} min={todayISO()} onChange={e=>setF(p=>({ ...p, fecha:e.target.value }))} style={{ textAlign:"left" }}/>
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={label}>Hora</div>
+              <input type="time" value={f.hora} onChange={e=>setF(p=>({ ...p, hora:e.target.value }))} style={{ textAlign:"left" }}/>
+            </div>
+          </div>
+          <div style={{ ...label, marginTop:12 }}>Dónde <span style={{ color:"var(--faint)", fontWeight:400 }}>(opcional)</span></div>
+          <input value={f.lugar} maxLength={60} onChange={e=>setF(p=>({ ...p, lugar:e.target.value }))} placeholder="El gimnasio de siempre" style={{ textAlign:"left" }}/>
+          <div style={{ ...label, marginTop:12 }}>Nota <span style={{ color:"var(--faint)", fontWeight:400 }}>(opcional)</span></div>
+          <input value={f.nota} maxLength={200} onChange={e=>setF(p=>({ ...p, nota:e.target.value }))} placeholder="Toca pierna, avisados quedáis" style={{ textAlign:"left" }}/>
+          <div style={{ display:"flex", gap:8, marginTop:12 }}>
+            <button className="fh-btn" onClick={()=>setCreando(false)} style={{ flex:1, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:11, fontSize:12.5 }}>Cancelar</button>
+            <button className="fh-btn" onClick={proponer} disabled={ocupado} style={{ flex:1.4, background:"var(--gold)", padding:11, fontSize:12.5, opacity:ocupado?.6:1 }}>
+              {ocupado ? "Un momento…" : "Proponer"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {msg && (
+        <div style={{ display:"flex", gap:9, alignItems:"flex-start", marginTop:12, padding:"10px 12px", background:"var(--bg2)", border:`1px solid ${msg.ok?"var(--jade)":"var(--crimson)"}`, borderRadius:11 }}>
+          {msg.ok ? <Check size={15} color="var(--jade)" style={{ flexShrink:0, marginTop:1 }}/>
+                  : <ShieldAlert size={15} color="var(--crimson)" style={{ flexShrink:0, marginTop:1 }}/>}
+          <div style={{ fontSize:12, color:"var(--txt)", lineHeight:1.45 }}>{msg.t}</div>
+        </div>
+      )}
+    </div>
+  </>);
+}
+
+/* Tarjeta compacta para Inicio: la próxima quedada a la que has dicho que vas. */
+function ProximaQuedada({ quedadas, setTab }){
+  const prox = (quedadas || []).find(q => q.mi_respuesta === "voy") || (quedadas || [])[0];
+  if (!prox) return null;
+  const voy = prox.mi_respuesta === "voy";
+  return (
+    <div className="fh-card" style={{ padding:14, marginTop:12, borderColor:voy?"var(--jade)":"var(--line)", display:"flex", gap:11, alignItems:"flex-start" }}>
+      <CalendarDays size={18} color={voy?"var(--jade)":"var(--gold)"} style={{ flexShrink:0, marginTop:1 }}/>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ fontSize:12.5, color:"var(--txt)", lineHeight:1.45 }}>
+          {voy ? <>Has quedado <b>{cuandoTexto(prox.cuando)}</b></> : <>{prox.display_name || "@"+prox.handle} propone entrenar <b>{cuandoTexto(prox.cuando)}</b></>}
+          {prox.lugar ? ` · ${prox.lugar}` : ""}
+        </div>
+        <div style={{ fontSize:11.5, color:"var(--faint)", marginTop:3 }}>
+          {prox.van === 1 ? "va 1 persona" : `van ${prox.van} personas`}
+          {" · "}
+          <button onClick={()=>setTab("cuenta")} style={{ background:"none", border:"none", padding:0, color:"var(--gold)", cursor:"pointer", font:"inherit" }}>
+            {voy ? "ver" : "contestar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* Sección de amigos: invitar por código y canjear el que te pasen.
    Círculo cerrado, sin buscador de usuarios ni solicitudes pendientes. */
 function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar }){
@@ -3251,7 +3449,7 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar }){
   </>);
 }
 
-function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onSalir, onRefrescar }){
+function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onSalir, onRefrescar, quedadas, onRefrescarQuedadas, cargandoQuedadas }){
   const [modo, setModo] = useState("entrar");          // entrar | registro
   const [f, setF] = useState({ email:"", password:"", handle:"", displayName:"" });
   const [msg, setMsg] = useState(null);
@@ -3393,6 +3591,8 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
       )}
 
       <AmigosPanel amigos={amigos} onRefrescarAmigos={refrescarAmigos} onQuitar={quitarAmigo}/>
+
+      <QuedadasPanel quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={cargandoQuedadas}/>
 
       <div style={sectionTitle}>CLASIFICACIÓN</div>
       <div style={{ display:"flex", gap:6, marginBottom:8 }}>
@@ -3920,7 +4120,7 @@ function CyclePhaseCard({ state, setTab }){
   );
 }
 
-function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate }){
+function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const RankIcon=rank.icon;
@@ -3979,6 +4179,8 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
           <div style={{ fontSize:11, color:"var(--faint)", marginTop:8 }}>{state.xp} XP · {state.totalWorkouts} entrenos</div>
         </div>
       </div>
+
+      {cloudEnabled && perfil && <ProximaQuedada quedadas={quedadas} setTab={setTab}/>}
 
       {/* Racha (respeta descansos) */}
       <StreakCard log={log} plannedDays={state.reminders?.days} bestStreak={state.bestStreak} setTab={setTab}/>

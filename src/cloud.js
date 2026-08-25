@@ -296,6 +296,64 @@ export async function rutinasDeAmigos(){
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
+/* --- Quedadas para ir juntos al gimnasio --------------------------------- */
+
+export async function listarQuedadas(){
+  if (!supabase) return sinNube;
+  try {
+    const { data, error } = await supabase.from("quedadas").select("*").limit(30);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, quedadas:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function crearQuedada({ cuando, lugar, nota }){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"Necesitas cuenta para quedar con tus amigos." };
+    const { data, error } = await supabase.from("meetups")
+      .insert({ created_by:user.id, cuando, lugar:String(lugar || "").slice(0,60), nota:String(nota || "").slice(0,200) })
+      .select().single();
+    if (error) return { ok:false, msg:traducir(error) };
+    // Quien la propone va, evidentemente.
+    await supabase.from("meetup_guests").insert({ meetup_id:data.id, user_id:user.id, respuesta:"voy" });
+    return { ok:true, quedada:data };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function responderQuedada(meetupId, respuesta){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("meetup_guests")
+      .upsert({ meetup_id:meetupId, user_id:user.id, respuesta, updated_at:new Date().toISOString() },
+              { onConflict:"meetup_id,user_id" });
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function cancelarQuedada(meetupId){
+  if (!supabase) return sinNube;
+  try {
+    const { error } = await supabase.from("meetups").delete().eq("id", meetupId);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function asistentes(meetupId){
+  if (!supabase) return sinNube;
+  try {
+    const { data, error } = await supabase.from("quedada_asistentes")
+      .select("*").eq("meetup_id", meetupId).eq("respuesta", "voy");
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, gente:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
 export async function borrarAmigo(amigoId){
   if (!supabase) return sinNube;
   try {

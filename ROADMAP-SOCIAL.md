@@ -113,7 +113,8 @@ Empezar por ahí y meter FCM solo si se echa de menos de verdad.
 | **3. Amigos** ✅ **HECHA** | Invitar por **código de 6 caracteres** compartible por WhatsApp, lista de amigos, quitar amigo, y clasificaciones limitadas a tu círculo. Pendiente: ver las rutinas del amigo (va con la fase 4). | Sin solicitudes pendientes ni buscador, como se acordó para un círculo cerrado. |
 | **4. Hacer la rutina de un amigo** ✅ **HECHA** | Publicas una rutina con un interruptor (nunca automático), tus amigos la ven en Rutinas → De mis amigos, la copian con atribución y se llevan +75 XP la primera vez que la entrenan. | Reaprovechó `importRoutine` y el formato de `encodeRoutine` tal cual. |
 | **5. Avisos** | Primero **locales al abrir** (novedades desde la última visita). Push real con FCM solo si se echa en falta. | Da el valor sin arrastrar Google Play Services de entrada. **Ya hecho de aquí**: el aviso de fin de descanso, que es local y no necesita backend ni amigos. |
-| **6. Entrenar juntos** | Quedada con fecha/hora + sesión conjunta en tiempo real (Supabase Realtime). | Lo más caro y lo más frágil: al final. |
+| **6a. Quedadas** ✅ **HECHA** | Propones día, hora, sitio y nota; tus amigos la ven y contestan "Yo voy" / "No puedo", con el recuento de quién va. Tarjeta en Inicio con la próxima. | Lo que de verdad dinamiza: saber que va alguien más. |
+| **6b. Entrenar juntos en directo** | Sesión conjunta en tiempo real (Supabase Realtime). | Lo más caro y frágil: al final. |
 
 Al ser círculo cerrado, **la fase 3 puede ser muy simple**: un código de invitación de 6
 caracteres que se pasa por WhatsApp y da amistad directa, sin buscador de usuarios ni

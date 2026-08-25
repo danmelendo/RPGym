@@ -56,6 +56,12 @@ rutina de un amigo → avisos → entrenar juntos.
 
 ## ✅ Hecho
 
+- **Quedadas con "Yo voy"**: proponer día/hora/sitio, contestar, ver quién va y
+  cancelar. Tarjeta de la próxima en Inicio. Verificado que un extraño no ve las
+  quedadas del círculo ni puede apuntarse, y que nadie contesta por otro.
+- **Rutinas de amigos**: publicar con interruptor explícito, copiarlas y +75 XP al
+  estrenarlas.
+
 - **Clasificaciones semanal, mensual e histórica** (tabla `workout_points`: solo fecha
   y XP por entreno, sin detalle) y **saludos** reescritos sin épica medieval.
 - **Amigos por código de invitación** de 6 caracteres, compartible por WhatsApp.
