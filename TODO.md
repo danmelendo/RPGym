@@ -1,75 +1,86 @@
 # TODO — siguiente paso inmediato
 
-## 🔴 1. Aplicar la migración en Supabase (bloquea todo lo demás)
+## 🔴 1. Desactivar la confirmación por correo (bloquea el registro)
 
-Es lo único pendiente para que la parte social funcione. **30 segundos.**
+**El registro está roto ahora mismo**, y no por un fallo del código: con *Confirm
+email* activado, Supabase manda un correo por cada alta y el SMTP gratuito tiene un
+límite muy bajo (2-3 por hora). Al probarlo saltó `over_email_send_rate_limit` a la
+segunda alta. Registrando a varios amigos seguidos, os quedaríais fuera.
 
-1. Entra en <https://supabase.com/dashboard/project/svmxsnvjjddxgolkjwjb/sql/new>
-   (funciona igual desde el móvil, no hace falta ordenador).
-2. Pega entero el contenido de
-   [supabase/migrations/20260825000000_fase1_cuentas.sql](supabase/migrations/20260825000000_fase1_cuentas.sql).
-3. **Run**.
+**Arreglo (1 clic, desde el móvil vale):**
+<https://supabase.com/dashboard/project/svmxsnvjjddxgolkjwjb/auth/providers>
+→ Email → **Confirm email: OFF**.
 
-Sabrás que ha ido bien porque en **Table Editor** aparecen `profiles`, `heartbeat`
-y `app_versions`.
+Sin confirmación, el alta devuelve sesión al instante, no se manda ningún correo y no
+hay límite. Para un grupo cerrado es lo razonable. El código ya soporta las dos
+opciones, así que no hay que tocar nada.
 
-> **Por qué no se aplicó sola al conectar el repo**: la integración de GitHub que
-> despliega migraciones va con *Branching*, que es de **plan de pago**. En el plan
-> gratuito se aplican con el SQL Editor o con el CLI. El fichero ya está en
-> `supabase/migrations/`, así que si algún día pasas a Pro se aplicará solo.
+> Si prefieres mantener la confirmación, la alternativa es configurar un SMTP propio
+> (*Authentication → SMTP Settings*), pero es bastante más trabajo.
 
-> **Qué credencial haría falta para aplicarlo en remoto** (por si vuelve a surgir):
-> - ❌ **service_role key**: NO sirve. Solo se salta las RLS sobre tablas que ya
->   existen; no puede ejecutar DDL. No la compartas: es la más peligrosa y aquí no
->   aportaría nada.
-> - ⚠️ **Contraseña de la base de datos** (cadena de conexión): sí serviría, vía un
->   cliente Postgres. Está acotada a esta base y se puede rotar después desde
->   *Project Settings → Database → Reset password*.
-> - ⚠️ **Personal Access Token**: serviría vía Management API, pero da acceso a
->   **toda tu cuenta y todos tus proyectos**. Peor opción que la anterior.
->
-> La anon key que ya está en `.env` es pública por diseño y no supone riesgo.
+## 🟡 2. Después
 
-## 🟡 2. Después de aplicar la migración
-
-- [ ] Probar el ciclo completo: registro con usuario único, intento de usuario
-      duplicado, keep-alive (`heartbeat.pings` sube) y clasificación.
-- [ ] Regenerar el APK **con** credenciales (`npm run apk`). Ojo: hasta ahora los APK
-      se han generado sin `.env`, así que no llevaban nada de Supabase.
+- [ ] Registrar tu usuario real y comprobar que sales en la clasificación.
+- [ ] Regenerar el APK **con** credenciales (`npm run apk`) y probarlo en el móvil.
 - [ ] Publicarlo como GitHub Release y registrar la versión en `app_versions`:
       ```bash
-      gh release create v1.0.0 android/app/build/outputs/apk/debug/app-debug.apk \
-        --title "RPGym 1.0.0" --notes "Primera versión con cuentas"
+      gh release create v1.0.0 android/app/build/outputs/apk/debug/app-debug.apk         --title "RPGym 1.0.0" --notes "Primera versión con cuentas"
       ```
 - [ ] Subir a la vez `APP_VERSION_CODE` en [src/App.jsx](src/App.jsx) y `versionCode`
-      en [android/version.properties](android/version.properties). Si no coinciden,
-      cada uno se verá a sí mismo como desactualizado.
+      en [android/version.properties](android/version.properties).
 
 ## 🟠 3. Antes de repartirlo a los amigos
 
 - [ ] **Reescribir `Ajustes → Privacidad`** en [src/App.jsx](src/App.jsx) y
-      [public/privacidad.html](public/privacidad.html). Ahora mismo prometen que
-      *"no se recoge, no se envía y no se comparte ningún dato"* y que *"no hay
-      servidores, ni cuentas"*. Con la nube activada **eso es falso**, y es el texto
-      que van a leer tus amigos.
-- [ ] Decidir si dejas la confirmación por correo activada. Está **activada**: hay
-      que abrir un correo antes de poder entrar. Para un grupo cerrado quizá
-      prefieras *Authentication → Providers → Email → Confirm email* → desactivar.
+      [public/privacidad.html](public/privacidad.html). Prometen que *"no se recoge, no
+      se envía y no se comparte ningún dato"* y que *"no hay servidores, ni cuentas"*.
+      Con la nube activa **es falso**, y es lo que van a leer tus amigos.
+- [ ] **Rotar la contraseña de la base de datos**: se compartió por chat para aplicar la
+      migración. *Settings → Database → Reset password*. La app **no la usa** (solo la
+      anon key), así que rotarla no rompe nada.
 
-## ⚪ 4. Fases siguientes (ver [ROADMAP-SOCIAL.md](ROADMAP-SOCIAL.md))
+## 🔵 4. Higiene de credenciales
+
+En `.env` (ignorado por git) conviven ahora públicas y secretas. **Regla: el prefijo
+`VITE_` hace que Vite incruste la variable dentro del APK.**
+
+| Variable | Prefijo | Dónde acaba |
+|---|---|---|
+| `VITE_SUPABASE_URL` | `VITE_` | Dentro del APK — correcto, es pública |
+| `VITE_SUPABASE_ANON_KEY` | `VITE_` | Dentro del APK — correcto, es pública |
+| `SUPABASE_DB_PASSWORD` | sin prefijo | Solo en este PC |
+| `SUPABASE_SECRET_KEY` | sin prefijo | Solo en este PC |
+
+Si añades un secreto, **nunca** le pongas `VITE_` delante.
+
+## ⚪ 5. Fases siguientes (ver [ROADMAP-SOCIAL.md](ROADMAP-SOCIAL.md))
 
 Sincronización de rutinas y entrenos → amigos por código de invitación → hacer la
 rutina de un amigo → avisos → entrenar juntos.
 
 ---
 
+## ✅ Hecho
+
+- Migración de la fase 1 **aplicada** en `svmxsnvjjddxgolkjwjb` (eu-central-1,
+  PostgreSQL 17.6) y registrada en `supabase_migrations.schema_migrations`.
+- `profiles`, `heartbeat`, `app_versions` y la vista `leaderboard` creadas, con RLS
+  activa en las tres tablas.
+- **Fallo de seguridad corregido**: `ping()` se podía llamar sin sesión. Postgres
+  concede `EXECUTE` a `PUBLIC` por defecto, así que `grant ... to authenticated` no
+  restringía nada; hacía falta `revoke ... from public, anon` primero.
+- Verificado con la clave pública que un anónimo **no** puede leer perfiles, crear
+  perfiles falsos, escribir versiones de app ni llamar a `ping()`.
+- Verificado el caso de los dos Danieles: mismo handle rechazado, `@DANIEL` rechazado,
+  handles con espacios o demasiado cortos rechazados, `@daniel2` aceptado. Todo en una
+  transacción revertida: la base sigue con 0 perfiles y 0 usuarios.
+
+---
+
 ## Deuda técnica anotada
 
 - **La clasificación es confiable, no verificable.** Cada uno escribe su propio XP
-  desde el móvil. Entre amigos es asumible; el arreglo (si molesta) está explicado al
-  final de la migración: subir los entrenos y calcular la XP en el servidor.
-- **Un solo fichero de ~5.200 líneas** ([src/App.jsx](src/App.jsx)). Funciona y está
-  ordenado por secciones, pero es el candidato obvio a partir en módulos si sigue
-  creciendo.
-- **APK de 33 MB**, casi todo imágenes de ejercicios sin recomprimir (decisión
-  consciente). `ffmpeg -q:v 7` recorta ~20% sin pérdida visible si algún día pesa.
+  desde el móvil. Entre amigos es asumible; el arreglo está explicado al final de la
+  migración: subir los entrenos y calcular la XP en el servidor.
+- **Un solo fichero de ~5.200 líneas** ([src/App.jsx](src/App.jsx)).
+- **APK de 33 MB**, casi todo imágenes sin recomprimir (decisión consciente).

@@ -79,7 +79,10 @@ as $$
   select not exists (select 1 from public.profiles where lower(handle) = lower(p_handle));
 $$;
 
-grant execute on function public.handle_disponible(text) to anon, authenticated;
+-- OJO: Postgres concede EXECUTE a PUBLIC por defecto en toda función nueva, así que
+-- un `grant ... to authenticated` NO restringe nada. Hay que REVOCAR primero.
+revoke all on function public.handle_disponible(text) from public;
+grant execute on function public.handle_disponible(text) to anon, authenticated;  -- ésta SÍ es pública a propósito
 
 -- ---------------------------------------------------------------------------
 -- KEEP-ALIVE
@@ -116,6 +119,9 @@ begin
 end;
 $$;
 
+-- Sin este revoke, cualquiera con la anon key podría llamar a ping() sin registrarse
+-- y escribir en heartbeat. Es un endpoint de escritura: exige sesión.
+revoke all on function public.ping() from public, anon;
 grant execute on function public.ping() to authenticated;
 
 -- ---------------------------------------------------------------------------
