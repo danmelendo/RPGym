@@ -1914,23 +1914,61 @@ function bodyweightFactor(weightKg, sex){
 }
 const ENERGY = { alto:{ mult:1.05, label:"Con ganas", icon:Flame }, normal:{ mult:1.0, label:"Normal", icon:Gauge }, bajo:{ mult:0.9, label:"Cansado", icon:Moon } };
 
-/* Saludo épico según la hora del día. Cada frase es un vocativo limpio que encaja con ", {nombre}". */
-function greetingFor(name, sex){
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+
+/* Saludo según la hora. Motivador pero con guasa: nada de épica medieval.
+   Cada frase funciona sola y también seguida de ", {nombre}", así que se evitan
+   las que terminan en signo de exclamación o en una palabra que chirríe con la coma. */
+const SALUDOS = {
+  // 00:00 - 05:59 · o hay mucha disciplina, o algo ha salido raro
+  madrugada: [
+    "El gimnasio vacío es el mejor gimnasio",
+    "A estas horas nadie te quita la máquina",
+    "O mucha disciplina, o poco sueño",
+    "Madrugar cuesta menos que arrepentirse",
+    "Los que dicen que no tienen tiempo siguen durmiendo",
+    "Hoy no hay cola en el rack",
+  ],
+  // 06:00 - 11:59 · quitárselo de encima temprano
+  manana: [
+    "Hazlo ahora y el resto del día es tuyo",
+    "El mejor momento para empezar fue ayer",
+    "Café, y a mover hierro",
+    "Empieza fuerte y presume luego",
+    "Nadie ha vuelto nunca del gimnasio arrepentido",
+    "Hoy tu yo de dentro de un mes te lo agradece",
+    "Un día menos de excusas",
+  ],
+  // 12:00 - 19:59 · la franja de las excusas
+  tarde: [
+    "El sofá seguirá ahí cuando vuelvas",
+    "Suelta el móvil, coge la barra",
+    "Una hora hoy, cero excusas mañana",
+    "Lo difícil es entrar por la puerta; lo demás va solo",
+    "El descanso sabe mejor después",
+    "Que el día no se te vaya entero en cosas de otros",
+    "Ninguna serie se hace sola",
+  ],
+  // 20:00 - 23:59 · tarde pero has venido
+  noche: [
+    "Tarde, pero has venido. Eso ya te distingue",
+    "Cierra el día haciendo algo por ti",
+    "Los resultados no miran el reloj",
+    "Mejor a deshora que nunca",
+    "El día no cuenta hasta que levantas algo",
+    "Última oportunidad de que hoy cuente",
+  ],
+};
+
+function greetingFor(name){
   const h = new Date().getHours();
-  const epithet = sex==="mujer" ? "guerrera" : sex==="hombre" ? "guerrero" : "leyenda";
-  let pool;
-  if (h < 6)       pool = ["A esta hora entrenan los grandes", "Silencio, hierro y voluntad", "La madrugada es de los elegidos", `El mundo duerme, ${epithet}`];
-  else if (h < 12) pool = ["Un nuevo día que conquistar", "El sol sale para los valientes", "Hoy toca escribir leyenda", `Amanece tu momento, ${epithet}`];
-  else if (h < 20) pool = ["La tarde es tuya", "El hierro te reclama", "Descarga el día en la barra", `Que empiece la gesta, ${epithet}`];
-  else             pool = ["La noche es de los constantes", "Última gesta del día", "Cierra el día como un titán", `La barra te espera, ${epithet}`];
-  const g = pool[Math.floor(Math.random()*pool.length)];
-  const nm = name && name!=="Atleta" ? name.trim() : "";
-  if (!nm) return g;
-  // Si la frase ya termina con el epíteto, sustitúyelo por el nombre (evita doble vocativo).
-  if (g.endsWith(`, ${epithet}`)) return g.slice(0, g.length - epithet.length) + nm;
+  const franja = h < 6 ? "madrugada" : h < 12 ? "manana" : h < 20 ? "tarde" : "noche";
+  const g = pick(SALUDOS[franja]);
+  const nm = name && name !== "Atleta" ? name.trim() : "";
+  // Solo se añade el nombre si la frase no termina ya en punto: "…te distingue, Dani" chirría.
+  if (!nm || /[.!?]$/.test(g) || g.includes(". ")) return g;
   return `${g}, ${nm}`;
 }
-const pick = arr => arr[Math.floor(Math.random()*arr.length)];
 
 function cumXpForLevel(level){ let t=0; for(let k=1;k<level;k++) t+=100+(k-1)*50; return t; }
 function levelFromXp(xp){ let l=1; while(cumXpForLevel(l+1)<=xp) l++; return l; }
@@ -3676,7 +3714,7 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
   const phase=recommendedPhase(state.startDate);
   const last=log.slice(-6).map((s,i)=>({ i, v:s.volume }));
   const week=weeksBetween(state.startDate, todayISO())+1;
-  const greeting=useMemo(()=>greetingFor(state.profile?.name, state.profile?.sex), [state.profile?.name, state.profile?.sex]);
+  const greeting=useMemo(()=>greetingFor(state.profile?.name), [state.profile?.name]);
 
   return (
     <div className="fh-in">
