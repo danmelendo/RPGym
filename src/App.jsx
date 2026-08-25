@@ -2145,6 +2145,10 @@ const PRIVACY_URL = "";
 
 /* Versión de esta build. Debe ir a la par de android/version.properties: es lo
    que compara la app contra app_versions para avisar de que hay una nueva. */
+/* XP extra la primera vez que haces la rutina de un amigo. Fijo y modesto:
+   premia probar lo de otro, no repetirlo en bucle. */
+const XP_RUTINA_AMIGO = 75;
+
 const APP_VERSION_CODE = 1;
 const APP_VERSION_NAME = "1.0.0";
 
@@ -2406,6 +2410,7 @@ export default function App(){
   const [cloudSession, setCloudSession] = useState(null);
   const [perfil, setPerfil] = useState(null);
   const [updateInfo, setUpdateInfo] = useState(null);
+  const [publicadas, setPublicadas] = useState([]);   // ids de mis rutinas visibles para amigos
   const [draftIsNew, setDraftIsNew] = useState(false);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
@@ -2437,6 +2442,8 @@ export default function App(){
         const p = await cloud.miPerfil();
         if(vivo && p.ok) setPerfil(p.perfil);
         cloud.ping();                                   // keep-alive, sin esperar
+        const pub = await cloud.misRutinasPublicadas();
+        if(vivo && pub.ok) setPublicadas(pub.ids);
       }
       const v = await cloud.versionMasNueva(APP_VERSION_CODE);
       if(vivo && v.ok && v.hayNueva) setUpdateInfo(v.version);
@@ -2710,11 +2717,22 @@ export default function App(){
     WEEKLY_MISSIONS.forEach(mn=>{ if(claimed.includes(mn.id)) return; if(mn.check(ctx)){ claimed.push(mn.id); missionXp+=mn.xp; missionsDone.push(mn); } });
     const missions={ week:state.weekStart, claimed };
 
+    /* Primera vez que entrenas la rutina de un amigo: XP extra. Solo una vez por
+       rutina, y el bonus es FIJO (no proporcional al volumen) para que no salga
+       a cuenta inflarlo repitiendo la misma sesión. */
+    const rutinaActual = findRoutine(session.routineId, customRoutines);
+    let xpAmigo = 0, amigoDe = null;
+    if(rutinaActual?.sharedFrom && !rutinaActual.bonusHecho){
+      xpAmigo = XP_RUTINA_AMIGO; amigoDe = rutinaActual.sharedFrom;
+      const nr = customRoutines.map(r => r.id===rutinaActual.id ? { ...r, bonusHecho:true } : r);
+      setCustomRoutinesState(nr); saveKey("gym:routines", nr);
+    }
+
     // Récord de racha de hábito
     const newStreak=habitStreak(nlog, state.reminders?.days);
     const bestStreak=Math.max(state.bestStreak||0, newStreak);
 
-    const finalXp=state.xp+sessionXp+achXp+missionXp; const finalLevel=levelFromXp(finalXp);
+    const finalXp=state.xp+sessionXp+achXp+missionXp+xpAmigo; const finalLevel=levelFromXp(finalXp);
 
     const ns={ ...state, xp:finalXp, cheatTokens, totalWorkouts, weeklyCount, weekGoalMet, weekStreak,
       lastWorkoutDate:todayISO(), achievements:ach, bests, firstBests, routinesUsed, muscleXp,
@@ -2723,7 +2741,7 @@ export default function App(){
 
     setResults({
       routineName:session.routineName, dayName:session.dayName, durationMin, seriesDone,
-      volume:Math.round(volume), xpBase, xpSets, xpPr, xpGoal, missionXp, achXp, sessionXp:sessionXp+achXp+missionXp,
+      volume:Math.round(volume), xpBase, xpSets, xpPr, xpGoal, missionXp, achXp, xpAmigo, amigoDe, sessionXp:sessionXp+achXp+missionXp+xpAmigo,
       prs:prList, volDelta, unlocked, cheatEarned:goalJustMet, levelUp: finalLevel>prevLevel ? finalLevel : null,
       muscleLevelUps, mGains, progressed, missionsDone, newStreak, bestStreak, bestStreakBeat: newStreak>(state.bestStreak||0),
       rankName: rankFor(finalLevel).name,
@@ -2750,6 +2768,25 @@ export default function App(){
   function setActiveRoutine(id){ const ns={ ...state, activeRoutine:id }; setState(ns); persist(ns); }
   function saveMealPlan(mp){ setMealPlan(mp); saveKey("gym:mealplan", mp); }
   function setExcludes(next){ setExcludesState(next); saveKey("gym:excludes", next); }
+
+  /* Publicar / dejar de publicar una rutina para los amigos. Explícito: por
+     defecto las rutinas no salen del móvil, y así lo dice la privacidad. */
+  async function publicarRutina(routine){
+    if(!cloud.cloudEnabled || !perfil) return;
+    const estaba = publicadas.includes(routine.id);
+    if(estaba){
+      const r = await cloud.dejarDePublicar(routine.id);
+      if(r.ok){ setPublicadas(p => p.filter(x => x !== routine.id));
+        showToast({ title:"Rutina retirada", sub:"Tus amigos ya no la ven.", icon:Lock }); }
+      else showToast({ title:"No se ha podido retirar", sub:r.msg, icon:ShieldAlert });
+    } else {
+      const payload = JSON.parse(b64urlDecode(encodeRoutine(routine).slice(SHARE_PREFIX.length)));
+      const r = await cloud.publicarRutina({ clientId:routine.id, name:routine.name, dias:routine.days.length, payload });
+      if(r.ok){ setPublicadas(p => [...p, routine.id]);
+        showToast({ title:"Compartida con tus amigos", sub:`${routine.name} ya aparece en su lista.`, icon:Users }); }
+      else showToast({ title:"No se ha podido compartir", sub:r.msg, icon:ShieldAlert });
+    }
+  }
 
   /* --- Rutinas propias (configurador) --- */
   function saveCustomRoutine(routine){
@@ -2798,7 +2835,7 @@ export default function App(){
 
   /* Mete una rutina que te han compartido (ya viene validada por decodeRoutine). */
   function importRoutine(routine){
-    const next = [...customRoutines, normalizeCustomRoutine(routine)];
+    const next = [...customRoutines, normalizeCustomRoutine(routine)];   // conserva sharedFrom si viene
     setCustomRoutinesState(next); saveKey("gym:routines", next);
     showToast({ title:"Rutina importada", sub:`${routine.name} · ${routine.days.length} día${routine.days.length===1?"":"s"}`, icon:Download });
   }
@@ -2857,7 +2894,7 @@ export default function App(){
       <div className="fh-shell">
         {tab==="home" && <HomeView {...{ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines,
           cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null) }}/>}
-        {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine }}/>}
+        {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina }}/>}
         {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines }}/>}
         {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests }}/>}
         {tab==="results" && <ResultsView {...{ results, setTab, level, rank }}/>}
@@ -3749,8 +3786,9 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
         <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.5 }}>
           Si creas una cuenta (opcional), se suben <b style={{ color:"var(--txt)" }}>solo</b> tu nombre, tu usuario,
           tu nivel, tu XP, tu racha y la <b style={{ color:"var(--txt)" }}>fecha y el XP</b> de cada entreno, para las
-          clasificaciones. <b style={{ color:"var(--txt)" }}>Nunca</b> salen de aquí qué ejercicios haces ni con cuánto
-          peso, ni tu peso corporal, medidas, edad, rutinas, dieta o los datos del ciclo.
+          clasificaciones, más las rutinas que compartas <b style={{ color:"var(--txt)" }}>a propósito</b>, una a una.
+          <b style={{ color:"var(--txt)" }}> Nunca</b> salen de aquí qué ejercicios haces ni con cuánto peso, ni tu peso
+          corporal, medidas, edad, dieta o los datos del ciclo.
         </p>
         <p style={{ fontSize:11.5, color:"var(--faint)", margin:0, lineHeight:1.5 }}>
           Puedes borrarlo todo cuando quieras desde <b style={{ color:"var(--muted)" }}>Borrar progreso</b>, o desinstalando la app.
@@ -4019,7 +4057,7 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
 
 /* Panel para pasarle una rutina a otra persona: genera el código y lo copia o
    lo manda por la app que elija (WhatsApp, Telegram…) si el móvil lo permite. */
-function ShareRoutinePanel({ routine, onClose }){
+function ShareRoutinePanel({ routine, onClose, publicada, onPublicar }){
   const [msg, setMsg] = useState(null);
   const code = useMemo(()=>encodeRoutine(routine), [routine]);
   const puedeCompartir = typeof navigator !== "undefined" && !!navigator.share;
@@ -4048,6 +4086,20 @@ function ShareRoutinePanel({ routine, onClose }){
       <textarea readOnly value={code} rows={3} onFocus={e=>e.target.select()}
         aria-label="Código de la rutina"
         style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, wordBreak:"break-all" }}/>
+      {cloud.cloudEnabled && (
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, marginTop:11, paddingTop:11, borderTop:"1px solid var(--line)" }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:12.5, color:"var(--txt)", display:"flex", alignItems:"center", gap:7 }}>
+              <Users size={14} color="var(--jade)"/> Visible para mis amigos
+            </div>
+            <div style={{ fontSize:11, color:"var(--faint)", marginTop:3, lineHeight:1.4 }}>
+              {publicada ? "La ven en su lista y pueden copiarla." : "Por defecto tus rutinas no salen del móvil."}
+            </div>
+          </div>
+          <ToggleSwitch on={publicada} onClick={onPublicar}/>
+        </div>
+      )}
+
       <div style={{ display:"flex", gap:8, marginTop:10 }}>
         <button className="fh-btn" onClick={copiar} style={{ flex:1, background:"var(--gold)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
           <Copy size={14}/> Copiar código
@@ -4148,8 +4200,83 @@ function ImportRoutinePanel({ existingNames, onImport, onClose }){
   );
 }
 
+/* Rutinas que comparten tus amigos. Copiarlas guarda de quién son y da XP extra
+   la primera vez que las entrenas. */
+function RutinasDeAmigos({ onImportar, yaTengo }){
+  const [rutinas, setRutinas] = useState(null);
+  const [cargando, setCargando] = useState(false);
+  const [abierta, setAbierta] = useState(null);
+  const [msg, setMsg] = useState(null);
+
+  async function cargar(){
+    setCargando(true);
+    const r = await cloud.rutinasDeAmigos();
+    setCargando(false);
+    if (r.ok) setRutinas(r.rutinas); else { setRutinas([]); setMsg(r.msg); }
+  }
+  useEffect(()=>{ cargar(); }, []);
+
+  function copiar(fila){
+    const decodificada = decodeRoutine(SHARE_PREFIX + b64urlEncode(JSON.stringify(fila.payload)), yaTengo);
+    if (!decodificada.ok) { setMsg(decodificada.msg); return; }
+    onImportar({ ...decodificada.routine,
+      sharedFrom: { handle: fila.handle, displayName: fila.display_name },
+      bonusHecho: false });
+    setMsg(`«${fila.name}» añadida. La primera vez que la entrenes te llevas ${XP_RUTINA_AMIGO} XP extra.`);
+  }
+
+  if (cargando && !rutinas) return <Empty text="Buscando rutinas de tus amigos…"/>;
+  if (rutinas && !rutinas.length) return (
+    <p style={{ fontSize:11.5, color:"var(--faint)", margin:"9px 4px 0", lineHeight:1.5 }}>
+      Ninguno de tus amigos ha compartido rutinas todavía. Comparte tú una desde el botón <b style={{ color:"var(--muted)" }}>Compartir</b> de cualquiera de las tuyas.
+    </p>
+  );
+
+  return (<>
+    {(rutinas || []).map(f=>{
+      const abierto = abierta === f.id;
+      const total = (f.payload?.d || []).reduce((a,d)=>a + (d[1]?.length || 0), 0);
+      return (
+        <div key={f.id} className="fh-card" style={{ marginBottom:10, overflow:"hidden", borderColor:abierto?"var(--jade)":"var(--line)" }}>
+          <button onClick={()=>setAbierta(abierto?null:f.id)}
+            style={{ width:"100%", background:"none", border:"none", cursor:"pointer", padding:14, textAlign:"left", color:"var(--txt)" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
+              <div style={{ minWidth:0 }}>
+                <div className="disp" style={{ fontSize:15, fontWeight:700 }}>{f.name}</div>
+                <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:2 }}>
+                  de <b style={{ color:"var(--jade)" }}>{f.display_name || "@"+f.handle}</b> · {f.dias} día{f.dias===1?"":"s"} · {total} ejercicios
+                </div>
+              </div>
+              <ChevronRight size={16} color="var(--faint)" style={{ flexShrink:0, transform:abierto?"rotate(90deg)":"none", transition:"transform .15s" }}/>
+            </div>
+          </button>
+          {abierto && (
+            <div className="fh-in" style={{ padding:"0 14px 14px" }}>
+              {(f.payload?.d || []).map((dia,i)=>(
+                <div key={i} style={{ padding:"7px 0", borderTop:"1px solid var(--line)" }}>
+                  <div className="disp" style={{ fontSize:12.5, fontWeight:600 }}>{dia[0]}</div>
+                  <div style={{ fontSize:11, color:"var(--faint)", marginTop:3, lineHeight:1.5 }}>
+                    {(dia[1] || []).map(e=>`${e[0]} ${e[1]}×${e[2]}`).join(" · ")}
+                  </div>
+                </div>
+              ))}
+              <button className="fh-btn" onClick={()=>copiar(f)}
+                style={{ width:"100%", marginTop:11, background:"var(--jade)", padding:12, fontSize:13, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                <Plus size={15}/> Hacer esta rutina · +{XP_RUTINA_AMIGO} XP la primera vez
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    })}
+    {msg && (
+      <div className="fh-card" style={{ padding:12, marginTop:4, borderColor:"var(--jade)", fontSize:12, color:"var(--muted)", lineHeight:1.45 }}>{msg}</div>
+    )}
+  </>);
+}
+
 /* Tarjeta de rutina: la usan tanto el catálogo de la app como "Mis rutinas". */
-function RoutineCard({ r, state, level, isOpen, onToggle, setActiveRoutine, startWorkout, onEdit, onDelete }){
+function RoutineCard({ r, state, level, isOpen, onToggle, setActiveRoutine, startWorkout, onEdit, onDelete, publicadas, onPublicar }){
   const [confirmDel, setConfirmDel] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const isActive = state.activeRoutine===r.id;
@@ -4183,7 +4310,7 @@ function RoutineCard({ r, state, level, isOpen, onToggle, setActiveRoutine, star
               <button className="fh-btn" onClick={()=>{ setConfirmDel(v=>!v); setShareOpen(false); }} style={{ flex:1, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:"10px 6px", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}><Trash2 size={13} color="var(--crimson)"/> Borrar</button>
             </div>
           )}
-          {mine && shareOpen && <ShareRoutinePanel routine={r} onClose={()=>setShareOpen(false)}/>}
+          {mine && shareOpen && <ShareRoutinePanel routine={r} onClose={()=>setShareOpen(false)} publicada={!!publicadas?.includes(r.id)} onPublicar={()=>onPublicar(r)}/>}
           {mine && confirmDel && (
             <div className="fh-card" style={{ background:"var(--bg2)", padding:13, marginBottom:12 }}>
               <div style={{ fontSize:12.5, color:"var(--muted)", lineHeight:1.45, marginBottom:10 }}>¿Seguro que quieres borrar «{r.name}»? Los entrenos que ya has hecho con ella se conservan en tu historial.</div>
@@ -4216,7 +4343,7 @@ function RoutineCard({ r, state, level, isOpen, onToggle, setActiveRoutine, star
   );
 }
 
-function RoutinesView({ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine }){
+function RoutinesView({ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar }){
   const [open, setOpen] = useState(state.activeRoutine);
   const [noticeClosed, setNoticeClosed] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -4225,7 +4352,7 @@ function RoutinesView({ state, level, setActiveRoutine, startWorkout, customRout
   const expLabel = (EXPERIENCE_LEVELS.find(e=>e.id===experience)||EXPERIENCE_LEVELS[0]).label;
   const canUnlock = experience!=="experto";
   const mine = customRoutines || [];
-  const cardProps = { state, level, setActiveRoutine, startWorkout, onEdit:editRoutine, onDelete:deleteCustomRoutine };
+  const cardProps = { state, level, setActiveRoutine, startWorkout, onEdit:editRoutine, onDelete:deleteCustomRoutine, publicadas, onPublicar };
   return (
     <div className="fh-in">
       <header style={{ padding:"22px 2px 8px" }}>
@@ -4262,6 +4389,13 @@ function RoutinesView({ state, level, setActiveRoutine, startWorkout, customRout
             onImport={importRoutine}
             onClose={()=>setImportOpen(false)}/>
         )}
+        {cloud.cloudEnabled && perfil && (
+          <div style={{ marginTop:14 }}>
+            <div className="disp" style={{ fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"0 4px 8px" }}>DE MIS AMIGOS</div>
+            <RutinasDeAmigos onImportar={importRoutine} yaTengo={mine.map(r=>r.name)}/>
+          </div>
+        )}
+
         {!mine.length && !importOpen && (
           <p style={{ fontSize:11.5, color:"var(--faint)", margin:"9px 4px 0", lineHeight:1.5 }}>
             ¿Te han pautado una rutina? Móntala aquí con los ejercicios de la app. Y si alguien te pasa la suya, <b style={{ color:"var(--muted)" }}>Importar rutina</b> la mete tal cual con solo pegar su código.
@@ -4908,6 +5042,7 @@ function ResultsView({ results, setTab, level, rank }){
         <Row label="Base por completar" val={"+"+r.xpBase}/>
         <Row label={`Series completadas (${r.seriesDone})`} val={"+"+r.xpSets}/>
         {r.xpPr>0 && <Row label={`Récords personales (${r.prs.length})`} val={"+"+r.xpPr} color="var(--gold)"/>}
+        {r.xpAmigo>0 && <Row label={`Estreno de la rutina de ${r.amigoDe?.displayName || "@"+r.amigoDe?.handle}`} val={"+"+r.xpAmigo} color="var(--jade)"/>}
         {r.xpGoal>0 && <Row label="Objetivo semanal" val={"+"+r.xpGoal} color="var(--jade)"/>}
         {r.missionXp>0 && <Row label="Misiones semanales" val={"+"+r.missionXp} color="var(--arcane)"/>}
         {r.achXp>0 && <Row label="Logros desbloqueados" val={"+"+r.achXp} color="var(--violet)"/>}

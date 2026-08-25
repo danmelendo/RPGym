@@ -245,6 +245,57 @@ export async function listarAmigos(){
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
+/* --- Rutinas compartidas con los amigos ----------------------------------
+   NADA se sube solo: publicar una rutina es una acción explícita del usuario.
+   El payload es el mismo formato de encodeRoutine(), ya probado. */
+
+export async function publicarRutina({ clientId, name, dias, payload }){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"Necesitas cuenta para compartir con tus amigos." };
+    const { error } = await supabase.from("shared_routines")
+      .upsert({ owner_id:user.id, client_id:String(clientId), name:String(name).slice(0,40),
+                dias:Number(dias) || 1, payload, updated_at:new Date().toISOString() },
+              { onConflict:"owner_id,client_id" });
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function dejarDePublicar(clientId){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("shared_routines").delete()
+      .eq("owner_id", user.id).eq("client_id", String(clientId));
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* Qué rutinas mías están publicadas ahora mismo (para pintar el interruptor). */
+export async function misRutinasPublicadas(){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:true, ids:[] };
+    const { data, error } = await supabase.from("shared_routines").select("client_id").eq("owner_id", user.id);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, ids:(data || []).map(r => r.client_id) };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function rutinasDeAmigos(){
+  if (!supabase) return sinNube;
+  try {
+    const { data, error } = await supabase.from("rutinas_de_amigos").select("*").limit(60);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, rutinas:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
 export async function borrarAmigo(amigoId){
   if (!supabase) return sinNube;
   try {
