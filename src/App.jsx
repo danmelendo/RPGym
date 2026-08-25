@@ -2731,9 +2731,12 @@ export default function App(){
     setSession(null); setTab("results");
 
     // Sube el estado de juego para la clasificación (si hay cuenta). Sin bloquear.
+    // El detalle del entreno NO sale del móvil: solo fecha y XP para los periodos.
     if(cloud.cloudEnabled && perfil){
       cloud.sincronizarPerfil({ level:finalLevel, xp:finalXp, totalWorkouts, bestStreak,
         displayName:state.profile?.name, appVersion:APP_VERSION_NAME });
+      cloud.registrarEntreno({ clientId:`${record.date}-${session.startedAt}`,
+        day:record.date, xp:record.xp });
     }
   }
 
@@ -2864,7 +2867,7 @@ export default function App(){
         {tab==="editor" && <RoutineBuilderView {...{ draft:routineDraft, setDraft:setRoutineDraft, onSave:saveRoutineFromEditor, onCancel:closeEditor, isNew:draftIsNew }}/>}
         {tab==="ajustes" && <SettingsView {...{ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup }}/>}
         {tab==="cuenta" && <AccountView {...{ state, level, setTab, session:cloudSession, perfil,
-          onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onSalir:salirCuenta, onRefrescar:()=>cloud.leaderboard() }}/>}
+          onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onSalir:salirCuenta, onRefrescar:(p)=>cloud.leaderboard(p) }}/>}
       </div>
 
       {tab!=="workout" && tab!=="results" && tab!=="editor" && (
@@ -3084,6 +3087,7 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
   const [cargando, setCargando] = useState(false);
   const [tabla, setTabla] = useState(null);
   const [cargandoTabla, setCargandoTabla] = useState(false);
+  const [periodo, setPeriodo] = useState("semanal");
 
   const label = { padding:"0 2px 6px", fontSize:12, color:"var(--muted)", fontWeight:600 };
   const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
@@ -3100,14 +3104,14 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
     setF({ email:"", password:"", handle:"", displayName:"" });
   }
 
-  async function verTabla(){
+  async function verTabla(p = periodo){
     setCargandoTabla(true);
-    const r = await onRefrescar();
+    const r = await onRefrescar(p);
     setCargandoTabla(false);
     setTabla(r.ok ? r.filas : []);
     if (!r.ok) setMsg({ ok:false, t:r.msg });
   }
-  useEffect(()=>{ if (session && perfil) verTabla(); /* eslint-disable-next-line */ }, [session?.user?.id, perfil?.handle]);
+  useEffect(()=>{ if (session && perfil) verTabla(periodo); /* eslint-disable-next-line */ }, [session?.user?.id, perfil?.handle, periodo]);
 
   /* --- Sin sesión: entrar o registrarse --- */
   if (!session) return (
@@ -3206,25 +3210,39 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
       )}
 
       <div style={sectionTitle}>CLASIFICACIÓN</div>
+      <div style={{ display:"flex", gap:6, marginBottom:10 }}>
+        {cloud.PERIODOS.map(p=>(
+          <button key={p.id} className="fh-btn" onClick={()=>setPeriodo(p.id)}
+            style={{ flex:1, padding:"9px", fontSize:12.5, background:periodo===p.id?"var(--gold)":"var(--card)", color:periodo===p.id?"#0F131A":"var(--muted)", border:periodo===p.id?"none":"1px solid var(--line)" }}>{p.label}</button>
+        ))}
+      </div>
       <div className="fh-card" style={{ padding:16 }}>
+        <div style={{ fontSize:11.5, color:"var(--faint)", marginBottom:10, lineHeight:1.45 }}>
+          {periodo==="semanal" ? "XP ganado desde el lunes."
+            : periodo==="mensual" ? "XP ganado este mes."
+            : "XP total desde que empezaste, incluido lo de antes de tener cuenta."}
+        </div>
         {cargandoTabla && <Empty text="Cargando clasificación…"/>}
         {!cargandoTabla && tabla && tabla.length === 0 && <Empty text="Todavía no hay nadie más. Invita a alguien."/>}
         {!cargandoTabla && tabla && tabla.map((p,i)=>{
           const esYo = p.handle === yo;
+          const sinActividad = periodo !== "historica" && !p.xp;
           return (
-            <div key={p.id} style={{ display:"flex", alignItems:"center", gap:11, padding:"9px 0", borderTop:i?"1px solid var(--line)":"none" }}>
-              <span className="cinzel" style={{ width:22, textAlign:"center", fontSize:14, fontWeight:700, color:i===0?"var(--gold)":i===1?"var(--muted)":i===2?"var(--ember)":"var(--faint)" }}>{i+1}</span>
+            <div key={p.id} style={{ display:"flex", alignItems:"center", gap:11, padding:"9px 0", borderTop:i?"1px solid var(--line)":"none", opacity:sinActividad?.55:1 }}>
+              <span className="cinzel" style={{ width:22, textAlign:"center", fontSize:14, fontWeight:700, color:i===0&&!sinActividad?"var(--gold)":i===1&&!sinActividad?"var(--muted)":i===2&&!sinActividad?"var(--ember)":"var(--faint)" }}>{i+1}</span>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:13.5, fontWeight:esYo?700:500, color:esYo?"var(--gold)":"var(--txt)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                   {p.display_name || p.handle}{esYo && " · tú"}
                 </div>
-                <div style={{ fontSize:11, color:"var(--faint)", marginTop:1 }}>Nivel {p.level} · {p.total_workouts} entrenos</div>
+                <div style={{ fontSize:11, color:"var(--faint)", marginTop:1 }}>
+                  Nivel {p.level} · {p.entrenos ?? 0} entreno{(p.entrenos ?? 0)===1?"":"s"}{periodo!=="historica" && sinActividad ? " · sin actividad" : ""}
+                </div>
               </div>
               <span className="mono" style={{ fontSize:12.5, color:esYo?"var(--gold)":"var(--muted)", flexShrink:0 }}>{p.xp} XP</span>
             </div>
           );
         })}
-        <button className="fh-btn" onClick={verTabla} disabled={cargandoTabla}
+        <button className="fh-btn" onClick={()=>verTabla()} disabled={cargandoTabla}
           style={{ width:"100%", marginTop:12, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:10, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
           <Shuffle size={14}/> Actualizar
         </button>
@@ -3574,8 +3592,9 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
         </p>
         <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.5 }}>
           Si creas una cuenta (opcional), se suben <b style={{ color:"var(--txt)" }}>solo</b> tu nombre, tu usuario,
-          tu nivel, tu XP, tus entrenos y tu racha, para la clasificación. <b style={{ color:"var(--txt)" }}>Nunca</b> salen
-          de aquí tu peso, tus medidas, tu edad, tus rutinas, tu dieta ni los datos del ciclo.
+          tu nivel, tu XP, tu racha y la <b style={{ color:"var(--txt)" }}>fecha y el XP</b> de cada entreno, para las
+          clasificaciones. <b style={{ color:"var(--txt)" }}>Nunca</b> salen de aquí qué ejercicios haces ni con cuánto
+          peso, ni tu peso corporal, medidas, edad, rutinas, dieta o los datos del ciclo.
         </p>
         <p style={{ fontSize:11.5, color:"var(--faint)", margin:0, lineHeight:1.5 }}>
           Puedes borrarlo todo cuando quieras desde <b style={{ color:"var(--muted)" }}>Borrar progreso</b>, o desinstalando la app.

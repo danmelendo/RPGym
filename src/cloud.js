@@ -184,14 +184,39 @@ export async function ping(){
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
-/* --- Leaderboard --------------------------------------------------------- */
+/* --- Clasificaciones ------------------------------------------------------ */
 
-export async function leaderboard(limite = 50){
+/* Periodos disponibles. La histórica sale de profiles (incluye lo entrenado
+   antes de tener cuenta); semanal y mensual salen de workout_points. */
+export const PERIODOS = [
+  { id:"semanal",   vista:"leaderboard_semanal",   label:"Semana" },
+  { id:"mensual",   vista:"leaderboard_mensual",   label:"Mes" },
+  { id:"historica", vista:"leaderboard_historica", label:"Siempre" },
+];
+
+export async function leaderboard(periodo = "semanal", limite = 50){
+  if (!supabase) return sinNube;
+  const p = PERIODOS.find(x => x.id === periodo) || PERIODOS[0];
+  try {
+    const { data, error } = await supabase.from(p.vista).select("*").limit(limite);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, filas:data || [], periodo:p.id };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* Registra el XP de un entreno para las clasificaciones por periodo.
+   Sube SOLO fecha y XP: el detalle del entreno no sale del móvil.
+   client_id es el identificador local, para que reintentar no duplique. */
+export async function registrarEntreno({ clientId, day, xp }){
   if (!supabase) return sinNube;
   try {
-    const { data, error } = await supabase.from("leaderboard").select("*").limit(limite);
-    if (error) return { ok:false, msg:traducir(error) };
-    return { ok:true, filas:data || [] };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("workout_points")
+      .insert({ user_id:user.id, client_id:String(clientId), day, xp:Math.max(0, Math.min(5000, Math.round(xp) || 0)) });
+    // 23505 = clave duplicada: ese entreno ya estaba registrado. No es un error.
+    if (error && error.code !== "23505") return { ok:false, msg:traducir(error) };
+    return { ok:true, yaEstaba: error?.code === "23505" };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
