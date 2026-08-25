@@ -56,6 +56,11 @@ rutina de un amigo → avisos → entrenar juntos.
 
 ## ✅ Hecho
 
+- **Nombres de ejercicios revisados**: corregidas traducciones literales ("elevación de
+  gemelos" → "elevación de talones", que es el movimiento; "gemelos" es el músculo) y
+  deshechos los nombres con barra que mezclaban dos ejercicios. Con migración
+  automática: nadie pierde marcas al actualizar.
+
 - **Quedadas con "Yo voy"**: proponer día/hora/sitio, contestar, ver quién va y
   cancelar. Tarjeta de la próxima en Inicio. Verificado que un extraño no ve las
   quedadas del círculo ni puede apuntarse, y que nadie contesta por otro.

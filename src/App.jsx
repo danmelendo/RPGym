@@ -48,7 +48,7 @@ const ROUTINES = [
         { name:"Plancha", sets:2, reps:"20 s", rest:45, muscle:"Core" },
       ]},
       { name:"Día B", exercises:[
-        { name:"Prensa", sets:3, reps:"12-15", rest:75, muscle:"Pierna" },
+        { name:"Prensa de piernas", sets:3, reps:"12-15", rest:75, muscle:"Pierna" },
         { name:"Jalón al pecho", sets:2, reps:"12-15", rest:60, muscle:"Espalda" },
         { name:"Press inclinado mancuernas", sets:2, reps:"12-15", rest:60, muscle:"Pecho" },
         { name:"Elevaciones laterales", sets:2, reps:"12-15", rest:45, muscle:"Hombro" },
@@ -83,7 +83,7 @@ const ROUTINES = [
         { name:"Rueda abdominal", sets:3, reps:"10-12", rest:45, muscle:"Core" },
       ]},
       { name:"Día C", exercises:[
-        { name:"Prensa", sets:4, reps:"10-12", rest:90, muscle:"Pierna" },
+        { name:"Prensa de piernas", sets:4, reps:"10-12", rest:90, muscle:"Pierna" },
         { name:"Press inclinado mancuernas", sets:3, reps:"10-12", rest:75, muscle:"Pecho" },
         { name:"Remo con mancuerna", sets:3, reps:"10-12", rest:75, muscle:"Espalda" },
         { name:"Curl de bíceps", sets:3, reps:"12-15", rest:45, muscle:"Bíceps" },
@@ -105,8 +105,8 @@ const ROUTINES = [
       { name:"Pierna A", exercises:[
         { name:"Sentadilla", sets:4, reps:"6-8", rest:150, muscle:"Pierna" },
         { name:"Peso muerto rumano", sets:3, reps:"8-10", rest:120, muscle:"Femoral" },
-        { name:"Prensa", sets:3, reps:"12-15", rest:90, muscle:"Pierna" },
-        { name:"Elevación de gemelos", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
+        { name:"Prensa de piernas", sets:3, reps:"12-15", rest:90, muscle:"Pierna" },
+        { name:"Elevación de talones de pie", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
         { name:"Plancha", sets:3, reps:"45 s", rest:45, muscle:"Core" },
       ]},
       { name:"Torso B", exercises:[
@@ -118,9 +118,9 @@ const ROUTINES = [
       ]},
       { name:"Pierna B", exercises:[
         { name:"Peso muerto", sets:4, reps:"5-6", rest:180, muscle:"Espalda" },
-        { name:"Zancadas", sets:3, reps:"10-12", rest:90, muscle:"Pierna" },
-        { name:"Curl femoral", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
-        { name:"Elevación de gemelos", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
+        { name:"Zancadas con barra", sets:3, reps:"10-12", rest:90, muscle:"Pierna" },
+        { name:"Curl femoral en máquina", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
+        { name:"Elevación de talones de pie", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
         { name:"Rueda abdominal", sets:3, reps:"10-12", rest:45, muscle:"Core" },
       ]},
     ]},
@@ -137,7 +137,7 @@ const ROUTINES = [
         { name:"Plancha", sets:3, reps:"45 s", rest:45, muscle:"Core" },
       ]},
       { name:"Día B", exercises:[
-        { name:"Zancadas", sets:4, reps:"12/pierna", rest:75, muscle:"Pierna" },
+        { name:"Zancadas con barra", sets:4, reps:"12/pierna", rest:75, muscle:"Pierna" },
         { name:"Peso muerto rumano mancuernas", sets:4, reps:"12-15", rest:75, muscle:"Femoral" },
         { name:"Flexiones diamante", sets:3, reps:"máx", rest:60, muscle:"Tríceps" },
         { name:"Elevaciones laterales", sets:3, reps:"15-20", rest:45, muscle:"Hombro" },
@@ -145,10 +145,10 @@ const ROUTINES = [
       ]},
       { name:"Día C", exercises:[
         { name:"Sentadilla búlgara", sets:4, reps:"10/pierna", rest:75, muscle:"Pierna" },
-        { name:"Remo invertido / mancuerna", sets:4, reps:"10-12", rest:60, muscle:"Espalda" },
+        { name:"Remo invertido o con mancuerna", sets:4, reps:"10-12", rest:60, muscle:"Espalda" },
         { name:"Flexiones inclinadas", sets:3, reps:"máx", rest:60, muscle:"Pecho" },
         { name:"Curl de bíceps mancuernas", sets:3, reps:"12-15", rest:45, muscle:"Bíceps" },
-        { name:"Rueda / plancha lateral", sets:3, reps:"30 s", rest:45, muscle:"Core" },
+        { name:"Plancha lateral", sets:3, reps:"30 s", rest:45, muscle:"Core" },
       ]},
     ]},
 
@@ -157,12 +157,12 @@ const ROUTINES = [
     blurb:"Día de remate para intercalar. Fortalece el core y añade gasto calórico. Recuerda: no elimina grasa localizada, pero suma al déficit total.",
     days:[
       { name:"Circuito", exercises:[
-        { name:"Cinta / bici (calentar)", sets:1, reps:"8 min", rest:0, muscle:"Cardio" },
+        { name:"Calentamiento en cinta o bici", sets:1, reps:"8 min", rest:0, muscle:"Cardio" },
         { name:"Plancha", sets:4, reps:"45 s", rest:40, muscle:"Core" },
         { name:"Mountain climbers", sets:4, reps:"30 s", rest:40, muscle:"Core" },
-        { name:"Elevación de piernas colgado", sets:4, reps:"12-15", rest:45, muscle:"Core" },
+        { name:"Elevación de piernas en barra", sets:4, reps:"12-15", rest:45, muscle:"Core" },
         { name:"Rueda abdominal", sets:3, reps:"10-12", rest:45, muscle:"Core" },
-        { name:"HIIT bici/cinta", sets:6, reps:"30/30 s", rest:30, muscle:"Cardio" },
+        { name:"HIIT en bici o cinta", sets:6, reps:"30/30 s", rest:30, muscle:"Cardio" },
       ]},
     ]},
 
@@ -179,16 +179,16 @@ const ROUTINES = [
         { name:"Mountain climbers", sets:4, reps:"30 s", rest:30, muscle:"Core" },
       ]},
       { name:"Día B", exercises:[
-        { name:"Prensa", sets:3, reps:"15-20", rest:60, muscle:"Pierna" },
+        { name:"Prensa de piernas", sets:3, reps:"15-20", rest:60, muscle:"Pierna" },
         { name:"Jalón al pecho", sets:3, reps:"12-15", rest:60, muscle:"Espalda" },
         { name:"Press inclinado mancuernas", sets:3, reps:"12-15", rest:60, muscle:"Pecho" },
         { name:"Elevaciones laterales", sets:3, reps:"15-20", rest:40, muscle:"Hombro" },
-        { name:"HIIT bici/cinta", sets:6, reps:"30/30 s", rest:30, muscle:"Cardio" },
+        { name:"HIIT en bici o cinta", sets:6, reps:"30/30 s", rest:30, muscle:"Cardio" },
       ]},
       { name:"Día C", exercises:[
         { name:"Peso muerto rumano", sets:3, reps:"12-15", rest:75, muscle:"Femoral" },
         { name:"Remo en máquina", sets:3, reps:"12-15", rest:60, muscle:"Espalda" },
-        { name:"Zancadas", sets:3, reps:"12/pierna", rest:60, muscle:"Pierna" },
+        { name:"Zancadas con barra", sets:3, reps:"12/pierna", rest:60, muscle:"Pierna" },
         { name:"Curl de bíceps", sets:2, reps:"12-15", rest:40, muscle:"Bíceps" },
         { name:"Extensión de tríceps", sets:2, reps:"12-15", rest:40, muscle:"Tríceps" },
         { name:"Plancha", sets:3, reps:"40 s", rest:40, muscle:"Core" },
@@ -215,9 +215,9 @@ const ROUTINES = [
       { name:"Glúteo + cardio", exercises:[
         { name:"Peso muerto rumano mancuernas", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
         { name:"Patada de glúteo en polea", sets:3, reps:"15/pierna", rest:40, muscle:"Pierna" },
-        { name:"Prensa", sets:3, reps:"15-20", rest:60, muscle:"Pierna" },
+        { name:"Prensa de piernas", sets:3, reps:"15-20", rest:60, muscle:"Pierna" },
         { name:"Elevación de piernas", sets:3, reps:"15", rest:40, muscle:"Core" },
-        { name:"HIIT bici/cinta", sets:6, reps:"30/30 s", rest:30, muscle:"Cardio" },
+        { name:"HIIT en bici o cinta", sets:6, reps:"30/30 s", rest:30, muscle:"Cardio" },
       ]},
     ]},
 
@@ -235,7 +235,7 @@ const ROUTINES = [
       ]},
       { name:"Tirón", exercises:[
         { name:"Peso muerto", sets:3, reps:"5-6", rest:180, muscle:"Espalda" },
-        { name:"Dominadas / jalón", sets:4, reps:"8-10", rest:120, muscle:"Espalda" },
+        { name:"Dominadas o jalón", sets:4, reps:"8-10", rest:120, muscle:"Espalda" },
         { name:"Remo con barra", sets:3, reps:"10-12", rest:90, muscle:"Espalda" },
         { name:"Face pull", sets:3, reps:"15-20", rest:45, muscle:"Hombro" },
         { name:"Curl de bíceps", sets:3, reps:"12-15", rest:45, muscle:"Bíceps" },
@@ -243,8 +243,8 @@ const ROUTINES = [
       { name:"Pierna", exercises:[
         { name:"Sentadilla", sets:4, reps:"6-8", rest:150, muscle:"Pierna" },
         { name:"Peso muerto rumano", sets:3, reps:"10-12", rest:120, muscle:"Femoral" },
-        { name:"Prensa", sets:3, reps:"12-15", rest:90, muscle:"Pierna" },
-        { name:"Elevación de gemelos", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
+        { name:"Prensa de piernas", sets:3, reps:"12-15", rest:90, muscle:"Pierna" },
+        { name:"Elevación de talones de pie", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
         { name:"Elevación de piernas", sets:3, reps:"12-15", rest:45, muscle:"Core" },
       ]},
     ]},
@@ -258,27 +258,27 @@ const ROUTINES = [
         { name:"Remo con barra", sets:4, reps:"8-10", rest:120, muscle:"Espalda" },
         { name:"Press militar", sets:4, reps:"8-10", rest:90, muscle:"Hombro" },
         { name:"Jalón al pecho", sets:3, reps:"10-12", rest:75, muscle:"Espalda" },
-        { name:"Curl + tríceps (superserie)", sets:3, reps:"12-15", rest:60, muscle:"Brazo" },
+        { name:"Superserie de bíceps y tríceps", sets:3, reps:"12-15", rest:60, muscle:"Brazo" },
       ]},
       { name:"Pierna A", exercises:[
         { name:"Sentadilla", sets:5, reps:"5-8", rest:180, muscle:"Pierna" },
         { name:"Peso muerto rumano", sets:4, reps:"8-10", rest:120, muscle:"Femoral" },
-        { name:"Prensa", sets:4, reps:"12-15", rest:90, muscle:"Pierna" },
-        { name:"Elevación de gemelos", sets:5, reps:"15-20", rest:45, muscle:"Gemelo" },
+        { name:"Prensa de piernas", sets:4, reps:"12-15", rest:90, muscle:"Pierna" },
+        { name:"Elevación de talones de pie", sets:5, reps:"15-20", rest:45, muscle:"Gemelo" },
         { name:"Plancha", sets:3, reps:"60 s", rest:45, muscle:"Core" },
       ]},
       { name:"Torso B", exercises:[
         { name:"Press inclinado con barra", sets:4, reps:"8-10", rest:120, muscle:"Pecho" },
-        { name:"Dominadas / jalón", sets:4, reps:"8-10", rest:120, muscle:"Espalda" },
+        { name:"Dominadas o jalón", sets:4, reps:"8-10", rest:120, muscle:"Espalda" },
         { name:"Elevaciones laterales", sets:5, reps:"12-15", rest:45, muscle:"Hombro" },
         { name:"Remo con mancuerna", sets:3, reps:"10-12", rest:75, muscle:"Espalda" },
         { name:"Face pull", sets:3, reps:"15-20", rest:45, muscle:"Hombro" },
       ]},
       { name:"Pierna B", exercises:[
         { name:"Peso muerto", sets:4, reps:"4-6", rest:180, muscle:"Espalda" },
-        { name:"Zancadas", sets:4, reps:"10-12", rest:90, muscle:"Pierna" },
-        { name:"Curl femoral", sets:4, reps:"12-15", rest:60, muscle:"Femoral" },
-        { name:"Extensión de cuádriceps", sets:3, reps:"12-15", rest:60, muscle:"Pierna" },
+        { name:"Zancadas con barra", sets:4, reps:"10-12", rest:90, muscle:"Pierna" },
+        { name:"Curl femoral en máquina", sets:4, reps:"12-15", rest:60, muscle:"Femoral" },
+        { name:"Extensión de cuádriceps en máquina", sets:3, reps:"12-15", rest:60, muscle:"Pierna" },
         { name:"Rueda abdominal", sets:3, reps:"12", rest:45, muscle:"Core" },
       ]},
     ]},
@@ -290,12 +290,12 @@ const ROUTINES = [
       { name:"Empuje A", exercises:[
         { name:"Press banca", sets:4, reps:"6-8", rest:120, muscle:"Pecho" },
         { name:"Press militar", sets:3, reps:"8-10", rest:90, muscle:"Hombro" },
-        { name:"Aperturas", sets:3, reps:"12-15", rest:45, muscle:"Pecho" },
+        { name:"Aperturas con mancuernas", sets:3, reps:"12-15", rest:45, muscle:"Pecho" },
         { name:"Elevaciones laterales", sets:4, reps:"12-15", rest:45, muscle:"Hombro" },
         { name:"Extensión de tríceps", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
       ]},
       { name:"Tirón A", exercises:[
-        { name:"Dominadas / jalón", sets:4, reps:"6-8", rest:120, muscle:"Espalda" },
+        { name:"Dominadas o jalón", sets:4, reps:"6-8", rest:120, muscle:"Espalda" },
         { name:"Remo con barra", sets:4, reps:"8-10", rest:90, muscle:"Espalda" },
         { name:"Face pull", sets:3, reps:"15-20", rest:45, muscle:"Hombro" },
         { name:"Curl de bíceps", sets:4, reps:"10-12", rest:45, muscle:"Bíceps" },
@@ -303,15 +303,15 @@ const ROUTINES = [
       ]},
       { name:"Pierna A", exercises:[
         { name:"Sentadilla", sets:4, reps:"6-8", rest:150, muscle:"Pierna" },
-        { name:"Prensa", sets:4, reps:"10-12", rest:90, muscle:"Pierna" },
-        { name:"Curl femoral", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
-        { name:"Elevación de gemelos", sets:5, reps:"15-20", rest:45, muscle:"Gemelo" },
+        { name:"Prensa de piernas", sets:4, reps:"10-12", rest:90, muscle:"Pierna" },
+        { name:"Curl femoral en máquina", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
+        { name:"Elevación de talones de pie", sets:5, reps:"15-20", rest:45, muscle:"Gemelo" },
         { name:"Plancha", sets:3, reps:"60 s", rest:45, muscle:"Core" },
       ]},
       { name:"Empuje B", exercises:[
         { name:"Press inclinado mancuernas", sets:4, reps:"8-10", rest:90, muscle:"Pecho" },
         { name:"Press militar mancuernas", sets:3, reps:"10-12", rest:75, muscle:"Hombro" },
-        { name:"Fondos", sets:3, reps:"máx", rest:75, muscle:"Pecho" },
+        { name:"Fondos en paralelas", sets:3, reps:"máx", rest:75, muscle:"Pecho" },
         { name:"Elevaciones laterales", sets:4, reps:"15-20", rest:45, muscle:"Hombro" },
         { name:"Press francés", sets:3, reps:"10-12", rest:45, muscle:"Tríceps" },
       ]},
@@ -325,8 +325,8 @@ const ROUTINES = [
       { name:"Pierna B", exercises:[
         { name:"Peso muerto rumano", sets:4, reps:"8-10", rest:120, muscle:"Femoral" },
         { name:"Sentadilla búlgara", sets:3, reps:"10/pierna", rest:90, muscle:"Pierna" },
-        { name:"Extensión de cuádriceps", sets:4, reps:"12-15", rest:60, muscle:"Pierna" },
-        { name:"Elevación de gemelos", sets:5, reps:"15-20", rest:45, muscle:"Gemelo" },
+        { name:"Extensión de cuádriceps en máquina", sets:4, reps:"12-15", rest:60, muscle:"Pierna" },
+        { name:"Elevación de talones de pie", sets:5, reps:"15-20", rest:45, muscle:"Gemelo" },
         { name:"Rueda abdominal", sets:3, reps:"12", rest:45, muscle:"Core" },
       ]},
     ]},
@@ -364,9 +364,9 @@ const ROUTINES = [
       { name:"Pierna Fuerza", exercises:[
         { name:"Sentadilla", sets:4, reps:"5-6", rest:180, muscle:"Pierna" },
         { name:"Peso muerto", sets:3, reps:"4-6", rest:180, muscle:"Espalda" },
-        { name:"Prensa", sets:3, reps:"8-10", rest:120, muscle:"Pierna" },
+        { name:"Prensa de piernas", sets:3, reps:"8-10", rest:120, muscle:"Pierna" },
         { name:"Curl femoral tumbado", sets:3, reps:"10-12", rest:75, muscle:"Femoral" },
-        { name:"Elevación de gemelos", sets:4, reps:"10-12", rest:60, muscle:"Gemelo" },
+        { name:"Elevación de talones de pie", sets:4, reps:"10-12", rest:60, muscle:"Gemelo" },
       ]},
       { name:"Torso Volumen", exercises:[
         { name:"Press inclinado mancuernas", sets:4, reps:"10-12", rest:90, muscle:"Pecho" },
@@ -378,7 +378,7 @@ const ROUTINES = [
       { name:"Pierna Volumen", exercises:[
         { name:"Sentadilla búlgara", sets:3, reps:"10/pierna", rest:90, muscle:"Pierna" },
         { name:"Peso muerto rumano", sets:4, reps:"10-12", rest:90, muscle:"Femoral" },
-        { name:"Extensión de cuádriceps", sets:4, reps:"12-15", rest:60, muscle:"Pierna" },
+        { name:"Extensión de cuádriceps en máquina", sets:4, reps:"12-15", rest:60, muscle:"Pierna" },
         { name:"Curl femoral sentado", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
         { name:"Rueda abdominal", sets:4, reps:"10-12", rest:45, muscle:"Core" },
       ]},
@@ -390,14 +390,14 @@ const ROUTINES = [
     days:[
       { name:"Sentadilla", exercises:[
         { name:"Sentadilla", sets:5, reps:"3-5", rest:210, muscle:"Pierna" },
-        { name:"Prensa", sets:3, reps:"8-10", rest:120, muscle:"Pierna" },
+        { name:"Prensa de piernas", sets:3, reps:"8-10", rest:120, muscle:"Pierna" },
         { name:"Zancadas con mancuernas", sets:3, reps:"10/pierna", rest:90, muscle:"Pierna" },
         { name:"Plancha con lastre", sets:3, reps:"45 s", rest:60, muscle:"Core" },
       ]},
       { name:"Banca", exercises:[
         { name:"Press banca", sets:5, reps:"3-5", rest:210, muscle:"Pecho" },
         { name:"Press inclinado mancuernas", sets:3, reps:"8-10", rest:120, muscle:"Pecho" },
-        { name:"Fondos lastrados", sets:3, reps:"8-10", rest:90, muscle:"Pecho" },
+        { name:"Fondos en paralelas lastrados", sets:3, reps:"8-10", rest:90, muscle:"Pecho" },
         { name:"Extensión de tríceps en polea", sets:3, reps:"12-15", rest:60, muscle:"Tríceps" },
       ]},
       { name:"Peso muerto", exercises:[
@@ -438,15 +438,15 @@ const ROUTINES = [
       { name:"Pierna A", exercises:[
         { name:"Sentadilla", sets:4, reps:"6-8", rest:180, muscle:"Pierna" },
         { name:"Peso muerto rumano", sets:4, reps:"8-10", rest:120, muscle:"Femoral" },
-        { name:"Prensa", sets:4, reps:"12-15", rest:90, muscle:"Pierna", note:"última serie: rest-pause" },
+        { name:"Prensa de piernas", sets:4, reps:"12-15", rest:90, muscle:"Pierna", note:"última serie: rest-pause" },
         { name:"Curl femoral sentado", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
-        { name:"Elevación de gemelos", sets:5, reps:"12-20", rest:45, muscle:"Gemelo" },
+        { name:"Elevación de talones de pie", sets:5, reps:"12-20", rest:45, muscle:"Gemelo" },
         { name:"Rueda abdominal", sets:3, reps:"12", rest:45, muscle:"Core" },
       ]},
       { name:"Empuje B", exercises:[
         { name:"Press inclinado con barra", sets:4, reps:"8-10", rest:120, muscle:"Pecho" },
         { name:"Press mancuernas sentado", sets:3, reps:"10-12", rest:90, muscle:"Hombro" },
-        { name:"Fondos lastrados", sets:3, reps:"8-12", rest:90, muscle:"Pecho" },
+        { name:"Fondos en paralelas lastrados", sets:3, reps:"8-12", rest:90, muscle:"Pecho" },
         { name:"Elevaciones laterales en polea", sets:4, reps:"15-20", rest:45, muscle:"Hombro", note:"última serie: dropset" },
         { name:"Press francés", sets:4, reps:"10-12", rest:45, muscle:"Tríceps" },
       ]},
@@ -460,9 +460,9 @@ const ROUTINES = [
       { name:"Pierna B", exercises:[
         { name:"Sentadilla frontal", sets:4, reps:"8-10", rest:150, muscle:"Pierna" },
         { name:"Peso muerto rumano", sets:4, reps:"10-12", rest:90, muscle:"Femoral" },
-        { name:"Extensión de cuádriceps", sets:4, reps:"12-15", rest:60, muscle:"Pierna", note:"última serie: dropset" },
+        { name:"Extensión de cuádriceps en máquina", sets:4, reps:"12-15", rest:60, muscle:"Pierna", note:"última serie: dropset" },
         { name:"Sentadilla búlgara", sets:3, reps:"10/pierna", rest:75, muscle:"Pierna" },
-        { name:"Elevación de gemelos", sets:5, reps:"12-20", rest:45, muscle:"Gemelo" },
+        { name:"Elevación de talones de pie", sets:5, reps:"12-20", rest:45, muscle:"Gemelo" },
       ]},
     ]},
 
@@ -474,7 +474,7 @@ const ROUTINES = [
         { name:"Press banca", sets:5, reps:"6-8", rest:150, muscle:"Pecho" },
         { name:"Press inclinado mancuernas", sets:4, reps:"8-12", rest:90, muscle:"Pecho" },
         { name:"Aperturas en polea", sets:4, reps:"12-15", rest:60, muscle:"Pecho" },
-        { name:"Fondos", sets:3, reps:"máx", rest:75, muscle:"Pecho" },
+        { name:"Fondos en paralelas", sets:3, reps:"máx", rest:75, muscle:"Pecho" },
         { name:"Extensión de tríceps en polea", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
       ]},
       { name:"Espalda énfasis", exercises:[
@@ -494,7 +494,7 @@ const ROUTINES = [
       { name:"Pierna (mantenimiento)", exercises:[
         { name:"Sentadilla", sets:3, reps:"6-8", rest:150, muscle:"Pierna" },
         { name:"Peso muerto rumano", sets:3, reps:"10-12", rest:90, muscle:"Femoral" },
-        { name:"Elevación de gemelos", sets:3, reps:"12-20", rest:45, muscle:"Gemelo" },
+        { name:"Elevación de talones de pie", sets:3, reps:"12-20", rest:45, muscle:"Gemelo" },
         { name:"Plancha", sets:3, reps:"60 s", rest:45, muscle:"Core" },
       ]},
       { name:"Torso extra", exercises:[
@@ -528,7 +528,7 @@ const ROUTINES = [
       { name:"Día C", exercises:[
         { name:"Sentadilla sumo con mancuerna", sets:3, reps:"12-15", rest:75, muscle:"Pierna" },
         { name:"Patada de glúteo en polea", sets:2, reps:"12/pierna", rest:45, muscle:"Pierna" },
-        { name:"Aperturas", sets:2, reps:"12-15", rest:45, muscle:"Pecho" },
+        { name:"Aperturas con mancuernas", sets:2, reps:"12-15", rest:45, muscle:"Pecho" },
         { name:"Curl de bíceps mancuernas", sets:2, reps:"12-15", rest:45, muscle:"Bíceps" },
         { name:"Plancha", sets:2, reps:"20 s", rest:45, muscle:"Core" },
       ]},
@@ -540,7 +540,7 @@ const ROUTINES = [
       { name:"Glúteo A", exercises:[
         { name:"Hip thrust", sets:4, reps:"8-12", rest:120, muscle:"Pierna" },
         { name:"Peso muerto sumo", sets:3, reps:"8-10", rest:120, muscle:"Pierna" },
-        { name:"Prensa", sets:3, reps:"12-15", rest:90, muscle:"Pierna" },
+        { name:"Prensa de piernas", sets:3, reps:"12-15", rest:90, muscle:"Pierna" },
         { name:"Abductores en máquina", sets:4, reps:"15-20", rest:45, muscle:"Pierna" },
         { name:"Curl femoral tumbado", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
       ]},
@@ -560,9 +560,9 @@ const ROUTINES = [
       ]},
       { name:"Full / core", exercises:[
         { name:"Peso muerto rumano", sets:3, reps:"10-12", rest:90, muscle:"Femoral" },
-        { name:"Elevación de gemelos", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
+        { name:"Elevación de talones de pie", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
         { name:"Rueda abdominal", sets:3, reps:"10-12", rest:45, muscle:"Core" },
-        { name:"Elevación de piernas colgado", sets:3, reps:"12", rest:45, muscle:"Core" },
+        { name:"Elevación de piernas en barra", sets:3, reps:"12", rest:45, muscle:"Core" },
       ]},
     ]},
   { id:"f_ul", cat:"Hipertrofia", sex:"f", name:"Torso / Pierna Mujer", subtitle:"4 días · glúteo + volumen",
@@ -574,7 +574,7 @@ const ROUTINES = [
         { name:"Sentadilla", sets:4, reps:"8-10", rest:150, muscle:"Pierna" },
         { name:"Peso muerto rumano", sets:3, reps:"10-12", rest:90, muscle:"Femoral" },
         { name:"Abductores en máquina", sets:4, reps:"15-20", rest:45, muscle:"Pierna" },
-        { name:"Elevación de gemelos", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
+        { name:"Elevación de talones de pie", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
       ]},
       { name:"Torso A", exercises:[
         { name:"Press inclinado mancuernas", sets:4, reps:"10-12", rest:90, muscle:"Pecho" },
@@ -585,7 +585,7 @@ const ROUTINES = [
       ]},
       { name:"Pierna B", exercises:[
         { name:"Peso muerto sumo", sets:4, reps:"6-8", rest:150, muscle:"Pierna" },
-        { name:"Prensa", sets:4, reps:"12-15", rest:90, muscle:"Pierna" },
+        { name:"Prensa de piernas", sets:4, reps:"12-15", rest:90, muscle:"Pierna" },
         { name:"Patada de glúteo en polea", sets:3, reps:"15/pierna", rest:45, muscle:"Pierna" },
         { name:"Curl femoral tumbado", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
         { name:"Puente de glúteo", sets:3, reps:"15", rest:45, muscle:"Pierna" },
@@ -623,7 +623,7 @@ const ROUTINES = [
         { name:"Press banca mancuernas", sets:3, reps:"10-12", rest:75, muscle:"Pecho" },
         { name:"Remo al mentón", sets:3, reps:"12-15", rest:60, muscle:"Hombro" },
         { name:"Encogimientos", sets:3, reps:"12-15", rest:45, muscle:"Hombro" },
-        { name:"Elevación de gemelos sentado", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
+        { name:"Elevación de talones sentado", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
         { name:"Russian twist", sets:3, reps:"20", rest:45, muscle:"Core" },
       ]},
     ]},
@@ -643,7 +643,7 @@ const ROUTINES = [
         { name:"Sentadilla", sets:4, reps:"5", rest:180, muscle:"Pierna" },
         { name:"Peso muerto piernas rígidas", sets:3, reps:"6-8", rest:120, muscle:"Femoral" },
         { name:"Sentadilla hack", sets:3, reps:"8-10", rest:90, muscle:"Pierna" },
-        { name:"Elevación de gemelos sentado", sets:4, reps:"10-15", rest:45, muscle:"Gemelo" },
+        { name:"Elevación de talones sentado", sets:4, reps:"10-15", rest:45, muscle:"Gemelo" },
       ]},
       { name:"Torso B", exercises:[
         { name:"Peso muerto", sets:3, reps:"5", rest:180, muscle:"Espalda" },
@@ -653,9 +653,9 @@ const ROUTINES = [
       ]},
       { name:"Pierna B", exercises:[
         { name:"Sentadilla frontal", sets:4, reps:"6", rest:150, muscle:"Pierna" },
-        { name:"Prensa", sets:3, reps:"10-12", rest:90, muscle:"Pierna" },
+        { name:"Prensa de piernas", sets:3, reps:"10-12", rest:90, muscle:"Pierna" },
         { name:"Curl femoral tumbado", sets:3, reps:"10-12", rest:60, muscle:"Femoral" },
-        { name:"Elevación de gemelos", sets:4, reps:"12-20", rest:45, muscle:"Gemelo" },
+        { name:"Elevación de talones de pie", sets:4, reps:"12-20", rest:45, muscle:"Gemelo" },
       ]},
     ]},
 
@@ -681,7 +681,7 @@ const ROUTINES = [
     days:[
       { name:"Full body exprés", exercises:[
         { name:"Sentadilla goblet", sets:3, reps:"12", rest:45, muscle:"Pierna" },
-        { name:"Press banca / flexiones", sets:3, reps:"12", rest:45, muscle:"Pecho" },
+        { name:"Press banca o flexiones", sets:3, reps:"12", rest:45, muscle:"Pecho" },
         { name:"Remo con mancuerna", sets:3, reps:"12", rest:45, muscle:"Espalda" },
         { name:"Press militar mancuernas", sets:3, reps:"12", rest:45, muscle:"Hombro" },
         { name:"Plancha", sets:3, reps:"40 s", rest:30, muscle:"Core" },
@@ -727,39 +727,112 @@ function pickInitialRoutine({ goal, experience, sex }){
   return r;
 }
 
+/* =========================================================================
+   RENOMBRES DE EJERCICIOS
+   Algunos nombres eran traducción literal del inglés o dos ejercicios mezclados
+   con una barra. Al corregirlos hay que ARRASTRAR los datos ya guardados: las
+   marcas, la progresión y el historial se indexan POR NOMBRE, así que sin esto
+   un usuario perdería sus récords al actualizar.
+   Si vuelves a renombrar un ejercicio, añádelo aquí. No borres entradas viejas.
+   ========================================================================= */
+const RENOMBRES = {
+  "Elevación de gemelos": "Elevación de talones de pie",
+  "Elevación de gemelos sentado": "Elevación de talones sentado",
+  "Elevación de gemelos en prensa": "Gemelo en prensa",
+  "Elevación de gemelos con mancuerna": "Elevación de talones con mancuerna",
+  "Elevación de gemelos en multipower": "Elevación de talones en multipower",
+  "Elevación de puntas en multipower": "Elevación de puntas (tibial)",
+  "Dominadas / jalón": "Dominadas o jalón",
+  "Press banca / flexiones": "Press banca o flexiones",
+  "Remo invertido / mancuerna": "Remo invertido o con mancuerna",
+  "Rueda / plancha lateral": "Plancha lateral",
+  "HIIT bici/cinta": "HIIT en bici o cinta",
+  "Cinta / bici (calentar)": "Calentamiento en cinta o bici",
+  "Curl + tríceps (superserie)": "Superserie de bíceps y tríceps",
+  "Sentadilla en máquina de silla": "Sentadilla en máquina",
+  "Elevación de piernas colgado": "Elevación de piernas en barra",
+  "Extensión de cuádriceps": "Extensión de cuádriceps en máquina",
+  "Extensión de cuádriceps a una pierna": "Extensión de cuádriceps a una pierna en máquina",
+  "Curl femoral": "Curl femoral en máquina",
+  "Aperturas": "Aperturas con mancuernas",
+  "Fondos": "Fondos en paralelas",
+  "Fondos lastrados": "Fondos en paralelas lastrados",
+  "Zancadas": "Zancadas con barra",
+  "Prensa": "Prensa de piernas",
+};
+
+/* Aplica los renombres a todo lo que guarda nombres de ejercicio. */
+function migrarNombres({ state, log, customRoutines }){
+  const nuevo = n => RENOMBRES[n] || n;
+  let tocado = false;
+
+  const mapaClaves = obj => {
+    if(!obj) return obj;
+    const out = {}; let cambio = false;
+    for(const [k,v] of Object.entries(obj)){
+      const k2 = nuevo(k);
+      if(k2 !== k) cambio = true;
+      // Si ya existe la clave nueva (raro), se queda la mejor marca.
+      out[k2] = (k2 in out) ? (typeof v === "number" ? Math.max(out[k2], v) : v) : v;
+    }
+    if(cambio) tocado = true;
+    return cambio ? out : obj;
+  };
+
+  const s2 = { ...state,
+    bests: mapaClaves(state.bests), firstBests: mapaClaves(state.firstBests),
+    nextWeight: mapaClaves(state.nextWeight), cardioBests: mapaClaves(state.cardioBests),
+    muscleXp: state.muscleXp };
+
+  const l2 = (log || []).map(rec => {
+    const ex = (rec.exercises || []).map(e => e.name !== nuevo(e.name) ? { ...e, name:nuevo(e.name) } : e);
+    if(ex.some((e,i) => e !== rec.exercises[i])) { tocado = true; return { ...rec, exercises:ex }; }
+    return rec;
+  });
+
+  const r2 = (customRoutines || []).map(r => {
+    const days = (r.days || []).map(d => ({ ...d,
+      exercises: (d.exercises || []).map(e => e.name !== nuevo(e.name) ? { ...e, name:nuevo(e.name) } : e) }));
+    if(JSON.stringify(days) !== JSON.stringify(r.days)) { tocado = true; return { ...r, days }; }
+    return r;
+  });
+
+  return { state:s2, log:l2, customRoutines:r2, tocado };
+}
+
 /* Pesos base sugeridos (kg) para pre-rellenar antes de tener historial */
 const EX_BASE = {
-  "Sentadilla":40, "Sentadilla goblet":16, "Sentadilla búlgara":12, "Prensa":80,
+  "Sentadilla":40, "Sentadilla goblet":16, "Sentadilla búlgara":12, "Prensa de piernas":80,
   "Press banca":30, "Press inclinado con barra":25, "Press inclinado mancuernas":14,
   "Press militar":25, "Press militar mancuernas":12, "Peso muerto":50, "Peso muerto rumano":40,
   "Peso muerto rumano ligero":30, "Peso muerto rumano mancuernas":16, "Remo con barra":30,
   "Remo con mancuerna":16, "Remo en máquina":30, "Jalón al pecho":35, "Jalón agarre cerrado":32,
-  "Dominadas / jalón":35, "Zancadas":12, "Curl femoral":25, "Extensión de cuádriceps":25,
-  "Elevación de gemelos":40, "Elevaciones laterales":8, "Face pull":15, "Curl de bíceps":10,
+  "Dominadas o jalón":35, "Zancadas con barra":12, "Curl femoral en máquina":25, "Extensión de cuádriceps en máquina":25,
+  "Elevación de talones de pie":40, "Elevaciones laterales":8, "Face pull":15, "Curl de bíceps":10,
   "Curl de bíceps mancuernas":10, "Curl martillo":10, "Curl predicador":12, "Extensión de tríceps":12,
-  "Press francés":15, "Aperturas":10, "Fondos":0, "Fondos asistidos":0, "Flexiones":0,
-  "Flexiones diamante":0, "Flexiones inclinadas":0, "Remo invertido / mancuerna":14,
-  "Press banca / flexiones":25, "Curl + tríceps (superserie)":10,
+  "Press francés":15, "Aperturas con mancuernas":10, "Fondos en paralelas":0, "Fondos asistidos":0, "Flexiones":0,
+  "Flexiones diamante":0, "Flexiones inclinadas":0, "Remo invertido o con mancuerna":14,
+  "Press banca o flexiones":25, "Superserie de bíceps y tríceps":10,
   "Jalón agarre neutro":32, "Curl con barra":20, "Curl femoral tumbado":25, "Curl femoral sentado":25,
   "Aperturas en polea":12, "Extensión de tríceps en polea":15, "Sentadilla frontal":30,
-  "Press mancuernas sentado":14, "Dominadas lastradas":0, "Fondos lastrados":0, "Plancha con lastre":0,
+  "Press mancuernas sentado":14, "Dominadas lastradas":0, "Fondos en paralelas lastrados":0, "Plancha con lastre":0,
   "Zancadas con mancuernas":12, "Elevaciones laterales en polea":8, "Pullover en polea":20, "Pájaros en polea":8,
   "Hip thrust":40, "Puente de glúteo":20, "Patada de glúteo en polea":10, "Abductores en máquina":30,
   "Aductores en máquina":30, "Peso muerto sumo":40, "Sentadilla sumo con mancuerna":16, "Zancada caminando":10,
   "Good morning":20,
   /* Cardio / peso corporal: sin carga sugerida (peso 0 → no prefill). */
-  "Mountain climbers":0, "HIIT bici/cinta":0, "Cinta / bici (calentar)":0,
+  "Mountain climbers":0, "HIIT en bici o cinta":0, "Calentamiento en cinta o bici":0,
   /* --- Ejercicios adicionales --- */
   "Press banca mancuernas":20, "Press Arnold":12, "Encogimientos":22, "Curl concentrado":10,
   "Curl inclinado":9, "Extensión de tríceps sobre cabeza":12, "Patada de tríceps":8, "Remo en T":30,
-  "Remo al mentón":20, "Peso muerto piernas rígidas":35, "Elevación de gemelos sentado":30,
+  "Remo al mentón":20, "Peso muerto piernas rígidas":35, "Elevación de talones sentado":30,
   "Crunch abdominal":0, "Russian twist":0, "Sentadilla hack":40, "Dominada supina":0, "Bicicleta abdominal":0,
   /* --- Catálogo ampliado (free-exercise-db): solo se usan en rutinas propias --- */
   "Press declinado con barra":28, "Contractor de pecho":25, "Press de pecho en máquina":30, "Pullover con mancuerna":14,
   "Jalón agarre supino":32, "Remo con dos mancuernas":14, "Peso muerto parcial":60,
   "Encogimientos con barra":40, "Elevación frontal":7, "Press de hombro en máquina":20, "Press de hombro en polea":15, "Pájaros con mancuernas":7,
   "Zancada inversa":10, "Subida al cajón":10, "Sentadilla en multipower":30, "Sentadilla con mancuernas":14,
-  "Elevación de gemelos en prensa":60, "Elevación de gemelos con mancuerna":14,
+  "Gemelo en prensa":60, "Elevación de talones con mancuerna":14,
   "Curl en polea":15, "Curl inverso":15, "Curl araña":10,
   "Extensión de tríceps con cuerda":15, "Press banca agarre cerrado":25,
   "Crunch en polea":20, "Crunch en máquina":25,
@@ -780,13 +853,13 @@ const EX_BASE = {
   "Encogimientos en máquina de gemelos":40, "Press de hombro en máquina de discos":20, "Remo al cuello en polea baja":15,
   "Encogimientos tras espalda en multipower":40, "Remo al mentón a una mano en multipower":12, "Remo al mentón en multipower":20,
   "Elevación lateral en polea baja":6, "Remo al mentón en polea":18,
-  "Sentadilla hack en máquina":45, "Prensa con pies juntos":70, "Extensión de cuádriceps a una pierna":15,
+  "Sentadilla hack en máquina":45, "Prensa con pies juntos":70, "Extensión de cuádriceps a una pierna en máquina":15,
   "Zancada en multipower":20, "Pull through en polea":25, "Peso muerto en polea":30,
-  "Aductores en polea":10, "Sentadilla en máquina de silla":40, "Peso muerto en máquina":50,
+  "Aductores en polea":10, "Sentadilla en máquina":40, "Peso muerto en máquina":50,
   "Sentadilla tumbada en máquina":50, "Sentadilla hack con pies juntos":40, "Prensa en multipower":40,
   "Sentadilla a una pierna en multipower":20,
   "Curl femoral de pie":15, "Peso muerto rumano en multipower":35,
-  "Elevación de gemelos en multipower":40, "Gemelos en máquina":55, "Elevación de puntas en multipower":25,
+  "Elevación de talones en multipower":40, "Gemelos en máquina":55, "Elevación de puntas (tibial)":25,
   "Curl de bíceps en máquina":20, "Curl predicador en máquina":18, "Curl martillo en polea":15,
   "Curl predicador en polea":15, "Curl en polea alta":10, "Curl tumbado en polea":12,
   "Curl tumbado en polea alta":12, "Curl sobre la cabeza en polea":10, "Curl inverso en polea":12,
@@ -809,11 +882,11 @@ function baseFor(name, sex){ const b = EX_BASE[name] ?? 10; return sex==="mujer"
    En estos no se pide peso: solo se anotan repeticiones o segundos.
    OJO: las variantes "lastradas" / "con lastre" NO van aquí, porque sí llevan disco. */
 const BODYWEIGHT_EX = new Set([
-  "Plancha", "Rueda / plancha lateral", "Rueda abdominal", "Crunch abdominal", "Bicicleta abdominal",
-  "Russian twist", "Elevación de piernas", "Elevación de piernas colgado", "Mountain climbers",
+  "Plancha", "Plancha lateral", "Rueda abdominal", "Crunch abdominal", "Bicicleta abdominal",
+  "Russian twist", "Elevación de piernas", "Elevación de piernas en barra", "Mountain climbers",
   "Flexiones", "Flexiones diamante", "Flexiones inclinadas",
-  "Fondos", "Fondos asistidos", "Dominada supina",
-  "HIIT bici/cinta", "Cinta / bici (calentar)",
+  "Fondos en paralelas", "Fondos asistidos", "Dominada supina",
+  "HIIT en bici o cinta", "Calentamiento en cinta o bici",
   /* Catálogo ampliado: peso corporal, isométricos y cardio */
   "Flexiones declinadas", "Hiperextensiones", "Sentadilla con salto", "Sentadilla sin peso",
   "Puente de glúteo a una pierna", "Curl nórdico", "Fondos en banco", "Elevación de rodillas",
@@ -844,7 +917,7 @@ const EX_MUSCLE_EXTRA = {
   "Encogimientos con barra":"Hombro", "Elevación frontal":"Hombro", "Press de hombro en máquina":"Hombro", "Press de hombro en polea":"Hombro", "Pájaros con mancuernas":"Hombro",
   "Zancada inversa":"Pierna", "Subida al cajón":"Pierna", "Sentadilla en multipower":"Pierna", "Sentadilla con mancuernas":"Pierna", "Sentadilla con salto":"Pierna", "Sentadilla sin peso":"Pierna", "Puente de glúteo a una pierna":"Pierna",
   "Curl nórdico":"Femoral",
-  "Elevación de gemelos en prensa":"Gemelo", "Elevación de gemelos con mancuerna":"Gemelo",
+  "Gemelo en prensa":"Gemelo", "Elevación de talones con mancuerna":"Gemelo",
   "Curl en polea":"Bíceps", "Curl inverso":"Bíceps", "Curl araña":"Bíceps",
   "Fondos en banco":"Tríceps", "Extensión de tríceps con cuerda":"Tríceps", "Press banca agarre cerrado":"Tríceps",
   "Crunch en polea":"Core", "Crunch en máquina":"Core", "Elevación de rodillas":"Core", "Tijeras":"Core",
@@ -875,16 +948,16 @@ const EX_MUSCLE_EXTRA = {
   "Remo al mentón a una mano en multipower":"Hombro", "Remo al mentón en multipower":"Hombro",
   "Elevación lateral en polea baja":"Hombro", "Remo al mentón en polea":"Hombro",
   "Sentadilla hack en máquina":"Pierna", "Prensa con pies juntos":"Pierna",
-  "Extensión de cuádriceps a una pierna":"Pierna", "Zancada en multipower":"Pierna",
+  "Extensión de cuádriceps a una pierna en máquina":"Pierna", "Zancada en multipower":"Pierna",
   "Pull through en polea":"Pierna", "Peso muerto en polea":"Pierna",
-  "Aductores en polea":"Pierna", "Sentadilla en máquina de silla":"Pierna",
+  "Aductores en polea":"Pierna", "Sentadilla en máquina":"Pierna",
   "Peso muerto en máquina":"Pierna", "Sentadilla tumbada en máquina":"Pierna",
   "Sentadilla hack con pies juntos":"Pierna", "Prensa en multipower":"Pierna",
   "Sentadilla a una pierna en multipower":"Pierna",
   "Curl femoral de pie":"Femoral", "Peso muerto rumano en multipower":"Femoral",
   "Curl nórdico en máquina":"Femoral",
-  "Elevación de gemelos en multipower":"Gemelo", "Gemelos en máquina":"Gemelo",
-  "Elevación de puntas en multipower":"Gemelo",
+  "Elevación de talones en multipower":"Gemelo", "Gemelos en máquina":"Gemelo",
+  "Elevación de puntas (tibial)":"Gemelo",
   "Curl de bíceps en máquina":"Bíceps", "Curl predicador en máquina":"Bíceps",
   "Curl martillo en polea":"Bíceps", "Curl predicador en polea":"Bíceps",
   "Curl en polea alta":"Bíceps", "Curl tumbado en polea":"Bíceps",
@@ -935,7 +1008,7 @@ const isCardio = name => EX_MUSCLE[name] === "Cardio";
    intervalos por segundos no tienen consola que mirar: solo tiempo. */
 const MACHINE_CARDIO = new Set([
   "Cinta de correr", "Caminar en cinta", "Bici estática", "Elíptica",
-  "Máquina de remo", "Escaladora", "Cinta / bici (calentar)",
+  "Máquina de remo", "Escaladora", "Calentamiento en cinta o bici",
 ]);
 /* Solo pedimos datos de consola si es máquina Y el objetivo va en minutos
    (en intervalos de segundos no tiene sentido apuntar km por serie). */
@@ -965,7 +1038,7 @@ const EX_HOW = {
   "Remo con mancuerna":"Con una rodilla y una mano en el banco, deja colgar la mancuerna. Tira del codo hacia atrás llevando la mancuerna a la cadera, aprieta la espalda arriba y baja despacio. No gires el tronco.",
   "Press militar mancuernas":"De pie o sentado con la espalda firme, mancuernas a la altura de los hombros. Empuja arriba hasta casi estirar los brazos sin arquear la lumbar y baja controlado. Aprieta glúteos y abdomen.",
   "Plancha":"Sobre antebrazos y puntas de los pies, cuerpo en línea recta de cabeza a talones. Aprieta abdomen y glúteos, no dejes caer la cadera ni subas el culo. Respira con normalidad.",
-  "Prensa":"Sentado en la máquina, pies a la anchura de los hombros. Baja flexionando las rodillas hacia el pecho sin despegar la lumbar del respaldo y empuja sin bloquear del todo las rodillas.",
+  "Prensa de piernas":"Sentado en la máquina, pies a la anchura de los hombros. Baja flexionando las rodillas hacia el pecho sin despegar la lumbar del respaldo y empuja sin bloquear del todo las rodillas.",
   "Jalón al pecho":"Sentado, agarra la barra más ancha que los hombros. Tira hacia la parte alta del pecho llevando los codos abajo y atrás, aprieta la espalda y sube controlando sin encoger los hombros.",
   "Press inclinado mancuernas":"Banco inclinado 30-45°, mancuernas a los lados del pecho. Empuja arriba juntándolas un poco y baja controlado hasta notar estiramiento en el pecho. Omóplatos apretados.",
   "Elevaciones laterales":"De pie con una mancuerna en cada mano y codos algo flexionados, sube los brazos a los lados hasta la altura del hombro liderando con el codo, y baja despacio. Sin impulso del cuerpo.",
@@ -982,32 +1055,32 @@ const EX_HOW = {
   "Extensión de tríceps":"En polea alta con cuerda o barra, codos pegados al cuerpo. Estira los codos hacia abajo apretando el tríceps y vuelve controlando sin abrir los codos.",
   "Rueda abdominal":"De rodillas, desliza la rueda hacia delante estirando el cuerpo SIN arquear la lumbar (abdomen apretado), hasta donde controles, y vuelve. Empieza con recorrido corto.",
   "Peso muerto rumano":"De pie con barra y piernas casi rectas, lleva la cadera atrás bajando la barra pegada a las piernas hasta notar tensión en los femorales, espalda recta, y sube apretando glúteos.",
-  "Zancadas":"Da un paso al frente y baja la rodilla trasera hacia el suelo con el tronco erguido y la rodilla delantera sobre el tobillo. Empuja para volver y alterna piernas.",
-  "Curl femoral":"En la máquina, engancha los tobillos y flexiona las rodillas llevando el talón hacia el glúteo apretando el femoral; vuelve controlado.",
-  "Elevación de gemelos":"Con las puntas de los pies en un escalón, sube el talón lo máximo poniéndote de puntillas, aprieta arriba y baja estirando bien el gemelo.",
-  "Extensión de cuádriceps":"Sentado en la máquina, engancha los tobillos y estira las rodillas apretando el cuádriceps arriba; baja controlado sin dejar caer el peso.",
-  "Dominadas / jalón":"Dominadas: colgado de la barra, tira del pecho hacia ella llevando los codos abajo y atrás, y baja controlado. Si aún no salen, usa el jalón al pecho en polea con la misma técnica.",
-  "Aperturas":"Tumbado con mancuernas sobre el pecho y codos algo flexionados, abre los brazos en arco hasta notar estiramiento y ciérralos apretando el pecho, como si abrazaras.",
+  "Zancadas con barra":"Da un paso al frente y baja la rodilla trasera hacia el suelo con el tronco erguido y la rodilla delantera sobre el tobillo. Empuja para volver y alterna piernas.",
+  "Curl femoral en máquina":"En la máquina, engancha los tobillos y flexiona las rodillas llevando el talón hacia el glúteo apretando el femoral; vuelve controlado.",
+  "Elevación de talones de pie":"Con las puntas de los pies en un escalón, sube el talón lo máximo poniéndote de puntillas, aprieta arriba y baja estirando bien el gemelo.",
+  "Extensión de cuádriceps en máquina":"Sentado en la máquina, engancha los tobillos y estira las rodillas apretando el cuádriceps arriba; baja controlado sin dejar caer el peso.",
+  "Dominadas o jalón":"Dominadas: colgado de la barra, tira del pecho hacia ella llevando los codos abajo y atrás, y baja controlado. Si aún no salen, usa el jalón al pecho en polea con la misma técnica.",
+  "Aperturas con mancuernas":"Tumbado con mancuernas sobre el pecho y codos algo flexionados, abre los brazos en arco hasta notar estiramiento y ciérralos apretando el pecho, como si abrazaras.",
   "Curl martillo":"Curl con las mancuernas en agarre neutro (palmas enfrentadas). Sube flexionando el codo sin girar la muñeca y baja controlado. Trabaja bíceps y antebrazo.",
   "Press francés":"Tumbado o sentado, barra o mancuernas sobre la cabeza con los codos apuntando al techo. Baja flexionando solo los codos hacia la frente y estira arriba. Codos quietos.",
-  "Fondos":"En paralelas, baja flexionando los codos hasta que el hombro llegue a su altura y empuja arriba. Inclínate adelante para pecho, vertical para tríceps. No bajes más de lo que controles.",
+  "Fondos en paralelas":"En paralelas, baja flexionando los codos hasta que el hombro llegue a su altura y empuja arriba. Inclínate adelante para pecho, vertical para tríceps. No bajes más de lo que controles.",
   "Curl predicador":"Con el brazo apoyado en el banco predicador, sube la barra o mancuerna flexionando el codo y baja controlando bien la parte final, sin estirar de golpe.",
   "Jalón agarre cerrado":"Jalón en polea con agarre estrecho (triángulo). Tira hacia el pecho con los codos pegados abajo y atrás, aprieta la espalda y sube controlado.",
   "Sentadilla búlgara":"Pie trasero apoyado en un banco y una mancuerna en cada mano. Baja flexionando la pierna delantera con el tronco algo inclinado y empuja para subir. Una pierna cada vez.",
   "Flexiones":"Manos algo más anchas que los hombros, cuerpo en línea recta. Baja el pecho al suelo con los codos a ~45° y empuja arriba apretando abdomen y glúteos. Si cuesta, apoya rodillas.",
   "Peso muerto rumano mancuernas":"Como el rumano pero con una mancuerna en cada mano: cadera atrás, mancuernas pegadas a las piernas, espalda recta, hasta notar los femorales, y sube apretando glúteos.",
   "Flexiones diamante":"Flexión con las manos juntas formando un triángulo bajo el pecho y los codos pegados al cuerpo. Enfatiza el tríceps. Cuerpo recto y abdomen apretado.",
-  "Remo invertido / mancuerna":"Remo invertido: bajo una barra fija, cuerpo recto colgando, tira del pecho hacia la barra. Alternativa: remo con mancuerna apoyando rodilla y mano en un banco.",
+  "Remo invertido o con mancuerna":"Remo invertido: bajo una barra fija, cuerpo recto colgando, tira del pecho hacia la barra. Alternativa: remo con mancuerna apoyando rodilla y mano en un banco.",
   "Flexiones inclinadas":"Flexiones con las manos apoyadas en una superficie elevada (banco). Más fáciles que en el suelo: baja el pecho hacia el borde y empuja. Cuerpo recto.",
   "Curl de bíceps mancuernas":"De pie con una mancuerna en cada mano y codos pegados, sube flexionando el codo sin balancear y baja despacio. Puedes alternar brazos.",
-  "Rueda / plancha lateral":"Rueda abdominal (deslizar sin arquear la lumbar) o, como alternativa, plancha lateral: de lado sobre un antebrazo, cuerpo en línea recta y cadera arriba, aguanta.",
-  "Cinta / bici (calentar)":"Trote suave en cinta o pedaleo ligero en bici para subir pulsaciones antes de entrenar. Ritmo cómodo en el que puedas hablar.",
+  "Plancha lateral":"Rueda abdominal (deslizar sin arquear la lumbar) o, como alternativa, plancha lateral: de lado sobre un antebrazo, cuerpo en línea recta y cadera arriba, aguanta.",
+  "Calentamiento en cinta o bici":"Trote suave en cinta o pedaleo ligero en bici para subir pulsaciones antes de entrenar. Ritmo cómodo en el que puedas hablar.",
   "Mountain climbers":"En posición de flexión, lleva las rodillas al pecho alternando rápido como si corrieras, con el abdomen apretado y la cadera estable.",
-  "Elevación de piernas colgado":"Colgado de la barra, sube las piernas (rectas o rodillas flexionadas) llevando la pelvis hacia arriba sin balancearte. Control en la bajada.",
-  "HIIT bici/cinta":"Intervalos: ~30 s fuerte (casi al máximo) y 30 s suave, repitiendo. Sube pulsaciones para el gasto calórico. Ajusta la intensidad a tu forma física.",
+  "Elevación de piernas en barra":"Colgado de la barra, sube las piernas (rectas o rodillas flexionadas) llevando la pelvis hacia arriba sin balancearte. Control en la bajada.",
+  "HIIT en bici o cinta":"Intervalos: ~30 s fuerte (casi al máximo) y 30 s suave, repitiendo. Sube pulsaciones para el gasto calórico. Ajusta la intensidad a tu forma física.",
   "Dominadas lastradas":"Dominadas con peso añadido (cinturón de lastre o mancuerna entre los pies). Misma técnica: pecho a la barra, codos abajo y atrás, bajada controlada. Solo si dominas las normales.",
-  "Press banca / flexiones":"Press de banca con barra (bajar al pecho y empujar) o, si no hay banco libre, flexiones con la misma idea de empuje.",
-  "Curl + tríceps (superserie)":"Superserie: una serie de curl de bíceps seguida SIN descanso de una de extensión de tríceps; descansa al terminar ambas.",
+  "Press banca o flexiones":"Press de banca con barra (bajar al pecho y empujar) o, si no hay banco libre, flexiones con la misma idea de empuje.",
+  "Superserie de bíceps y tríceps":"Superserie: una serie de curl de bíceps seguida SIN descanso de una de extensión de tríceps; descansa al terminar ambas.",
   "Jalón agarre neutro":"Jalón en polea con agarre neutro (palmas enfrentadas). Tira hacia el pecho con los codos pegados abajo, aprieta la espalda y sube controlado.",
   "Curl con barra":"De pie con barra recta o Z y codos pegados al cuerpo, sube flexionando el codo sin balancear la espalda y baja controlando.",
   "Curl femoral tumbado":"Tumbado boca abajo en la máquina, engancha los tobillos y lleva los talones al glúteo apretando el femoral; baja controlado sin despegar la cadera.",
@@ -1016,7 +1089,7 @@ const EX_HOW = {
   "Curl femoral sentado":"Sentado en la máquina, engancha los tobillos y flexiona las rodillas llevando los talones bajo el asiento apretando el femoral; vuelve controlado.",
   "Zancadas con mancuernas":"Zancadas con una mancuerna en cada mano: paso al frente, baja la rodilla trasera con el tronco erguido y empuja para volver. Alterna piernas.",
   "Plancha con lastre":"Plancha sobre antebrazos con un disco en la espalda alta. Cuerpo en línea recta, abdomen y glúteos apretados, sin hundir la cadera.",
-  "Fondos lastrados":"Fondos en paralelas con peso añadido (cinturón de lastre). Baja hasta que el hombro llegue al codo y empuja. Solo si dominas los fondos sin peso.",
+  "Fondos en paralelas lastrados":"Fondos en paralelas con peso añadido (cinturón de lastre). Baja hasta que el hombro llegue al codo y empuja. Solo si dominas los fondos sin peso.",
   "Press mancuernas sentado":"Sentado con respaldo, mancuernas a la altura de los hombros. Empuja arriba sin arquear la lumbar y baja controlado hasta los hombros.",
   "Sentadilla frontal":"Barra apoyada delante, sobre hombros y clavículas, codos altos. Baja manteniendo el tronco muy vertical y sube empujando con las piernas. Exige buena movilidad.",
   "Elevaciones laterales en polea":"De pie de lado a una polea baja, sube el brazo al lateral hasta la altura del hombro liderando con el codo y baja controlando. Un brazo cada vez.",
@@ -1041,7 +1114,7 @@ const EX_HOW = {
   "Remo en T":"Con el pecho apoyado o inclinado sobre la barra en T, tira del peso hacia el abdomen llevando los codos atrás y juntando las escápulas; baja controlando el estiramiento de la espalda.",
   "Remo al mentón":"De pie con la barra o mancuernas frente a los muslos y agarre estrecho, tira hacia arriba pegado al cuerpo liderando con los codos hasta la altura del pecho; baja controlando. No subas por encima de los hombros si molesta.",
   "Peso muerto piernas rígidas":"Con las piernas casi rectas (rodillas ligeramente flexionadas), baja la barra pegada a las piernas llevando la cadera atrás hasta notar el estiramiento de los femorales, y sube apretando glúteos. Espalda siempre recta.",
-  "Elevación de gemelos sentado":"Sentado con el peso sobre las rodillas y las puntas de los pies en un escalón, sube los talones lo máximo posible apretando el gemelo, y baja estirando por completo.",
+  "Elevación de talones sentado":"Sentado con el peso sobre las rodillas y las puntas de los pies en un escalón, sube los talones lo máximo posible apretando el gemelo, y baja estirando por completo.",
   "Crunch abdominal":"Tumbado boca arriba con las rodillas flexionadas, despega los hombros del suelo acercando las costillas a la cadera apretando el abdomen; baja despacio sin tirar del cuello.",
   "Russian twist":"Sentado con el tronco algo inclinado y los pies elevados o apoyados, gira el tronco de lado a lado tocando el suelo a cada lado, con el abdomen apretado. Puedes sujetar un peso.",
   "Sentadilla hack":"En la máquina hack, con los hombros bajo las almohadillas y los pies adelantados, baja flexionando rodillas y cadera con la espalda apoyada, y sube empujando con los talones sin bloquear.",
@@ -1071,8 +1144,8 @@ const EX_HOW = {
   "Sentadilla sin peso":"Sentadilla con tu propio peso: pies a la anchura de los hombros, baja llevando la cadera atrás con la espalda recta y los brazos delante para equilibrar, y sube apretando glúteos. Ideal para calentar y para aprender el patrón.",
   "Puente de glúteo a una pierna":"Tumbado boca arriba con una rodilla flexionada y la otra pierna estirada en el aire, empuja con el talón apoyado para subir la cadera hasta alinear rodilla, cadera y hombro. Aprieta el glúteo arriba y baja sin apoyar del todo.",
   "Curl nórdico":"De rodillas con los tobillos bien sujetos, baja el cuerpo hacia delante lo más despacio que puedas manteniendo el cuerpo recto de rodillas a hombros, y frena con los femorales. Ayúdate con las manos al final. Empieza con poco recorrido: da muchas agujetas.",
-  "Elevación de gemelos en prensa":"En la prensa, apoya solo la parte delantera de los pies en la plataforma con las rodillas casi estiradas. Empuja con las puntas hasta arriba y baja despacio dejando que el talón caiga por debajo para estirar bien el gemelo.",
-  "Elevación de gemelos con mancuerna":"De pie con una mancuerna en una mano y la otra apoyada para equilibrarte, sube sobre las puntas todo lo que puedas y baja despacio buscando el estiramiento. Mejor sobre un escalón para ganar recorrido.",
+  "Gemelo en prensa":"En la prensa, apoya solo la parte delantera de los pies en la plataforma con las rodillas casi estiradas. Empuja con las puntas hasta arriba y baja despacio dejando que el talón caiga por debajo para estirar bien el gemelo.",
+  "Elevación de talones con mancuerna":"De pie con una mancuerna en una mano y la otra apoyada para equilibrarte, sube sobre las puntas todo lo que puedas y baja despacio buscando el estiramiento. Mejor sobre un escalón para ganar recorrido.",
   "Curl en polea":"De pie frente a una polea baja con la barra o el agarre en las manos, flexiona los codos llevando el peso a los hombros sin mover los brazos del sitio, y baja controlado. La polea mantiene la tensión también abajo.",
   "Curl inverso":"Curl con las palmas hacia abajo (agarre prono). Sube la barra flexionando los codos pegados al cuerpo y baja despacio. Trabaja el braquial y el antebrazo: necesitarás bastante menos peso que en el curl normal.",
   "Curl araña":"Tumbado boca abajo sobre un banco inclinado con los brazos colgando en vertical, sube el peso flexionando solo los codos y baja del todo. Al no poder ayudarte con el cuerpo, el bíceps trabaja aislado de principio a fin.",
@@ -1139,12 +1212,12 @@ const EX_HOW = {
   "Remo al mentón en polea":"De pie frente a la polea baja con la barra, tira hacia arriba pegada al cuerpo con los codos altos hasta la altura del pecho. Sube solo hasta donde no te moleste el hombro.",
   "Sentadilla hack en máquina":"En la máquina hack, con la espalda apoyada en el respaldo y los pies a media plataforma, baja flexionando las rodillas hasta los muslos paralelos y sube empujando con todo el pie. La máquina sujeta la espalda: aísla el cuádriceps mejor que la sentadilla libre.",
   "Prensa con pies juntos":"Prensa con los pies juntos y centrados en la plataforma. Baja controlado sin despegar la lumbar del respaldo y empuja sin bloquear las rodillas. Al juntar los pies, el cuádriceps externo se lleva más trabajo.",
-  "Extensión de cuádriceps a una pierna":"Extensión de cuádriceps trabajando una pierna cada vez. Sube hasta estirar sin bloquear de golpe, aguanta un instante arriba y baja despacio. Perfecto para igualar diferencias entre piernas.",
+  "Extensión de cuádriceps a una pierna en máquina":"Extensión de cuádriceps trabajando una pierna cada vez. Sube hasta estirar sin bloquear de golpe, aguanta un instante arriba y baja despacio. Perfecto para igualar diferencias entre piernas.",
   "Zancada en multipower":"Con la barra guiada sobre los hombros, un pie delante y otro atrás (apoyado en un banco si quieres más rango), baja hasta que la rodilla de delante llegue a 90° y sube empujando con ese talón. La guía te quita el equilibrio de la ecuación.",
   "Pull through en polea":"De espaldas a la polea baja, con la cuerda entre las piernas, empuja la cadera hacia atrás con la espalda recta y vuelve estirando la cadera y apretando los glúteos. Es el patrón de bisagra de cadera con carga fácil de controlar.",
   "Peso muerto en polea":"De pie frente a la polea baja con la barra en las manos, baja llevando la cadera atrás con la espalda recta y sube estirando cadera y rodillas. Buena forma de aprender el peso muerto con carga ligera y guiada.",
   "Aductores en polea":"De lado a la polea baja con la tobillera en la pierna de dentro, lleva esa pierna hacia la línea media cruzando por delante de la otra, y vuelve despacio. Sujétate para no compensar con el tronco.",
-  "Sentadilla en máquina de silla":"Sentado en la máquina con la espalda apoyada y los pies en la plataforma, empuja hasta casi estirar las piernas y vuelve controlando. Es la opción más amable con la espalda para cargar el cuádriceps.",
+  "Sentadilla en máquina":"Sentado en la máquina con la espalda apoyada y los pies en la plataforma, empuja hasta casi estirar las piernas y vuelve controlando. Es la opción más amable con la espalda para cargar el cuádriceps.",
   "Peso muerto en máquina":"En la máquina de peso muerto, con los pies firmes y la espalda recta, estira cadera y rodillas hasta ponerte de pie y baja controlando. La guía te permite cargar el patrón sin arriesgar la técnica.",
   "Sentadilla tumbada en máquina":"Tumbado en la máquina con los pies en la plataforma y la espalda apoyada, baja flexionando las rodillas y empuja sin bloquearlas del todo. Muy parecida a la prensa pero con otro ángulo de cadera.",
   "Sentadilla hack con pies juntos":"Hack squat con los pies juntos y algo adelantados. Baja hasta los muslos paralelos con la espalda pegada al respaldo y sube empujando. Con los pies juntos, el cuádriceps externo se lleva la fiesta.",
@@ -1153,9 +1226,9 @@ const EX_HOW = {
   "Curl femoral de pie":"En la máquina de femoral de pie, sujétate al soporte y flexiona una rodilla llevando el talón al glúteo; baja despacio sin dejar caer el peso. Al ir pierna a pierna se nota mucho el femoral y se corrigen descompensaciones.",
   "Peso muerto rumano en multipower":"Con la barra guiada por delante de los muslos, empuja la cadera hacia atrás bajando la barra pegada a las piernas con la espalda recta, hasta notar el femoral, y sube apretando glúteos. La guía te deja centrarte en la bisagra de cadera.",
   "Curl nórdico en máquina":"En el banco de glute-ham, con los tobillos fijos, baja el cuerpo hacia delante frenando con los femorales y vuelve a subir tirando de ellos. Muy exigente: empieza con poco recorrido y ayúdate con las manos.",
-  "Elevación de gemelos en multipower":"Con la barra guiada sobre los hombros y la punta de los pies sobre un step, sube todo lo que puedas sobre las puntas y baja despacio dejando caer el talón para estirar. La guía permite cargar bien sin problemas de equilibrio.",
+  "Elevación de talones en multipower":"Con la barra guiada sobre los hombros y la punta de los pies sobre un step, sube todo lo que puedas sobre las puntas y baja despacio dejando caer el talón para estirar. La guía permite cargar bien sin problemas de equilibrio.",
   "Gemelos en máquina":"En la máquina de gemelos, con los hombros o las rodillas bajo el soporte y la punta de los pies en la plataforma, empuja hasta arriba y baja despacio buscando el estiramiento completo. El gemelo necesita recorrido y repeticiones: no lo hagas a medias.",
-  "Elevación de puntas en multipower":"Con la barra guiada sobre los hombros y los talones apoyados, sube las puntas de los pies hacia ti y baja despacio. Trabaja el tibial anterior, la cara delantera de la espinilla que casi nadie entrena.",
+  "Elevación de puntas (tibial)":"Con la barra guiada sobre los hombros y los talones apoyados, sube las puntas de los pies hacia ti y baja despacio. Trabaja el tibial anterior, la cara delantera de la espinilla que casi nadie entrena.",
   "Curl de bíceps en máquina":"Sentado con la parte alta de los brazos apoyada en el soporte y las axilas pegadas al borde, flexiona los codos hasta arriba y baja despacio sin despegar los brazos. La máquina te fija la postura: por eso permite apretar el bíceps sin ayudarte con la espalda.",
   "Curl predicador en máquina":"Variante con el brazo apoyado en un banco inclinado dentro de la máquina. Sube hasta contraer del todo y baja controlando hasta casi estirar el codo. Cuidado con soltar de golpe abajo: es donde más se resiente el tendón.",
   "Curl martillo en polea":"De pie frente a la polea baja con una cuerda, sube flexionando los codos con las palmas enfrentadas (como si dieras un martillazo) y baja despacio. Trabaja bíceps y braquial, y engorda el antebrazo.",
@@ -1197,33 +1270,33 @@ const EX_HOW = {
 
 /* Imágenes de ejercicios (free-exercise-db, dominio público / Unlicense) */
 const EX_IMG = {
-  "Aperturas": "/exercises/Dumbbell_Flyes/0.jpg",
+  "Aperturas con mancuernas": "/exercises/Dumbbell_Flyes/0.jpg",
   "Aperturas en polea": "/exercises/Cable_Crossover/0.jpg",
   "Curl con barra": "/exercises/Barbell_Curl/0.jpg",
   "Curl de bíceps": "/exercises/Dumbbell_Bicep_Curl/0.jpg",
   "Curl de bíceps mancuernas": "/exercises/Dumbbell_Bicep_Curl/0.jpg",
-  "Curl femoral": "/exercises/Lying_Leg_Curls/0.jpg",
+  "Curl femoral en máquina": "/exercises/Lying_Leg_Curls/0.jpg",
   "Curl femoral sentado": "/exercises/Seated_Leg_Curl/0.jpg",
   "Curl femoral tumbado": "/exercises/Lying_Leg_Curls/0.jpg",
   "Curl martillo": "/exercises/Hammer_Curls/0.jpg",
   "Curl predicador": "/exercises/Preacher_Curl/0.jpg",
-  "Dominadas / jalón": "/exercises/Pullups/0.jpg",
+  "Dominadas o jalón": "/exercises/Pullups/0.jpg",
   "Dominadas lastradas": "/exercises/Weighted_Pull_Ups/0.jpg",
   "Elevaciones laterales": "/exercises/Side_Lateral_Raise/0.jpg",
   "Elevaciones laterales en polea": "/exercises/Cable_Seated_Lateral_Raise/0.jpg",
-  "Elevación de gemelos": "/exercises/Standing_Calf_Raises/0.jpg",
+  "Elevación de talones de pie": "/exercises/Standing_Calf_Raises/0.jpg",
   "Elevación de piernas": "/exercises/Flat_Bench_Lying_Leg_Raise/0.jpg",
-  "Elevación de piernas colgado": "/exercises/Hanging_Leg_Raise/0.jpg",
-  "Extensión de cuádriceps": "/exercises/Leg_Extensions/0.jpg",
+  "Elevación de piernas en barra": "/exercises/Hanging_Leg_Raise/0.jpg",
+  "Extensión de cuádriceps en máquina": "/exercises/Leg_Extensions/0.jpg",
   "Extensión de tríceps": "/exercises/Triceps_Pushdown/0.jpg",
   "Extensión de tríceps en polea": "/exercises/Triceps_Pushdown/0.jpg",
   "Face pull": "/exercises/Face_Pull/0.jpg",
   "Flexiones": "/exercises/Pushups/0.jpg",
   "Flexiones diamante": "/exercises/Push-Ups_-_Close_Triceps_Position/0.jpg",
   "Flexiones inclinadas": "/exercises/Incline_Push-Up/0.jpg",
-  "Fondos": "/exercises/Dips_-_Chest_Version/0.jpg",
+  "Fondos en paralelas": "/exercises/Dips_-_Chest_Version/0.jpg",
   "Fondos asistidos": "/exercises/Dips_-_Chest_Version/0.jpg",
-  "Fondos lastrados": "/exercises/Ring_Dips/0.jpg",
+  "Fondos en paralelas lastrados": "/exercises/Ring_Dips/0.jpg",
   "Jalón agarre cerrado": "/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg",
   "Jalón agarre neutro": "/exercises/V-Bar_Pulldown/0.jpg",
   "Jalón al pecho": "/exercises/Wide-Grip_Lat_Pulldown/0.jpg",
@@ -1234,9 +1307,9 @@ const EX_IMG = {
   "Peso muerto rumano mancuernas": "/exercises/Stiff-Legged_Dumbbell_Deadlift/0.jpg",
   "Plancha": "/exercises/Plank/0.jpg",
   "Plancha con lastre": "/exercises/Plank/0.jpg",
-  "Prensa": "/exercises/Leg_Press/0.jpg",
+  "Prensa de piernas": "/exercises/Leg_Press/0.jpg",
   "Press banca": "/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg",
-  "Press banca / flexiones": "/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg",
+  "Press banca o flexiones": "/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg",
   "Press francés": "/exercises/Lying_Triceps_Press/0.jpg",
   "Press inclinado con barra": "/exercises/Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg",
   "Press inclinado mancuernas": "/exercises/Incline_Dumbbell_Press/0.jpg",
@@ -1248,14 +1321,14 @@ const EX_IMG = {
   "Remo con barra": "/exercises/Bent_Over_Barbell_Row/0.jpg",
   "Remo con mancuerna": "/exercises/One-Arm_Dumbbell_Row/0.jpg",
   "Remo en máquina": "/exercises/Seated_Cable_Rows/0.jpg",
-  "Remo invertido / mancuerna": "/exercises/Inverted_Row/0.jpg",
-  "Rueda / plancha lateral": "/exercises/Side_Bridge/0.jpg",
+  "Remo invertido o con mancuerna": "/exercises/Inverted_Row/0.jpg",
+  "Plancha lateral": "/exercises/Side_Bridge/0.jpg",
   "Rueda abdominal": "/exercises/Ab_Roller/0.jpg",
   "Sentadilla": "/exercises/Barbell_Squat/0.jpg",
   "Sentadilla búlgara": "/exercises/Split_Squats/0.jpg",
   "Sentadilla frontal": "/exercises/Front_Barbell_Squat/0.jpg",
   "Sentadilla goblet": "/exercises/Goblet_Squat/0.jpg",
-  "Zancadas": "/exercises/Dumbbell_Lunges/0.jpg",
+  "Zancadas con barra": "/exercises/Dumbbell_Lunges/0.jpg",
   "Zancadas con mancuernas": "/exercises/Dumbbell_Lunges/0.jpg",
   "Hip thrust": "/exercises/Barbell_Hip_Thrust/0.jpg",
   "Puente de glúteo": "/exercises/Butt_Lift_Bridge/0.jpg",
@@ -1276,16 +1349,16 @@ const EX_IMG = {
   "Remo en T": "/exercises/Lying_T-Bar_Row/0.jpg",
   "Remo al mentón": "/exercises/Upright_Barbell_Row/0.jpg",
   "Peso muerto piernas rígidas": "/exercises/Stiff-Legged_Barbell_Deadlift/0.jpg",
-  "Elevación de gemelos sentado": "/exercises/Seated_Calf_Raise/0.jpg",
+  "Elevación de talones sentado": "/exercises/Seated_Calf_Raise/0.jpg",
   "Crunch abdominal": "/exercises/Crunches/0.jpg",
   "Russian twist": "/exercises/Russian_Twist/0.jpg",
   "Sentadilla hack": "/exercises/Barbell_Hack_Squat/0.jpg",
   "Dominada supina": "/exercises/Chin-Up/0.jpg",
   "Bicicleta abdominal": "/exercises/Air_Bike/0.jpg",
   /* Cardio de las rutinas de la app: ya tenían nombre pero no demostración. */
-  "HIIT bici/cinta": "/exercises/Running_Treadmill/0.jpg",
-  "Cinta / bici (calentar)": "/exercises/Walking_Treadmill/0.jpg",
-  "Curl + tríceps (superserie)": "/exercises/Dumbbell_Bicep_Curl/0.jpg",
+  "HIIT en bici o cinta": "/exercises/Running_Treadmill/0.jpg",
+  "Calentamiento en cinta o bici": "/exercises/Walking_Treadmill/0.jpg",
+  "Superserie de bíceps y tríceps": "/exercises/Dumbbell_Bicep_Curl/0.jpg",
   /* --- Catálogo ampliado (free-exercise-db) --- */
   "Press declinado con barra": "/exercises/Decline_Barbell_Bench_Press/0.jpg",
   "Contractor de pecho": "/exercises/Butterfly/0.jpg",
@@ -1309,8 +1382,8 @@ const EX_IMG = {
   "Sentadilla sin peso": "/exercises/Bodyweight_Squat/0.jpg",
   "Puente de glúteo a una pierna": "/exercises/Single_Leg_Glute_Bridge/0.jpg",
   "Curl nórdico": "/exercises/Natural_Glute_Ham_Raise/0.jpg",
-  "Elevación de gemelos en prensa": "/exercises/Calf_Press_On_The_Leg_Press_Machine/0.jpg",
-  "Elevación de gemelos con mancuerna": "/exercises/Standing_Dumbbell_Calf_Raise/0.jpg",
+  "Gemelo en prensa": "/exercises/Calf_Press_On_The_Leg_Press_Machine/0.jpg",
+  "Elevación de talones con mancuerna": "/exercises/Standing_Dumbbell_Calf_Raise/0.jpg",
   "Curl en polea": "/exercises/Standing_Biceps_Cable_Curl/0.jpg",
   "Curl inverso": "/exercises/Reverse_Barbell_Curl/0.jpg",
   "Curl araña": "/exercises/Spider_Curl/0.jpg",
@@ -1377,12 +1450,12 @@ const EX_IMG = {
   "Remo al mentón en polea": "/exercises/Upright_Cable_Row/0.jpg",
   "Sentadilla hack en máquina": "/exercises/Hack_Squat/0.jpg",
   "Prensa con pies juntos": "/exercises/Narrow_Stance_Leg_Press/0.jpg",
-  "Extensión de cuádriceps a una pierna": "/exercises/Single-Leg_Leg_Extension/0.jpg",
+  "Extensión de cuádriceps a una pierna en máquina": "/exercises/Single-Leg_Leg_Extension/0.jpg",
   "Zancada en multipower": "/exercises/Smith_Single-Leg_Split_Squat/0.jpg",
   "Pull through en polea": "/exercises/Pull_Through/0.jpg",
   "Peso muerto en polea": "/exercises/Cable_Deadlifts/0.jpg",
   "Aductores en polea": "/exercises/Cable_Hip_Adduction/0.jpg",
-  "Sentadilla en máquina de silla": "/exercises/Chair_Squat/0.jpg",
+  "Sentadilla en máquina": "/exercises/Chair_Squat/0.jpg",
   "Peso muerto en máquina": "/exercises/Leverage_Deadlift/0.jpg",
   "Sentadilla tumbada en máquina": "/exercises/Lying_Machine_Squat/0.jpg",
   "Sentadilla hack con pies juntos": "/exercises/Narrow_Stance_Hack_Squats/0.jpg",
@@ -1391,9 +1464,9 @@ const EX_IMG = {
   "Curl femoral de pie": "/exercises/Standing_Leg_Curl/0.jpg",
   "Peso muerto rumano en multipower": "/exercises/Smith_Machine_Stiff-Legged_Deadlift/0.jpg",
   "Curl nórdico en máquina": "/exercises/Glute_Ham_Raise/0.jpg",
-  "Elevación de gemelos en multipower": "/exercises/Smith_Machine_Calf_Raise/0.jpg",
+  "Elevación de talones en multipower": "/exercises/Smith_Machine_Calf_Raise/0.jpg",
   "Gemelos en máquina": "/exercises/Calf_Press/0.jpg",
-  "Elevación de puntas en multipower": "/exercises/Smith_Machine_Reverse_Calf_Raises/0.jpg",
+  "Elevación de puntas (tibial)": "/exercises/Smith_Machine_Reverse_Calf_Raises/0.jpg",
   "Curl de bíceps en máquina": "/exercises/Machine_Bicep_Curl/0.jpg",
   "Curl predicador en máquina": "/exercises/Machine_Preacher_Curls/0.jpg",
   "Curl martillo en polea": "/exercises/Cable_Hammer_Curls_-_Rope_Attachment/0.jpg",
@@ -2494,11 +2567,15 @@ export default function App(){
       sub: { ...DEFAULT_STATE.sub, ...(s.sub || {}) },
       missions: { ...DEFAULT_STATE.missions, ...(s.missions || {}) },
       cycle: { ...DEFAULT_STATE.cycle, ...(s.cycle || {}) } };
-    setState(merged); setLog(l); setMeasures(m); setMealPlan(mp); setExcludesState(exc);
-    setCustomRoutinesState((Array.isArray(cr)?cr:[]).map(normalizeCustomRoutine));
+    // Arrastra los nombres de ejercicio que se hayan corregido desde la última versión.
+    const mig = migrarNombres({ state:merged, log:l, customRoutines:(Array.isArray(cr)?cr:[]) });
+    if(mig.tocado){ saveKey("gym:state", mig.state); saveKey("gym:log", mig.log); saveKey("gym:routines", mig.customRoutines); }
+
+    setState(mig.state); setLog(mig.log); setMeasures(m); setMealPlan(mp); setExcludesState(exc);
+    setCustomRoutinesState(mig.customRoutines.map(normalizeCustomRoutine));
     setCustomDietState(normalizeCustomDiet(cd));
-    setNeedsOnboarding(!merged.profile?.onboarded);
-    scheduleAllReminders(merged.reminders, merged.sub);
+    setNeedsOnboarding(!mig.state.profile?.onboarded);
+    scheduleAllReminders(mig.state.reminders, mig.state.sub);
   }
   function updateProfile(fields){
     const np = { ...state.profile, ...fields }; const ns = { ...state, profile: np };
