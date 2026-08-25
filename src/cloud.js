@@ -11,6 +11,7 @@
    son las políticas RLS de supabase/schema.sql.
    ========================================================================= */
 import { createClient } from "@supabase/supabase-js";
+import * as cripto from "./cripto.js";
 
 const URL = import.meta.env.VITE_SUPABASE_URL || "";
 const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
@@ -94,6 +95,7 @@ export async function registrar({ email, password, handle, displayName }){
     // se creará en el primer login (ver asegurarPerfil).
     if (!data.session) return { ok:true, necesitaConfirmar:true, handle:h, displayName };
 
+    await derivarYGuardarClave(password, data.user?.id);
     const p = await asegurarPerfil({ handle:h, displayName });
     if (!p.ok) return p;
     return { ok:true, necesitaConfirmar:false, perfil:p.perfil };
@@ -103,15 +105,24 @@ export async function registrar({ email, password, handle, displayName }){
 export async function entrar({ email, password }){
   if (!supabase) return sinNube;
   try {
-    const { error } = await supabase.auth.signInWithPassword({ email: String(email).trim(), password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: String(email).trim(), password });
     if (error) return { ok:false, msg:traducir(error) };
+    // Único momento en que tenemos la contraseña: se deriva aquí la clave de
+    // la copia cifrada y se guarda en este móvil. Nunca se sube.
+    await derivarYGuardarClave(password, data?.user?.id);
     return { ok:true };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+async function derivarYGuardarClave(password, userId){
+  if (!userId || !cripto.criptoDisponible) return;
+  try { await cripto.guardarClave(await cripto.derivarClave(password, userId)); } catch {}
 }
 
 export async function salir(){
   if (!supabase) return { ok:true };
   try { await supabase.auth.signOut(); } catch {}
+  cripto.olvidarClave();          // la clave de la copia no sobrevive al cierre de sesión
   return { ok:true };
 }
 
@@ -293,6 +304,46 @@ export async function rutinasDeAmigos(){
     const { data, error } = await supabase.from("rutinas_de_amigos").select("*").limit(60);
     if (error) return { ok:false, msg:traducir(error) };
     return { ok:true, rutinas:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* --- Copia de seguridad en la nube (cifrada en el móvil) ------------------
+   El servidor solo ve bytes opacos: el cifrado y el descifrado ocurren en el
+   dispositivo (ver cripto.js). Aquí solo se sube y se baja el bulto. */
+
+export async function subirCopia({ cifrado, iv, dispositivo }){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("backups").upsert({
+      user_id:user.id, cifrado, iv, dispositivo:String(dispositivo || "").slice(0,40),
+      bytes:cifrado.length, updated_at:new Date().toISOString(),
+    }, { onConflict:"user_id" });
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function bajarCopia(){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { data, error } = await supabase.from("backups").select("*").eq("user_id", user.id).maybeSingle();
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, copia:data || null };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function borrarCopia(){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("backups").delete().eq("user_id", user.id);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 

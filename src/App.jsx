@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import * as cloud from "./cloud.js";
+import * as cripto from "./cripto.js";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
@@ -3001,7 +3002,7 @@ export default function App(){
         {tab==="ajustes" && <SettingsView {...{ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup }}/>}
         {tab==="cuenta" && <AccountView {...{ state, level, setTab, session:cloudSession, perfil,
           onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onSalir:salirCuenta, onRefrescar:(p,soloAmigos)=>cloud.leaderboard(p, soloAmigos),
-          quedadas, onRefrescarQuedadas:refrescarQuedadas, cargandoQuedadas }}/>}
+          quedadas, onRefrescarQuedadas:refrescarQuedadas, cargandoQuedadas, exportBackup, importBackup }}/>}
       </div>
 
       {tab!=="workout" && tab!=="results" && tab!=="editor" && (
@@ -3213,6 +3214,125 @@ function OnboardingWizard({ onDone, initial, importBackup }){
    Todo esto es OPCIONAL: sin credenciales de Supabase ni siquiera se muestra,
    y sin red la app entera sigue funcionando igual. Ver ROADMAP-SOCIAL.md.
    ========================================================================= */
+
+/* Copia de seguridad en la nube, cifrada en el móvil.
+   Resuelve "cambio de móvil sin perder nada" sin que el detalle de los entrenos
+   salga del dispositivo: el servidor solo guarda bytes que no puede leer. */
+function CopiaNubePanel({ exportBackup, importBackup }){
+  const [copia, setCopia] = useState(null);
+  const [estado, setEstado] = useState("mirando");   // mirando | listo | trabajando
+  const [msg, setMsg] = useState(null);
+  const [confirmar, setConfirmar] = useState(false);
+
+  async function mirar(){
+    const r = await cloud.bajarCopia();
+    setEstado("listo");
+    if (r.ok) setCopia(r.copia);
+  }
+  useEffect(()=>{ mirar(); }, []);
+
+  async function subir(){
+    setEstado("trabajando"); setMsg(null);
+    const clave = await cripto.recuperarClave();
+    if (!clave) { setEstado("listo"); setMsg({ ok:false, t:"Vuelve a entrar con tu contraseña para poder cifrar la copia." }); return; }
+    try {
+      const texto = await exportBackup();
+      const { cifrado, iv } = await cripto.cifrar(texto, clave);
+      const r = await cloud.subirCopia({ cifrado, iv, dispositivo: navigator.userAgent.includes("Android") ? "Android" : "Navegador" });
+      setEstado("listo");
+      if (!r.ok) { setMsg({ ok:false, t:r.msg }); return; }
+      setMsg({ ok:true, t:"Copia subida y cifrada. Solo se puede abrir con tu contraseña." });
+      mirar();
+    } catch (e) {
+      setEstado("listo"); setMsg({ ok:false, t:"No se ha podido cifrar la copia en este dispositivo." });
+    }
+  }
+
+  async function restaurar(){
+    setConfirmar(false); setEstado("trabajando"); setMsg(null);
+    const clave = await cripto.recuperarClave();
+    if (!clave) { setEstado("listo"); setMsg({ ok:false, t:"Vuelve a entrar con tu contraseña para poder descifrar la copia." }); return; }
+    try {
+      const texto = await cripto.descifrar(copia.cifrado, copia.iv, clave);
+      const r = await importBackup(texto);
+      setEstado("listo");
+      setMsg({ ok:r.ok, t:r.ok ? "Progreso restaurado desde la nube." : r.msg });
+    } catch {
+      setEstado("listo");
+      setMsg({ ok:false, t:"No se ha podido descifrar. ¿Has cambiado la contraseña desde que subiste la copia? Si es así, sube una nueva." });
+    }
+  }
+
+  const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
+  const cuando = copia?.updated_at ? new Date(copia.updated_at) : null;
+
+  return (<>
+    <div style={sectionTitle}>COPIA EN LA NUBE</div>
+    <div className="fh-card" style={{ padding:16 }}>
+      <div style={{ display:"flex", gap:10, alignItems:"flex-start", marginBottom:12 }}>
+        <Lock size={16} color="var(--jade)" style={{ flexShrink:0, marginTop:1 }}/>
+        <div style={{ fontSize:12, color:"var(--muted)", lineHeight:1.5 }}>
+          Se cifra <b style={{ color:"var(--txt)" }}>en tu móvil</b> antes de subirla. El servidor guarda algo que no puede leer:
+          ni tus entrenos, ni tu peso, ni tu dieta. Solo se abre con tu contraseña.
+        </div>
+      </div>
+
+      {estado === "mirando" && <Empty text="Mirando si tienes copia…"/>}
+
+      {estado !== "mirando" && (
+        <div style={{ padding:"11px 13px", background:"var(--bg2)", border:"1px solid var(--line)", borderRadius:11, marginBottom:12 }}>
+          {copia ? (<>
+            <div style={{ fontSize:12.5, color:"var(--txt)" }}>
+              Última copia: <b>{cuando.toLocaleDateString("es-ES")}</b> a las {cuando.toLocaleTimeString("es-ES", { hour:"2-digit", minute:"2-digit" })}
+            </div>
+            <div style={{ fontSize:11, color:"var(--faint)", marginTop:3 }}>
+              desde {copia.dispositivo || "otro dispositivo"} · {(copia.bytes/1024).toFixed(0)} KB cifrados
+            </div>
+          </>) : (
+            <div style={{ fontSize:12.5, color:"var(--muted)" }}>Todavía no has subido ninguna copia.</div>
+          )}
+        </div>
+      )}
+
+      <div style={{ display:"flex", gap:8 }}>
+        <button className="fh-btn" onClick={subir} disabled={estado === "trabajando"}
+          style={{ flex:1, background:"var(--jade)", padding:12, fontSize:12.5, opacity:estado==="trabajando"?.6:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+          <Upload size={14}/> {estado === "trabajando" ? "Un momento…" : copia ? "Actualizar copia" : "Subir copia"}
+        </button>
+        {copia && (
+          <button className="fh-btn" onClick={()=>setConfirmar(v=>!v)} disabled={estado === "trabajando"}
+            style={{ flex:1, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:12, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+            <Download size={14} color="var(--gold)"/> Restaurar
+          </button>
+        )}
+      </div>
+
+      {confirmar && (
+        <div className="fh-card" style={{ background:"var(--bg2)", padding:13, marginTop:11 }}>
+          <div style={{ fontSize:12.5, color:"var(--muted)", lineHeight:1.45, marginBottom:10 }}>
+            Restaurar <b style={{ color:"var(--txt)" }}>sustituye</b> lo que tengas ahora en este móvil por lo de la copia. Lo que hayas hecho desde entonces se perderá.
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button className="fh-btn" onClick={()=>setConfirmar(false)} style={{ flex:1, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:9, fontSize:12 }}>Cancelar</button>
+            <button className="fh-btn" onClick={restaurar} style={{ flex:1, background:"var(--gold)", padding:9, fontSize:12 }}>Sí, restaurar</button>
+          </div>
+        </div>
+      )}
+
+      {msg && (
+        <div style={{ display:"flex", gap:9, alignItems:"flex-start", marginTop:12, padding:"10px 12px", background:"var(--bg2)", border:`1px solid ${msg.ok?"var(--jade)":"var(--crimson)"}`, borderRadius:11 }}>
+          {msg.ok ? <Check size={15} color="var(--jade)" style={{ flexShrink:0, marginTop:1 }}/>
+                  : <ShieldAlert size={15} color="var(--crimson)" style={{ flexShrink:0, marginTop:1 }}/>}
+          <div style={{ fontSize:12, color:"var(--txt)", lineHeight:1.45 }}>{msg.t}</div>
+        </div>
+      )}
+
+      <div style={{ fontSize:11, color:"var(--faint)", marginTop:11, lineHeight:1.45 }}>
+        Si cambias la contraseña de la cuenta, la copia antigua deja de poder abrirse: sube una nueva después.
+      </div>
+    </div>
+  </>);
+}
 
 /* Novedades del círculo desde la última vez que abriste la app.
    Se agrupan por persona: "Ana ha entrenado 3 veces" en vez de tres líneas. */
@@ -3592,7 +3712,7 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar }){
   </>);
 }
 
-function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onSalir, onRefrescar, quedadas, onRefrescarQuedadas, cargandoQuedadas }){
+function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onSalir, onRefrescar, quedadas, onRefrescarQuedadas, cargandoQuedadas, exportBackup, importBackup }){
   const [modo, setModo] = useState("entrar");          // entrar | registro
   const [f, setF] = useState({ email:"", password:"", handle:"", displayName:"" });
   const [msg, setMsg] = useState(null);
@@ -3736,6 +3856,8 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
       <AmigosPanel amigos={amigos} onRefrescarAmigos={refrescarAmigos} onQuitar={quitarAmigo}/>
 
       <QuedadasPanel quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={cargandoQuedadas}/>
+
+      <CopiaNubePanel exportBackup={exportBackup} importBackup={importBackup}/>
 
       <div style={sectionTitle}>CLASIFICACIÓN</div>
       <div style={{ display:"flex", gap:6, marginBottom:8 }}>
