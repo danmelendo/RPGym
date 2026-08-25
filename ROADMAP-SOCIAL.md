@@ -9,11 +9,15 @@
 > al estrenarlas · quedadas con "Yo voy" · novedades del círculo al abrir · copia de
 > seguridad cifrada en el móvil · entreno conjunto.
 >
-> **Decisiones pendientes del usuario** (ninguna bloquea nada):
-> 1. **Push real con FCM** — suena con la app cerrada, pero mete Google Play Services.
->    Hoy los avisos son locales al abrir.
-> 2. **Comparar récords entre amigos** ("te ha superado en press banca") — exigiría subir
->    ejercicio y peso, que hoy no salen del móvil.
+> **Decisiones tomadas (26/08):**
+> 1. **Push real con Firebase**: SÍ. Cableado listo; falta `google-services.json` y la
+>    cuenta de servicio → ver **[supabase/FIREBASE.md](supabase/FIREBASE.md)**.
+> 2. **Comparar récords entre amigos**: SÍ. Se sube el detalle de los entrenos y las
+>    marcas por ejercicio. Al ser una app privada entre amigos y no comercial, se
+>    levanta la restricción de subir datos de entrenamiento.
+>
+> **Las dos únicas excepciones que se mantienen**, y no se tocan:
+> el **ciclo menstrual** y las **rutinas marcadas como privadas**.
 >
 > **Contexto: uso privado.** Esto es para el círculo cercano, repartiendo el APK a mano.
 > **No entra en Google Play**, así que todo lo que sea política de tienda, cuestionario de

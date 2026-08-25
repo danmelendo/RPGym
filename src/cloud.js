@@ -8,7 +8,13 @@
 
    Las credenciales se inyectan en tiempo de build desde .env (ver .env.example).
    La anon key es PÚBLICA por diseño (viaja dentro del APK): la seguridad real
-   son las políticas RLS de supabase/schema.sql.
+   son las políticas RLS de supabase/migrations/.
+
+   QUÉ SE SINCRONIZA (app de uso privado entre amigos, no comercial):
+   se suben entrenos con su detalle, marcas por ejercicio, medidas y rutinas.
+   NO se suben, y esto no se toca:
+     · los datos del ciclo menstrual,
+     · las rutinas marcadas como privadas por su dueño.
    ========================================================================= */
 import { createClient } from "@supabase/supabase-js";
 import * as cripto from "./cripto.js";
@@ -260,14 +266,14 @@ export async function listarAmigos(){
    NADA se sube solo: publicar una rutina es una acción explícita del usuario.
    El payload es el mismo formato de encodeRoutine(), ya probado. */
 
-export async function publicarRutina({ clientId, name, dias, payload }){
+export async function publicarRutina({ clientId, name, dias, payload, privada = false }){
   if (!supabase) return sinNube;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok:false, msg:"Necesitas cuenta para compartir con tus amigos." };
     const { error } = await supabase.from("shared_routines")
       .upsert({ owner_id:user.id, client_id:String(clientId), name:String(name).slice(0,40),
-                dias:Number(dias) || 1, payload, updated_at:new Date().toISOString() },
+                dias:Number(dias) || 1, payload, privada:!!privada, updated_at:new Date().toISOString() },
               { onConflict:"owner_id,client_id" });
     if (error) return { ok:false, msg:traducir(error) };
     return { ok:true };
@@ -304,6 +310,85 @@ export async function rutinasDeAmigos(){
     const { data, error } = await supabase.from("rutinas_de_amigos").select("*").limit(60);
     if (error) return { ok:false, msg:traducir(error) };
     return { ok:true, rutinas:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* --- Notificaciones push (los tokens; el envío lo hace la Edge Function) --- */
+
+export async function guardarTokenPush(token){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("push_tokens")
+      .upsert({ token, user_id:user.id, plataforma:"android", updated_at:new Date().toISOString() },
+              { onConflict:"token" });
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function borrarTokenPush(){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:true };
+    await supabase.from("push_tokens").delete().eq("user_id", user.id);
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* Avisa a tus amigos de algo. La clave de Firebase NO está aquí: vive en la
+   Edge Function, porque dentro del APK cualquiera podría sacarla y mandar
+   notificaciones en nombre de otro. */
+export async function avisarAmigos(tipo, extra = {}){
+  if (!supabase) return sinNube;
+  try {
+    const { error } = await supabase.functions.invoke("avisar", { body: { tipo, ...extra } });
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* --- Récords por ejercicio -----------------------------------------------
+   Permiten compararse con los amigos y avisar de quién te ha adelantado. */
+
+export async function subirRecords(bests){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const filas = Object.entries(bests || {})
+      .filter(([ej, peso]) => ej && Number(peso) > 0)
+      .slice(0, 400)
+      .map(([ejercicio, peso]) => ({ user_id:user.id, ejercicio:String(ejercicio).slice(0,60),
+        peso:Math.min(999, Number(peso) || 0), updated_at:new Date().toISOString() }));
+    if (!filas.length) return { ok:true };
+    const { error } = await supabase.from("exercise_records").upsert(filas, { onConflict:"user_id,ejercicio" });
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, subidos:filas.length };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* Amigos que ahora mismo tienen mejor marca que tú en algún ejercicio. */
+export async function meHanSuperado(){
+  if (!supabase) return sinNube;
+  try {
+    const { data, error } = await supabase.from("me_han_superado").select("*").limit(20);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, filas:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* A quién has adelantado tú: se consulta al terminar un entreno con récord. */
+export async function heSuperado(ejercicios){
+  if (!supabase) return sinNube;
+  try {
+    let q = supabase.from("he_superado").select("*");
+    if (ejercicios?.length) q = q.in("ejercicio", ejercicios.slice(0, 20));
+    const { data, error } = await q.limit(20);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, filas:data || [] };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
@@ -490,7 +575,7 @@ export async function borrarAmigo(amigoId){
 /* Registra el XP de un entreno para las clasificaciones por periodo.
    Sube SOLO fecha y XP: el detalle del entreno no sale del móvil.
    client_id es el identificador local, para que reintentar no duplique. */
-export async function registrarEntreno({ clientId, day, xp, prs = 0 }){
+export async function registrarEntreno({ clientId, day, xp, prs = 0, rutina = "", detalle = null }){
   if (!supabase) return sinNube;
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -498,7 +583,8 @@ export async function registrarEntreno({ clientId, day, xp, prs = 0 }){
     const { error } = await supabase.from("workout_points")
       .insert({ user_id:user.id, client_id:String(clientId), day,
                 xp:Math.max(0, Math.min(5000, Math.round(xp) || 0)),
-                prs:Math.max(0, Math.min(50, Math.round(prs) || 0)) });   // solo cuántos, nunca de qué
+                prs:Math.max(0, Math.min(50, Math.round(prs) || 0)),
+                rutina:String(rutina || "").slice(0,80), detalle:detalle || null });
     // 23505 = clave duplicada: ese entreno ya estaba registrado. No es un error.
     if (error && error.code !== "23505") return { ok:false, msg:traducir(error) };
     return { ok:true, yaEstaba: error?.code === "23505" };

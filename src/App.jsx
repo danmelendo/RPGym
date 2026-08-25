@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { createPortal } from "react-dom";
 import * as cloud from "./cloud.js";
 import * as cripto from "./cripto.js";
+import * as push from "./push.js";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
@@ -1573,7 +1574,7 @@ function normalizeCustomRoutine(r){
         muscle:EX_MUSCLE[ex.name] })),
   }));
   const clean = days.length ? days : [{ name:"Día 1", exercises:[] }];
-  return { ...r, custom:true, cat:CUSTOM_CAT, id:r?.id || newRoutineId(),
+  return { ...r, custom:true, cat:CUSTOM_CAT, id:r?.id || newRoutineId(), privada:!!r?.privada,
     name:String(r?.name || "Mi rutina").slice(0,40),
     subtitle:String(r?.subtitle || "").slice(0,60),
     rpe:String(r?.rpe || "7-8"), blurb:String(r?.blurb || "").slice(0,300),
@@ -2493,6 +2494,8 @@ export default function App(){
   const [novedades, setNovedades] = useState([]);
   const [entrenando, setEntrenando] = useState([]);   // amigos entrenando ahora mismo
   const [sesionConjunta, setSesionConjunta] = useState(null);
+  const [adelantados, setAdelantados] = useState([]);      // a quién he superado con el último récord
+  const [superadoPor, setSuperadoPor] = useState([]);      // quién me ha adelantado a mí
   const [cargandoQuedadas, setCargandoQuedadas] = useState(false);
   const [draftIsNew, setDraftIsNew] = useState(false);
   const [toast, setToast] = useState(null);
@@ -2536,6 +2539,11 @@ export default function App(){
         if(vivo && nv.ok) setNovedades(nv.novedades);
         const ea = await cloud.quienEntrenaAhora();
         if(vivo && ea.ok) setEntrenando(ea.sesiones);
+        const sup = await cloud.meHanSuperado();
+        if(vivo && sup.ok) setSuperadoPor(sup.filas);
+        // Registra el dispositivo en FCM. Sin google-services.json el plugin no
+        // existe y esto no hace nada: la app funciona igual.
+        if(push.pushDisponible()) push.activarPush();
         saveGlobal("gym:ultimaVisita", new Date().toISOString());
       }
       const v = await cloud.versionMasNueva(APP_VERSION_CODE);
@@ -2549,7 +2557,12 @@ export default function App(){
       if(vivo && p.ok) setPerfil(p.perfil);
       cloud.ping();
     });
-    return ()=>{ vivo=false; off(); };
+    // Con la app abierta, Android no muestra la notificación: se enseña como aviso.
+    const offPush = push.alRecibirEnPrimerPlano(({ texto })=>{
+      if(texto) showToast({ title:"RPGym", sub:texto, icon:Users });
+    });
+
+    return ()=>{ vivo=false; off(); offPush(); };
   },[]);
 
   const persist = useCallback((ns,nl,nm)=>{ saveKey("gym:state",ns); if(nl) saveKey("gym:log",nl); if(nm) saveKey("gym:measures",nm); },[]);
@@ -2685,6 +2698,7 @@ export default function App(){
       cloud.abrirSesionConjunta(routine.name).then(r=>{
         if(r.ok) setSesionConjunta({ id:r.sesion.id, laAbriYo:true, con:null });
       });
+      cloud.avisarAmigos("entreno");          // "X está entrenando ahora"
     }
   }
 
@@ -2870,7 +2884,20 @@ export default function App(){
       cloud.sincronizarPerfil({ level:finalLevel, xp:finalXp, totalWorkouts, bestStreak,
         displayName:state.profile?.name, appVersion:APP_VERSION_NAME });
       cloud.registrarEntreno({ clientId:`${record.date}-${session.startedAt}`,
-        day:record.date, xp:record.xp, prs:prList.length });
+        day:record.date, xp:record.xp, prs:prList.length,
+        rutina:`${record.routineName} · ${record.dayName}`, detalle:record.exercises });
+      cloud.subirRecords(bests);
+      // ¿He adelantado a alguien con los récords de hoy?
+      if(prList.length){
+        cloud.avisarAmigos("record");          // "X acaba de batir un récord"
+        cloud.heSuperado(prList.map(p=>p.name)).then(r=>{
+          if(r.ok && r.filas.length){
+            setAdelantados(r.filas);
+            // A quien hayas adelantado, se le avisa: es el pique que engancha.
+            r.filas.forEach(f => cloud.avisarAmigos("superado", { ejercicio:f.ejercicio }));
+          }
+        });
+      }
     }
   }
 
@@ -2919,7 +2946,8 @@ export default function App(){
       else showToast({ title:"No se ha podido retirar", sub:r.msg, icon:ShieldAlert });
     } else {
       const payload = JSON.parse(b64urlDecode(encodeRoutine(routine).slice(SHARE_PREFIX.length)));
-      const r = await cloud.publicarRutina({ clientId:routine.id, name:routine.name, dias:routine.days.length, payload });
+      const r = await cloud.publicarRutina({ clientId:routine.id, name:routine.name,
+        dias:routine.days.length, payload, privada:!!routine.privada });
       if(r.ok){ setPublicadas(p => [...p, routine.id]);
         showToast({ title:"Compartida con tus amigos", sub:`${routine.name} ya aparece en su lista.`, icon:Users }); }
       else showToast({ title:"No se ha podido compartir", sub:r.msg, icon:ShieldAlert });
@@ -3031,11 +3059,11 @@ export default function App(){
       <Toast toast={toast}/>
       <div className="fh-shell">
         {tab==="home" && <HomeView {...{ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines,
-          cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), quedadas, novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno }}/>}
+          cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), quedadas, novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno, superadoPor }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina }}/>}
         {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines }}/>}
         {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests, sesionConjunta }}/>}
-        {tab==="results" && <ResultsView {...{ results, setTab, level, rank }}/>}
+        {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank }}/>}
         {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines }}/>}
         {tab==="logros" && <AchievementsView {...{ state, level }}/>}
         {tab==="dieta" && <DietView {...{ state, useCheat, mealPlan, saveMealPlan, excludes, setExcludes, setTab, customDiet, saveCustomDiet }}/>}
@@ -3375,6 +3403,37 @@ function CopiaNubePanel({ exportBackup, importBackup }){
   </>);
 }
 
+/* El pique: amigos que te han adelantado en algún ejercicio.
+   Es lo que de verdad pica y hace volver al gimnasio. */
+function MeHanSuperado({ filas, setTab }){
+  if (!filas?.length) return null;
+  const top = filas.slice(0, 3);
+  return (
+    <div className="fh-card" style={{ padding:14, marginTop:12, borderColor:"var(--ember)" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:9 }}>
+        <TrendingUp size={16} color="var(--ember)"/>
+        <span className="disp" style={{ fontWeight:600, fontSize:14.5 }}>Te han adelantado</span>
+      </div>
+      {top.map((f,i)=>(
+        <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, padding:"6px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontSize:12.5, color:"var(--txt)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.ejercicio}</div>
+            <div style={{ fontSize:11, color:"var(--faint)", marginTop:1 }}>{f.display_name || "@"+f.handle}</div>
+          </div>
+          <div className="mono" style={{ fontSize:12, color:"var(--ember)", flexShrink:0, textAlign:"right" }}>
+            {f.suyo} kg<div style={{ fontSize:10, color:"var(--faint)" }}>tú {f.mio}</div>
+          </div>
+        </div>
+      ))}
+      {filas.length > 3 && <div style={{ fontSize:11, color:"var(--faint)", marginTop:8 }}>y {filas.length - 3} más</div>}
+      <button className="fh-btn" onClick={()=>setTab("rutinas")}
+        style={{ width:"100%", marginTop:11, background:"var(--card2)", color:"var(--ember)", border:"1px solid var(--line2)", padding:10, fontSize:12.5 }}>
+        A recuperarlo
+      </button>
+    </div>
+  );
+}
+
 /* Amigos que están entrenando ahora mismo: la ocasión de unirse.
    Sin tiempo real: se consulta al abrir la app, que para un grupo pequeño basta. */
 function EntrenandoAhora({ sesiones, onUnirme, setTab }){
@@ -3496,6 +3555,7 @@ function QuedadasPanel({ quedadas, onRefrescar, cargando }){
     setOcupado(true); setMsg(null);
     const cuando = new Date(`${f.fecha}T${f.hora}:00`).toISOString();
     const r = await cloud.crearQuedada({ cuando, lugar:f.lugar, nota:f.nota });
+    if(r.ok) cloud.avisarAmigos("quedada");    // "X ha propuesto quedar" 
     setOcupado(false);
     if (!r.ok) { setMsg({ ok:false, t:r.msg }); return; }
     setCreando(false); setF(p=>({ ...p, lugar:"", nota:"" }));
@@ -4319,11 +4379,14 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
           queda en este móvil y la app funciona entera sin conexión. No hay publicidad ni analítica.
         </p>
         <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.5 }}>
-          Si creas una cuenta (opcional), se suben <b style={{ color:"var(--txt)" }}>solo</b> tu nombre, tu usuario,
-          tu nivel, tu XP, tu racha y la <b style={{ color:"var(--txt)" }}>fecha y el XP</b> de cada entreno, para las
-          clasificaciones, más las rutinas que compartas <b style={{ color:"var(--txt)" }}>a propósito</b>, una a una.
-          <b style={{ color:"var(--txt)" }}> Nunca</b> salen de aquí qué ejercicios haces ni con cuánto peso, ni tu peso
-          corporal, medidas, edad, dieta o los datos del ciclo.
+          Si creas una cuenta (opcional), tus <b style={{ color:"var(--txt)" }}>amigos</b> ven tu progreso: nivel, XP,
+          entrenos con sus ejercicios y pesos, tus marcas por ejercicio y tus rutinas. Es lo que permite compararse
+          y picarse.
+        </p>
+        <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.5 }}>
+          Dos cosas <b style={{ color:"var(--txt)" }}>no salen nunca</b> de este móvil, pase lo que pase:
+          los datos del <b style={{ color:"var(--txt)" }}>ciclo menstrual</b> y las rutinas que marques
+          como <b style={{ color:"var(--txt)" }}>privadas</b>.
         </p>
         <p style={{ fontSize:11.5, color:"var(--faint)", margin:0, lineHeight:1.5 }}>
           Puedes borrarlo todo cuando quieras desde <b style={{ color:"var(--muted)" }}>Borrar progreso</b>, o desinstalando la app.
@@ -4455,7 +4518,7 @@ function CyclePhaseCard({ state, setTab }){
   );
 }
 
-function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas, novedades, onCerrarNovedades, entrenando, onUnirme }){
+function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const RankIcon=rank.icon;
@@ -4516,6 +4579,7 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
       </div>
 
       {cloudEnabled && perfil && <EntrenandoAhora sesiones={entrenando} onUnirme={onUnirme} setTab={setTab}/>}
+      {cloudEnabled && perfil && <MeHanSuperado filas={superadoPor} setTab={setTab}/>}
       {cloudEnabled && perfil && <NovedadesCard novedades={novedades} onCerrar={onCerrarNovedades} setTab={setTab}/>}
       {cloudEnabled && perfil && <ProximaQuedada quedadas={quedadas} setTab={setTab}/>}
 
@@ -5182,6 +5246,18 @@ function RoutineBuilderView({ draft, setDraft, onSave, onCancel, isNew }){
         <div style={{ fontSize:11.5, color:"var(--faint)", margin:"7px 2px 0", lineHeight:1.45 }}>
           Con esto la app calcula el <b style={{ color:"var(--muted)" }}>peso sugerido</b> la primera vez que hagas cada ejercicio. Después se ajusta solo a tus marcas.
         </div>
+
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, marginTop:14, paddingTop:14, borderTop:"1px solid var(--line)" }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:12.5, color:"var(--txt)", display:"flex", alignItems:"center", gap:7 }}>
+              <Lock size={14} color="var(--muted)"/> Rutina privada
+            </div>
+            <div style={{ fontSize:11, color:"var(--faint)", marginTop:3, lineHeight:1.4 }}>
+              {draft.privada ? "No se comparte con tus amigos, ni aunque la publiques." : "Tus amigos podrán verla."}
+            </div>
+          </div>
+          <ToggleSwitch on={!!draft.privada} onClick={()=>setField({ privada: !draft.privada })}/>
+        </div>
       </div>
 
       {/* --- Días --- */}
@@ -5606,6 +5682,21 @@ function ResultsView({ results, setTab, level, rank }){
               ? <>Has movido un <b style={{ color:"var(--jade)" }}>{r.volDelta}% más</b> que la última vez en este día. Eso es progreso real.</>
               : <>Hoy un <b style={{ color:"var(--ember)" }}>{Math.abs(r.volDelta)}% menos</b> que la última vez. Pasa: descansa y a por la próxima.</>}
           </div>
+        </div>
+      )}
+
+      {/* A quién has adelantado con los récords de hoy */}
+      {r.adelantados?.length > 0 && (
+        <div className="fh-card fh-pop" style={{ padding:16, marginBottom:12, borderColor:"var(--jade)" }}>
+          <div className="disp" style={{ fontWeight:600, fontSize:15, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
+            <TrendingUp size={15} color="var(--jade)"/> Has adelantado a
+          </div>
+          {r.adelantados.map((a,i)=>(
+            <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderTop:i?"1px solid var(--line)":"none", fontSize:13 }}>
+              <span>{a.display_name || "@"+a.handle} · {a.ejercicio}</span>
+              <span className="mono" style={{ color:"var(--jade)" }}>{a.suyo} → {a.mio} kg</span>
+            </div>
+          ))}
         </div>
       )}
 

@@ -20,3 +20,6 @@ android/keystore.properties
 
 # Credenciales de Supabase (la plantilla es .env.example)
 .env
+
+# Firebase: identifica la app, no da permisos de envío. Fuera por costumbre.
+android/app/google-services.json

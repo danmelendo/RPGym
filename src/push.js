@@ -1,0 +1,76 @@
+/* =========================================================================
+   RPGym · notificaciones push (Firebase Cloud Messaging)
+
+   Supabase NO envía push: hace falta FCM. El envío lo hace una Edge Function
+   (supabase/functions/avisar), que es quien tiene la clave de servicio; desde
+   el móvil solo se registra el dispositivo y se escuchan los avisos.
+
+   Igual que el resto de la nube: si no está configurado, si no hay permiso o
+   si el plugin no existe (navegador), NADA falla. La app sigue igual.
+
+   El plugin se carga por BRIDGE GLOBAL, no con import: importarlo rompería el
+   bundle web, que es el mismo que se usa para desarrollar. Misma regla que ya
+   seguía @capacitor/local-notifications.
+   ========================================================================= */
+import * as cloud from "./cloud.js";
+
+const PN = () => (typeof window !== "undefined" && window.Capacitor?.Plugins?.PushNotifications) || null;
+
+/* ¿Estamos dentro del APK con el plugin disponible? */
+export const pushDisponible = () => !!PN();
+
+let yaRegistrado = false;
+
+/* Pide permiso, registra el dispositivo en FCM y guarda el token en Supabase
+   para que la Edge Function sepa a quién avisar. */
+export async function activarPush(){
+  const pn = PN();
+  if (!pn) return { ok:false, msg:"Las notificaciones push solo funcionan en la app instalada." };
+  if (yaRegistrado) return { ok:true, yaEstaba:true };
+
+  try {
+    let permiso = await pn.checkPermissions();
+    if (permiso.receive !== "granted") permiso = await pn.requestPermissions();
+    if (permiso.receive !== "granted") return { ok:false, msg:"No has dado permiso para las notificaciones." };
+
+    // El token llega por evento, no como valor de retorno.
+    const token = await new Promise((resolve) => {
+      const t = setTimeout(() => resolve(null), 12000);
+      pn.addListener("registration", (info) => { clearTimeout(t); resolve(info?.value || null); });
+      pn.addListener("registrationError", () => { clearTimeout(t); resolve(null); });
+      pn.register();
+    });
+    if (!token) return { ok:false, msg:"No se ha podido registrar el dispositivo. Inténtalo otra vez." };
+
+    const r = await cloud.guardarTokenPush(token);
+    if (!r.ok) return r;
+    yaRegistrado = true;
+    return { ok:true };
+  } catch (e) {
+    return { ok:false, msg:"No se han podido activar las notificaciones en este dispositivo." };
+  }
+}
+
+export async function desactivarPush(){
+  const pn = PN();
+  try { await pn?.unregister?.(); } catch {}
+  yaRegistrado = false;
+  return cloud.borrarTokenPush();
+}
+
+/* Avisos que llegan con la app ABIERTA: Android no los muestra solo, así que
+   se pasan a quien quiera pintarlos (un toast, por ejemplo). */
+export function alRecibirEnPrimerPlano(cb){
+  const pn = PN();
+  if (!pn) return () => {};
+  const h = pn.addListener("pushNotificationReceived", (n) => cb({ titulo:n?.title, texto:n?.body, datos:n?.data }));
+  return () => { try { h?.remove?.(); } catch {} };
+}
+
+/* El usuario ha tocado la notificación: se abre donde toque. */
+export function alTocarNotificacion(cb){
+  const pn = PN();
+  if (!pn) return () => {};
+  const h = pn.addListener("pushNotificationActionPerformed", (a) => cb(a?.notification?.data || {}));
+  return () => { try { h?.remove?.(); } catch {} };
+}

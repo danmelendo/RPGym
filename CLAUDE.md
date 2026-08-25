@@ -179,6 +179,7 @@ Guía completa y paso a paso en **[PLAYSTORE.md](PLAYSTORE.md)**. Resumen de lo 
 - Las imágenes de ejercicios ya son **locales** (`public/exercises/`, 100% offline) — no dependas de GitHub raw al añadir nuevas.
 - Los ejercicios de peso corporal van en `BODYWEIGHT_EX`, no por `EX_BASE === 0` (hay lastrados con base 0 que sí llevan peso).
 - No metas binarios grandes en `public/`: acaban dentro del APK. Si hace falta servirlos solo en dev, excluye del build como con `RPGym.apk`.
+- **Qué se sincroniza**: la app es de uso privado entre amigos, así que se suben entrenos con su detalle, marcas por ejercicio, medidas y rutinas. **Dos excepciones que NO se tocan**: los datos del **ciclo menstrual** y las rutinas marcadas como **privadas** por su dueño. Si añades sincronización nueva, respétalas.
 - **La parte social está en FASE 1** (cuentas, clasificación, keep-alive) y el resto planificado en [ROADMAP-SOCIAL.md](ROADMAP-SOCIAL.md) para **uso privado, repartiendo el APK a mano y sin pasar por Play**. Lo primero que rompe es el texto de `Ajustes → Privacidad`, que hoy promete al usuario que **no se recoge ni se envía nada**. No añadas red sin leer ese documento.
 - **Nada de recursos remotos** (fuentes, CDN, analítica, iconos por URL). La app debe seguir siendo 100% offline y sin llamadas a terceros, o la política de privacidad deja de ser cierta. Descarga y sirve desde `public/`.
 
@@ -196,6 +197,7 @@ Guía completa y paso a paso en **[PLAYSTORE.md](PLAYSTORE.md)**. Resumen de lo 
 | [android/](android) | Proyecto Android. |
 | [android/local.properties](android/local.properties) | Ruta local del SDK. |
 | [PLAYSTORE.md](PLAYSTORE.md) | Guía de publicación en Google Play (firma, versionado, AAB, migración de testers). |
+| [supabase/FIREBASE.md](supabase/FIREBASE.md) | Puesta en marcha del push: crear el proyecto de Firebase y desplegar la Edge Function. |
 | [supabase/README.md](supabase/README.md) | **Empieza por aquí para la nube**: crear el proyecto, ejecutar el esquema y pegar las credenciales en `.env`. |
 | [supabase/migrations/](supabase/migrations/) | Tablas, funciones y políticas RLS. **Las migraciones van aquí**: es la única carpeta que mira la integración de GitHub de Supabase. |
 | [src/cloud.js](src/cloud.js) | Capa de Supabase. Todo devuelve `{ok,...}`, nunca lanza: sin red la app sigue igual. |
