@@ -1,13 +1,16 @@
 # ROADMAP — RPGym social (backend Supabase)
 
-> **Estado: FASE 1 IMPLEMENTADA (a falta de credenciales).** Cuentas, perfiles con usuario
-> único, keep-alive, clasificación y aviso de versión ya están en el código
-> ([src/cloud.js](src/cloud.js), `AccountView` en [src/App.jsx](src/App.jsx),
-> [supabase/schema.sql](supabase/schema.sql)). Falta crear el proyecto en Supabase y pegar
-> las credenciales: ver **[supabase/README.md](supabase/README.md)**.
-> Sin `.env`, la app sigue siendo 100% local y Supabase ni se compila.
+> **Estado: FASE 1 TERMINADA Y EN PRODUCCIÓN.** Cuentas, perfiles con usuario único,
+> keep-alive, clasificación y aviso de versión: implementado, desplegado y verificado
+> contra el proyecto real (`svmxsnvjjddxgolkjwjb`, eu-central-1).
+> Correo saliente por Brevo, llegando a bandeja de entrada. Texto de privacidad
+> reescrito. Pendiente solo pegar las plantillas de correo en español
+> ([supabase/email-templates/](supabase/email-templates/)) y compilar el APK — ver
+> **[TODO.md](TODO.md)**.
 >
-> Fases 2-6 (sincronización, amigos, rutinas de amigos, avisos, entreno conjunto): pendientes.
+> **Fases 2-6 (sincronización, amigos, rutinas de amigos, avisos, entreno conjunto):
+> SIN EMPEZAR.** Nada de eso existe todavía en el código: en Supabase solo hay
+> `profiles`, `heartbeat` y `app_versions`.
 >
 > **Contexto: uso privado.** Esto es para el círculo cercano, repartiendo el APK a mano.
 > **No entra en Google Play**, así que todo lo que sea política de tienda, cuestionario de
@@ -105,11 +108,11 @@ Empezar por ahí y meter FCM solo si se echa de menos de verdad.
 
 | Fase | Qué entra | Por qué en este orden |
 |---|---|---|
-| **1. Cuenta** ✅ | Alta/login con **email + contraseña**, `handle` único (dos Danieles no chocan), perfil público mínimo, keep-alive y clasificación. **Falta reescribir el texto de privacidad antes de repartirlo.** | Hecho. Se eligió contraseña en vez de magic link: en el gimnasio no apetece salir a buscar el correo para entrar. |
+| **1. Cuenta** ✅ **HECHA** | Alta/login con **email + contraseña**, `handle` único (dos Danieles no chocan), perfil público mínimo, keep-alive, clasificación, SMTP propio y privacidad reescrita. | Se eligió contraseña en vez de magic link: en el gimnasio no apetece salir a buscar el correo para entrar. |
 | **2. Sincronización** | Subir/bajar rutinas y entrenos propios. Resolución de conflictos. | Es la fontanería de todo lo demás y, de regalo, resuelve el cambio de móvil sin copia manual. |
 | **3. Amigos** | Invitar por **código corto**, aceptar, lista de amigos, perfil del amigo con sus rutinas y su tabla de entrenos. | Ya se pueden mandar rutinas por código (`RPGYM-R1.`); esto lo hace cómodo, no lo inventa. |
 | **4. Hacer la rutina de un amigo** | Copiar su rutina y entrenarla, con atribución ("rutina de Dani") y XP extra la primera vez. | Reaprovecha `importRoutine` casi tal cual. |
-| **5. Avisos** | Primero **locales al abrir** (novedades desde la última visita). Push real con FCM solo si se echa en falta. | Da el valor sin arrastrar Google Play Services de entrada. |
+| **5. Avisos** | Primero **locales al abrir** (novedades desde la última visita). Push real con FCM solo si se echa en falta. | Da el valor sin arrastrar Google Play Services de entrada. **Ya hecho de aquí**: el aviso de fin de descanso, que es local y no necesita backend ni amigos. |
 | **6. Entrenar juntos** | Quedada con fecha/hora + sesión conjunta en tiempo real (Supabase Realtime). | Lo más caro y lo más frágil: al final. |
 
 Al ser círculo cerrado, **la fase 3 puede ser muy simple**: un código de invitación de 6
