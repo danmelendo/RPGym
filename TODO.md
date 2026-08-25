@@ -1,31 +1,16 @@
 # TODO — siguiente paso inmediato
 
-## 🟡 1. Traducir los correos (están en inglés)
+## 🟡 1. Firebase, para el push real
 
-Los correos de confirmación llegan con la plantilla por defecto de Supabase, en inglés
-(*"Confirm your email address"*), en una app que está entera en español. Es lo primero
-que van a ver tus amigos.
+Todo el cableado está hecho. Falta crear el proyecto y dar dos cosas:
+ver **[supabase/FIREBASE.md](supabase/FIREBASE.md)**. Sin ello la app funciona
+igual, con los avisos locales al abrir.
 
-Ya están escritas en [supabase/email-templates/](supabase/email-templates/): solo hay
-que pegarlas en *Authentication → Email Templates*.
+## 🟡 2. Traducir los correos de Supabase
 
-| Plantilla de Supabase | Fichero | Asunto sugerido |
-|---|---|---|
-| Confirm signup | `confirmar-registro.html` | Confirma tu cuenta de RPGym |
-| Reset password | `restablecer-contrasena.html` | Restablece tu contraseña de RPGym |
-| Change Email Address | `cambiar-correo.html` | Confirma tu nuevo correo de RPGym |
-| Magic Link | `enlace-magico.html` | Entra en RPGym |
-
-## 🟡 2. Compilar y repartir
-
-- [ ] `npm run apk` (ahora sí con `.env`, así que llevará la nube activa).
-- [ ] Probarlo en el móvil: registro real y clasificación.
-- [ ] Publicarlo como GitHub Release y registrar la versión en `app_versions`:
-      ```bash
-      gh release create v1.0.0 android/app/build/outputs/apk/debug/app-debug.apk         --title "RPGym 1.0.0" --notes "Primera versión con cuentas"
-      ```
-- [ ] Subir a la vez `APP_VERSION_CODE` en [src/App.jsx](src/App.jsx) y `versionCode`
-      en [android/version.properties](android/version.properties).
+Siguen llegando en inglés. Las plantillas en español están escritas en
+[supabase/email-templates/](supabase/email-templates/): solo hay que pegarlas en
+*Authentication → Email Templates*.
 
 ## 🟠 3. Higiene pendiente
 
@@ -55,6 +40,10 @@ rutina de un amigo → avisos → entrenar juntos.
 ---
 
 ## ✅ Hecho
+
+- **v1.0.0 PUBLICADA**: <https://github.com/danmelendo/RPGym/releases/tag/v1.0.0>
+  (36 MB). Registrada en `app_versions`, así que el aviso de actualización ya
+  funciona para las siguientes.
 
 - **ROADMAP SOCIAL COMPLETO**: las seis fases implementadas y verificadas contra el
   proyecto real. Ocho migraciones aplicadas, todas con RLS atacada desde fuera.
