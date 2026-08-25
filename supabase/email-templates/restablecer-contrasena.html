@@ -1,0 +1,33 @@
+<!-- Supabase → Authentication → Email Templates → "Reset password"
+     Asunto sugerido:  Restablece tu contraseña de RPGym
+     Variable disponible: {{ .ConfirmationURL }} -->
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:8px">
+
+  <div style="font-size:22px;font-weight:700;letter-spacing:.02em;color:#1a1a1a;margin-bottom:4px">RPGym</div>
+  <div style="font-size:13px;color:#777;margin-bottom:24px">Tu gimnasio, convertido en juego</div>
+
+  <h1 style="font-size:19px;color:#1a1a1a;margin:0 0 14px">Restablece tu contraseña</h1>
+
+  <p style="font-size:15px;line-height:1.55;color:#333;margin:0 0 20px">
+    Has pedido cambiar la contraseña de tu cuenta. Pulsa el botón y elige una nueva.
+  </p>
+
+  <p style="margin:0 0 24px">
+    <a href="{{ .ConfirmationURL }}"
+       style="display:inline-block;background:#B8862B;color:#fff;text-decoration:none;
+              padding:13px 26px;border-radius:10px;font-size:15px;font-weight:600">
+      Cambiar mi contraseña
+    </a>
+  </p>
+
+  <p style="font-size:13px;line-height:1.5;color:#777;margin:0 0 6px">
+    Si el botón no funciona, copia esta dirección en tu navegador:
+  </p>
+  <p style="font-size:12px;color:#B8862B;word-break:break-all;margin:0 0 24px">{{ .ConfirmationURL }}</p>
+
+  <hr style="border:none;border-top:1px solid #e5e5e5;margin:24px 0">
+
+  <p style="font-size:12px;line-height:1.5;color:#999;margin:0">
+    Si no has pedido cambiarla, ignora este correo: tu contraseña seguirá siendo la misma.
+  </p>
+</div>

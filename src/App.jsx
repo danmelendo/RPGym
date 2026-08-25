@@ -3480,9 +3480,13 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
       <div className="fh-card" style={{ padding:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:9, fontSize:14, marginBottom:8 }}><Lock size={16} color="var(--jade)"/> Tus datos son tuyos</div>
         <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.5 }}>
-          RPGym <b style={{ color:"var(--txt)" }}>no recoge, no envía y no comparte</b> ningún dato. Todo lo que escribes
-          se queda en este móvil: no hay servidores, ni cuentas, ni publicidad, ni analítica. La app funciona
-          entera sin conexión.
+          Sin cuenta, RPGym <b style={{ color:"var(--txt)" }}>no envía nada a ningún sitio</b>: todo lo que escribes se
+          queda en este móvil y la app funciona entera sin conexión. No hay publicidad ni analítica.
+        </p>
+        <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.5 }}>
+          Si creas una cuenta (opcional), se suben <b style={{ color:"var(--txt)" }}>solo</b> tu nombre, tu usuario,
+          tu nivel, tu XP, tus entrenos y tu racha, para la clasificación. <b style={{ color:"var(--txt)" }}>Nunca</b> salen
+          de aquí tu peso, tus medidas, tu edad, tus rutinas, tu dieta ni los datos del ciclo.
         </p>
         <p style={{ fontSize:11.5, color:"var(--faint)", margin:0, lineHeight:1.5 }}>
           Puedes borrarlo todo cuando quieras desde <b style={{ color:"var(--muted)" }}>Borrar progreso</b>, o desinstalando la app.

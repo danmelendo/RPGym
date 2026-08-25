@@ -1,54 +1,25 @@
 # TODO — siguiente paso inmediato
 
-## 🔴 1. Configurar Brevo como SMTP  ← DECIDIDO, pendiente de hacer
+## 🟡 1. Traducir los correos (están en inglés)
 
-Sin esto **el registro no funciona con gente de fuera**: el servicio de correo interno
-de Supabase solo entrega a miembros de tu organización (y solo 2 envíos/hora). Por eso
-saltó `over_email_send_rate_limit` en la prueba.
+Los correos de confirmación llegan con la plantilla por defecto de Supabase, en inglés
+(*"Confirm your email address"*), en una app que está entera en español. Es lo primero
+que van a ver tus amigos.
 
-Brevo: 300 correos/día gratis, sin tarjeta y **sin necesidad de dominio propio**.
+Ya están escritas en [supabase/email-templates/](supabase/email-templates/): solo hay
+que pegarlas en *Authentication → Email Templates*.
 
-**a) En Brevo** (<https://www.brevo.com>)
-1. Crear cuenta.
-2. *Senders, Domains & Dedicated IPs → Senders*: añadir y **verificar
-   `danmelendo@gmail.com`** como remitente (llega un correo de confirmación).
-3. *Transactional → Settings → Configuration → **SMTP relay*** → **Generate a new SMTP
-   key**. Copiar el **login SMTP** y la **clave** en ese momento: luego Brevo solo
-   muestra los últimos dígitos.
-   ⚠️ **Que sea la SMTP key, no la API key.** Están juntas en el panel, se parecen, y
-   la API key no vale para SMTP: falla con un error de autenticación poco claro.
+| Plantilla de Supabase | Fichero | Asunto sugerido |
+|---|---|---|
+| Confirm signup | `confirmar-registro.html` | Confirma tu cuenta de RPGym |
+| Reset password | `restablecer-contrasena.html` | Restablece tu contraseña de RPGym |
+| Change Email Address | `cambiar-correo.html` | Confirma tu nuevo correo de RPGym |
+| Magic Link | `enlace-magico.html` | Entra en RPGym |
 
-**b) En Supabase**
-<https://supabase.com/dashboard/project/svmxsnvjjddxgolkjwjb/settings/auth>
-→ **SMTP Settings** → *Enable Custom SMTP*:
+## 🟡 2. Compilar y repartir
 
-| Campo | Valor |
-|---|---|
-| Host | `smtp-relay.brevo.com` |
-| Port | `587` |
-| Username | el login SMTP de Brevo |
-| Password | la **SMTP key** de Brevo |
-| Sender email | `danmelendo@gmail.com` — **debe ser el verificado en el paso a.2** |
-| Sender name | `RPGym` |
-
-> ⚠️ Si el *Sender email* de Supabase no coincide con un remitente verificado en Brevo,
-> la conexión se establece pero Brevo rechaza cada correo — y desde Supabase parece que
-> funciona. Es el fallo más habitual después de confundir las claves.
-
-**c)** *Authentication → Rate Limits*: al activar SMTP propio Supabase deja 30/hora por
-defecto. Súbelo si os quedáis cortos.
-
-**d)** Avisar para probar el registro real de punta a punta: alta, confirmación, los dos
-Danieles con cuentas de verdad, keep-alive y clasificación.
-
-> Si algún día compras un dominio, cambia a **Resend**: mejor servicio y más integrado
-> con Supabase (3.000/mes), pero su plan gratuito **exige dominio verificado**, por eso
-> no encaja ahora.
-
-## 🟡 2. Después
-
-- [ ] Registrar tu usuario real y comprobar que sales en la clasificación.
-- [ ] Regenerar el APK **con** credenciales (`npm run apk`) y probarlo en el móvil.
+- [ ] `npm run apk` (ahora sí con `.env`, así que llevará la nube activa).
+- [ ] Probarlo en el móvil: registro real y clasificación.
 - [ ] Publicarlo como GitHub Release y registrar la versión en `app_versions`:
       ```bash
       gh release create v1.0.0 android/app/build/outputs/apk/debug/app-debug.apk         --title "RPGym 1.0.0" --notes "Primera versión con cuentas"
@@ -56,12 +27,8 @@ Danieles con cuentas de verdad, keep-alive y clasificación.
 - [ ] Subir a la vez `APP_VERSION_CODE` en [src/App.jsx](src/App.jsx) y `versionCode`
       en [android/version.properties](android/version.properties).
 
-## 🟠 3. Antes de repartirlo a los amigos
+## 🟠 3. Higiene pendiente
 
-- [ ] **Reescribir `Ajustes → Privacidad`** en [src/App.jsx](src/App.jsx) y
-      [public/privacidad.html](public/privacidad.html). Prometen que *"no se recoge, no
-      se envía y no se comparte ningún dato"* y que *"no hay servidores, ni cuentas"*.
-      Con la nube activa **es falso**, y es lo que van a leer tus amigos.
 - [ ] **Rotar la contraseña de la base de datos**: se compartió por chat para aplicar la
       migración. *Settings → Database → Reset password*. La app **no la usa** (solo la
       anon key), así que rotarla no rompe nada.
@@ -88,6 +55,17 @@ rutina de un amigo → avisos → entrenar juntos.
 ---
 
 ## ✅ Hecho
+
+- **SMTP de Brevo funcionando de punta a punta**: alta real, correo de confirmación
+  entregado **en bandeja de entrada, no en spam** (Brevo reescribe el remitente a su
+  propio dominio, así que no hay conflicto de DMARC con gmail.com).
+- **Ciclo completo verificado** contra el proyecto real: alta → confirmación → login →
+  reserva de nombre → keep-alive → clasificación. Los dos Danieles funcionan: el segundo
+  es rechazado y entra como `@daniel2`. Un usuario **no puede** editar el perfil de otro
+  (RLS). Cuentas de prueba borradas: la base quedó en 0 perfiles y 0 usuarios.
+- **Texto de privacidad reescrito** ([public/privacidad.html](public/privacidad.html) y
+  `Ajustes → Privacidad`): ahora dice la verdad sobre la cuenta opcional, qué se sube,
+  qué no sale nunca del móvil, y que Supabase (Alemania) y Brevo son los proveedores.
 
 - Migración de la fase 1 **aplicada** en `svmxsnvjjddxgolkjwjb` (eu-central-1,
   PostgreSQL 17.6) y registrada en `supabase_migrations.schema_migrations`.
