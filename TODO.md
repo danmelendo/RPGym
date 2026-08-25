@@ -1,56 +1,42 @@
 # TODO — siguiente paso inmediato
 
-## 🔴 1. Configurar un SMTP propio (el registro no funciona sin esto)
+## 🔴 1. Configurar Brevo como SMTP  ← DECIDIDO, pendiente de hacer
 
-Se mantiene la verificación por correo, así que hace falta un SMTP externo. **No es
-opcional**, y no solo por el límite:
+Sin esto **el registro no funciona con gente de fuera**: el servicio de correo interno
+de Supabase solo entrega a miembros de tu organización (y solo 2 envíos/hora). Por eso
+saltó `over_email_send_rate_limit` en la prueba.
 
-| | Servicio interno de Supabase | Con SMTP propio |
-|---|---|---|
-| Envíos | **2 por hora** | 300/día con Brevo |
-| Destinatarios | **Solo miembros de tu organización en Supabase** | Cualquiera |
+Brevo: 300 correos/día gratis, sin tarjeta y **sin necesidad de dominio propio**.
 
-Ese segundo punto es el que de verdad bloquea: con el servicio interno **tus amigos no
-recibirían el correo de confirmación**, por muchos envíos que quedaran. Por eso saltó
-`over_email_send_rate_limit` en la prueba.
+**a) En Brevo** (<https://www.brevo.com>)
+1. Crear cuenta.
+2. *Senders, Domains & Dedicated IPs → Senders*: añadir y **verificar
+   `danmelendo@gmail.com`** como remitente (llega un correo de confirmación).
+3. *SMTP & API → SMTP*: copiar el **login SMTP** y generar una **SMTP key**
+   (no es la contraseña de la cuenta).
 
-### Opción recomendada: Brevo (gratis, sin dominio propio)
+**b) En Supabase**
+<https://supabase.com/dashboard/project/svmxsnvjjddxgolkjwjb/settings/auth>
+→ **SMTP Settings** → *Enable Custom SMTP*:
 
-300 correos/día para siempre, sin tarjeta y **sin necesidad de tener un dominio** —
-basta con verificar una dirección de remitente. Está en la lista de proveedores
-compatibles de Supabase.
+| Campo | Valor |
+|---|---|
+| Host | `smtp-relay.brevo.com` |
+| Port | `587` |
+| Username | el login SMTP de Brevo |
+| Password | la **SMTP key** de Brevo |
+| Sender email | `danmelendo@gmail.com` (el verificado en el paso a.2) |
+| Sender name | `RPGym` |
 
-1. Crear cuenta en <https://www.brevo.com> y verificar `danmelendo@gmail.com` como
-   remitente (*Senders & IP → Senders*).
-2. *SMTP & API → SMTP*: apuntar el **SMTP key** (no es la contraseña de la cuenta).
-3. En Supabase: <https://supabase.com/dashboard/project/svmxsnvjjddxgolkjwjb/settings/auth>
-   → **SMTP Settings** → Enable, y rellenar:
+**c)** *Authentication → Rate Limits*: al activar SMTP propio Supabase deja 30/hora por
+defecto. Súbelo si os quedáis cortos.
 
-   | Campo | Valor |
-   |---|---|
-   | Host | `smtp-relay.brevo.com` |
-   | Port | `587` |
-   | Username | el login SMTP que da Brevo |
-   | Password | el **SMTP key** de Brevo |
-   | Sender email | `danmelendo@gmail.com` (el verificado) |
-   | Sender name | `RPGym` |
-
-4. *Authentication → Rate Limits*: al activar SMTP propio Supabase pone 30/hora por
-   defecto; súbelo si os quedáis cortos.
-
-> **Por qué no Resend**, que es el más integrado con Supabase: su plan gratis
-> (3.000/mes, 100/día) **exige un dominio verificado**. Como no tienes dominio propio,
-> te obligaría a comprar uno. Si algún día tienes dominio, es mejor opción que Brevo.
-
-> **Alternativa sin registrarte en nada**: SMTP de Gmail con una *contraseña de
-> aplicación* (`smtp.gmail.com:587`, requiere 2FA en la cuenta). Da unos 500 envíos
-> diarios y funciona, pero Google reescribe el remitente y no está en la lista de
-> proveedores soportados por Supabase. Sirve de apaño, no para dejarlo fijo.
-
-### Cuando esté puesto
-
-Avísame y pruebo el registro real de punta a punta: alta, confirmación, los dos
+**d)** Avisar para probar el registro real de punta a punta: alta, confirmación, los dos
 Danieles con cuentas de verdad, keep-alive y clasificación.
+
+> Si algún día compras un dominio, cambia a **Resend**: mejor servicio y más integrado
+> con Supabase (3.000/mes), pero su plan gratuito **exige dominio verificado**, por eso
+> no encaja ahora.
 
 ## 🟡 2. Después
 
