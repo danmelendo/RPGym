@@ -2485,6 +2485,7 @@ export default function App(){
   const [updateInfo, setUpdateInfo] = useState(null);
   const [publicadas, setPublicadas] = useState([]);   // ids de mis rutinas visibles para amigos
   const [quedadas, setQuedadas] = useState([]);
+  const [novedades, setNovedades] = useState([]);
   const [cargandoQuedadas, setCargandoQuedadas] = useState(false);
   const [draftIsNew, setDraftIsNew] = useState(false);
   const [toast, setToast] = useState(null);
@@ -2521,6 +2522,12 @@ export default function App(){
         if(vivo && pub.ok) setPublicadas(pub.ids);
         const q = await cloud.listarQuedadas();
         if(vivo && q.ok) setQuedadas(q.quedadas);
+        // Novedades desde la última visita. La marca es local: no hace falta
+        // guardar en el servidor cuándo abriste la app por última vez.
+        const desde = await loadGlobal("gym:ultimaVisita", null);
+        const nv = await cloud.novedades(desde);
+        if(vivo && nv.ok) setNovedades(nv.novedades);
+        saveGlobal("gym:ultimaVisita", new Date().toISOString());
       }
       const v = await cloud.versionMasNueva(APP_VERSION_CODE);
       if(vivo && v.ok && v.hayNueva) setUpdateInfo(v.version);
@@ -2835,7 +2842,7 @@ export default function App(){
       cloud.sincronizarPerfil({ level:finalLevel, xp:finalXp, totalWorkouts, bestStreak,
         displayName:state.profile?.name, appVersion:APP_VERSION_NAME });
       cloud.registrarEntreno({ clientId:`${record.date}-${session.startedAt}`,
-        day:record.date, xp:record.xp });
+        day:record.date, xp:record.xp, prs:prList.length });
     }
   }
 
@@ -2982,7 +2989,7 @@ export default function App(){
       <Toast toast={toast}/>
       <div className="fh-shell">
         {tab==="home" && <HomeView {...{ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines,
-          cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), quedadas }}/>}
+          cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), quedadas, novedades, onCerrarNovedades:()=>setNovedades([]) }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina }}/>}
         {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines }}/>}
         {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests }}/>}
@@ -3206,6 +3213,65 @@ function OnboardingWizard({ onDone, initial, importBackup }){
    Todo esto es OPCIONAL: sin credenciales de Supabase ni siquiera se muestra,
    y sin red la app entera sigue funcionando igual. Ver ROADMAP-SOCIAL.md.
    ========================================================================= */
+
+/* Novedades del círculo desde la última vez que abriste la app.
+   Se agrupan por persona: "Ana ha entrenado 3 veces" en vez de tres líneas. */
+function textoNovedad(n){
+  const quien = n.display_name || "@" + n.handle;
+  if (n.tipo === "amistad") return { icono: Users,       color: "var(--gold)",  txt: `${quien} está ahora en tu círculo` };
+  if (n.tipo === "quedada") return { icono: CalendarDays, color: "var(--sky)",   txt: `${quien} ha propuesto una quedada` };
+  if (n.tipo === "record")  return { icono: Crown,        color: "var(--gold)",  txt: `${quien} ha batido ${n.prs === 1 ? "un récord" : n.prs + " récords"}` };
+  return { icono: Dumbbell, color: "var(--jade)", txt: `${quien} ha entrenado` };
+}
+
+/* Agrupa los entrenos repetidos de la misma persona para no llenar la tarjeta. */
+function agruparNovedades(lista){
+  const entrenos = {}; const otras = [];
+  for (const n of lista) {
+    if (n.tipo === "entreno") {
+      const k = n.id;
+      entrenos[k] = entrenos[k] || { ...n, veces: 0 };
+      entrenos[k].veces++;
+      if (n.cuando > entrenos[k].cuando) entrenos[k].cuando = n.cuando;
+    } else otras.push(n);
+  }
+  return [...otras, ...Object.values(entrenos)].sort((a,b)=> (a.cuando < b.cuando ? 1 : -1)).slice(0, 8);
+}
+
+function NovedadesCard({ novedades, onCerrar, setTab }){
+  if (!novedades?.length) return null;
+  const lista = agruparNovedades(novedades);
+  return (
+    <div className="fh-card" style={{ padding:16, marginTop:12, borderColor:"var(--jade)" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:11 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <Users size={16} color="var(--jade)"/>
+          <span className="disp" style={{ fontWeight:600, fontSize:15 }}>Mientras no estabas</span>
+        </div>
+        <button onClick={onCerrar} aria-label="Cerrar novedades" style={{ background:"none", border:"none", padding:2, cursor:"pointer", color:"var(--faint)" }}><X size={15}/></button>
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+        {lista.map((n,i)=>{
+          const { icono:I, color, txt } = textoNovedad(n);
+          return (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ width:28, height:28, borderRadius:9, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <I size={13} color={color}/>
+              </div>
+              <div style={{ flex:1, minWidth:0, fontSize:12.5, color:"var(--txt)", lineHeight:1.4 }}>
+                {txt}{n.tipo === "entreno" && n.veces > 1 ? ` ${n.veces} veces` : ""}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <button className="fh-btn" onClick={()=>setTab("cuenta")}
+        style={{ width:"100%", marginTop:12, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:10, fontSize:12.5 }}>
+        Ver la clasificación
+      </button>
+    </div>
+  );
+}
 
 /* Fecha y hora de una quedada, en lenguaje normal: "hoy a las 19:00",
    "mañana a las 8:30", "el viernes a las 19:00". */
@@ -4197,7 +4263,7 @@ function CyclePhaseCard({ state, setTab }){
   );
 }
 
-function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas }){
+function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas, novedades, onCerrarNovedades }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const RankIcon=rank.icon;
@@ -4257,6 +4323,7 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
         </div>
       </div>
 
+      {cloudEnabled && perfil && <NovedadesCard novedades={novedades} onCerrar={onCerrarNovedades} setTab={setTab}/>}
       {cloudEnabled && perfil && <ProximaQuedada quedadas={quedadas} setTab={setTab}/>}
 
       {/* Racha (respeta descansos) */}

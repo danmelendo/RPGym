@@ -296,6 +296,20 @@ export async function rutinasDeAmigos(){
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
+/* --- Novedades del círculo ------------------------------------------------
+   Lo que ha pasado desde la última vez que abriste la app. Se derivan de los
+   datos que ya existen: no hay tabla de actividad que mantener ni proteger. */
+export async function novedades(desde){
+  if (!supabase) return sinNube;
+  try {
+    let q = supabase.from("novedades").select("*").order("cuando", { ascending:false }).limit(40);
+    if (desde) q = q.gt("cuando", desde);
+    const { data, error } = await q;
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, novedades:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
 /* --- Quedadas para ir juntos al gimnasio --------------------------------- */
 
 export async function listarQuedadas(){
@@ -370,13 +384,15 @@ export async function borrarAmigo(amigoId){
 /* Registra el XP de un entreno para las clasificaciones por periodo.
    Sube SOLO fecha y XP: el detalle del entreno no sale del móvil.
    client_id es el identificador local, para que reintentar no duplique. */
-export async function registrarEntreno({ clientId, day, xp }){
+export async function registrarEntreno({ clientId, day, xp, prs = 0 }){
   if (!supabase) return sinNube;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok:false, msg:"No hay sesión." };
     const { error } = await supabase.from("workout_points")
-      .insert({ user_id:user.id, client_id:String(clientId), day, xp:Math.max(0, Math.min(5000, Math.round(xp) || 0)) });
+      .insert({ user_id:user.id, client_id:String(clientId), day,
+                xp:Math.max(0, Math.min(5000, Math.round(xp) || 0)),
+                prs:Math.max(0, Math.min(50, Math.round(prs) || 0)) });   // solo cuántos, nunca de qué
     // 23505 = clave duplicada: ese entreno ya estaba registrado. No es un error.
     if (error && error.code !== "23505") return { ok:false, msg:traducir(error) };
     return { ok:true, yaEstaba: error?.code === "23505" };
