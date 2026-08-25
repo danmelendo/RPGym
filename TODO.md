@@ -12,8 +12,11 @@ Brevo: 300 correos/día gratis, sin tarjeta y **sin necesidad de dominio propio*
 1. Crear cuenta.
 2. *Senders, Domains & Dedicated IPs → Senders*: añadir y **verificar
    `danmelendo@gmail.com`** como remitente (llega un correo de confirmación).
-3. *SMTP & API → SMTP*: copiar el **login SMTP** y generar una **SMTP key**
-   (no es la contraseña de la cuenta).
+3. *Transactional → Settings → Configuration → **SMTP relay*** → **Generate a new SMTP
+   key**. Copiar el **login SMTP** y la **clave** en ese momento: luego Brevo solo
+   muestra los últimos dígitos.
+   ⚠️ **Que sea la SMTP key, no la API key.** Están juntas en el panel, se parecen, y
+   la API key no vale para SMTP: falla con un error de autenticación poco claro.
 
 **b) En Supabase**
 <https://supabase.com/dashboard/project/svmxsnvjjddxgolkjwjb/settings/auth>
@@ -25,8 +28,12 @@ Brevo: 300 correos/día gratis, sin tarjeta y **sin necesidad de dominio propio*
 | Port | `587` |
 | Username | el login SMTP de Brevo |
 | Password | la **SMTP key** de Brevo |
-| Sender email | `danmelendo@gmail.com` (el verificado en el paso a.2) |
+| Sender email | `danmelendo@gmail.com` — **debe ser el verificado en el paso a.2** |
 | Sender name | `RPGym` |
+
+> ⚠️ Si el *Sender email* de Supabase no coincide con un remitente verificado en Brevo,
+> la conexión se establece pero Brevo rechaza cada correo — y desde Supabase parece que
+> funciona. Es el fallo más habitual después de confundir las claves.
 
 **c)** *Authentication → Rate Limits*: al activar SMTP propio Supabase deja 30/hora por
 defecto. Súbelo si os quedáis cortos.
