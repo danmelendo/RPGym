@@ -2867,7 +2867,7 @@ export default function App(){
         {tab==="editor" && <RoutineBuilderView {...{ draft:routineDraft, setDraft:setRoutineDraft, onSave:saveRoutineFromEditor, onCancel:closeEditor, isNew:draftIsNew }}/>}
         {tab==="ajustes" && <SettingsView {...{ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup }}/>}
         {tab==="cuenta" && <AccountView {...{ state, level, setTab, session:cloudSession, perfil,
-          onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onSalir:salirCuenta, onRefrescar:(p)=>cloud.leaderboard(p) }}/>}
+          onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onSalir:salirCuenta, onRefrescar:(p,soloAmigos)=>cloud.leaderboard(p, soloAmigos) }}/>}
       </div>
 
       {tab!=="workout" && tab!=="results" && tab!=="editor" && (
@@ -3080,6 +3080,140 @@ function OnboardingWizard({ onDone, initial, importBackup }){
    y sin red la app entera sigue funcionando igual. Ver ROADMAP-SOCIAL.md.
    ========================================================================= */
 
+/* Sección de amigos: invitar por código y canjear el que te pasen.
+   Círculo cerrado, sin buscador de usuarios ni solicitudes pendientes. */
+function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar }){
+  const [modo, setModo] = useState(null);          // invitar | canjear
+  const [codigo, setCodigo] = useState("");
+  const [entrada, setEntrada] = useState("");
+  const [msg, setMsg] = useState(null);
+  const [cargando, setCargando] = useState(false);
+  const [confirmar, setConfirmar] = useState(null);
+
+  const puedeCompartir = typeof navigator !== "undefined" && !!navigator.share;
+  const invitacion = c => `¡Éntrale a RPGym conmigo! Instala la app y mete este código en Cuenta → Amigos:\n\n${c}\n\nAsí nos vemos en la clasificación.`;
+
+  async function invitar(){
+    setModo("invitar"); setMsg(null);
+    if (codigo) return;
+    setCargando(true);
+    const r = await cloud.crearInvitacion();
+    setCargando(false);
+    if (r.ok) setCodigo(r.code); else setMsg({ ok:false, t:r.msg });
+  }
+  async function copiar(){
+    try { await navigator.clipboard.writeText(invitacion(codigo)); setMsg({ ok:true, t:"Invitación copiada." }); }
+    catch { setMsg({ ok:false, t:"No se ha podido copiar. Selecciona el texto y cópialo a mano." }); }
+  }
+  async function enviar(){
+    try { await navigator.share({ title:"RPGym", text:invitacion(codigo) }); } catch {}
+  }
+  async function canjear(){
+    setCargando(true); setMsg(null);
+    const r = await cloud.canjearInvitacion(entrada);
+    setCargando(false);
+    if (!r.ok) { setMsg({ ok:false, t:r.msg }); return; }
+    setEntrada("");
+    setMsg({ ok:true, t: r.yaEra ? `Ya erais amigos, ${r.amigo?.display_name || "@"+r.amigo?.handle}.`
+                                 : `¡Ya sois amigos! ${r.amigo?.display_name || "@"+r.amigo?.handle} entra en tu clasificación.` });
+    onRefrescarAmigos();
+  }
+
+  const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
+
+  return (<>
+    <div style={sectionTitle}>AMIGOS {amigos.length > 0 && `· ${amigos.length}`}</div>
+    <div className="fh-card" style={{ padding:16 }}>
+      {amigos.length === 0 && !modo && (
+        <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
+          Todavía no tienes a nadie. Pásale tu código a quien quieras y apareceréis los dos en la clasificación.
+        </p>
+      )}
+
+      {amigos.map((a,i)=>(
+        <div key={a.id} style={{ display:"flex", alignItems:"center", gap:11, padding:"9px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+          <div style={{ width:34, height:34, borderRadius:10, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <User size={16} color="var(--gold)"/>
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:13.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.display_name || a.handle}</div>
+            <div className="mono" style={{ fontSize:11, color:"var(--faint)", marginTop:1 }}>@{a.handle} · nivel {a.level}</div>
+          </div>
+          <button onClick={()=>setConfirmar(confirmar===a.id?null:a.id)} aria-label={`Quitar a ${a.handle}`}
+            style={{ background:"var(--bg2)", border:"1px solid var(--line)", borderRadius:8, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--faint)", flexShrink:0 }}>
+            <X size={14}/>
+          </button>
+        </div>
+      ))}
+
+      {confirmar && (
+        <div className="fh-card" style={{ background:"var(--bg2)", padding:12, marginTop:10, display:"flex", alignItems:"center", gap:9, flexWrap:"wrap" }}>
+          <span style={{ fontSize:12.5, color:"var(--muted)", flex:1, minWidth:140 }}>¿Dejar de ser amigos? Podéis volver con otro código.</span>
+          <button className="fh-btn" onClick={()=>setConfirmar(null)} style={{ background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:"8px 13px", fontSize:12 }}>No</button>
+          <button className="fh-btn" onClick={()=>{ const id=confirmar; setConfirmar(null); onQuitar(id); }} style={{ background:"var(--crimson)", color:"#fff", padding:"8px 13px", fontSize:12 }}>Sí</button>
+        </div>
+      )}
+
+      <div style={{ display:"flex", gap:8, marginTop:amigos.length?13:0 }}>
+        <button className="fh-btn" onClick={invitar}
+          style={{ flex:1, background:modo==="invitar"?"var(--gold)":"var(--card2)", color:modo==="invitar"?"#0F131A":"var(--txt)", border:modo==="invitar"?"none":"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+          <Share2 size={14} color={modo==="invitar"?"#0F131A":"var(--gold)"}/> Invitar
+        </button>
+        <button className="fh-btn" onClick={()=>{ setModo(modo==="canjear"?null:"canjear"); setMsg(null); }}
+          style={{ flex:1, background:modo==="canjear"?"var(--jade)":"var(--card2)", color:modo==="canjear"?"#0F131A":"var(--txt)", border:modo==="canjear"?"none":"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+          <Plus size={15} color={modo==="canjear"?"#0F131A":"var(--jade)"}/> Tengo un código
+        </button>
+      </div>
+
+      {modo === "invitar" && (
+        <div className="fh-in" style={{ marginTop:12 }}>
+          {cargando && !codigo && <Empty text="Generando tu código…"/>}
+          {codigo && (<>
+            <div style={{ textAlign:"center", padding:"14px 10px", background:"var(--bg2)", border:"1px solid var(--gold)", borderRadius:12 }}>
+              <div style={{ fontSize:11, color:"var(--faint)", marginBottom:6, letterSpacing:".08em", fontWeight:700 }}>TU CÓDIGO</div>
+              <div className="mono" style={{ fontSize:30, fontWeight:700, color:"var(--gold)", letterSpacing:".14em" }}>{codigo}</div>
+            </div>
+            <div style={{ display:"flex", gap:8, marginTop:10 }}>
+              <button className="fh-btn" onClick={copiar} style={{ flex:1, background:"var(--gold)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                <Copy size={14}/> Copiar invitación
+              </button>
+              {puedeCompartir && (
+                <button className="fh-btn" onClick={enviar} style={{ flex:1, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  <Share2 size={14} color="var(--gold)"/> Enviar…
+                </button>
+              )}
+            </div>
+            <div style={{ fontSize:11, color:"var(--faint)", marginTop:9, lineHeight:1.45 }}>
+              Vale para 10 personas y caduca en 30 días. Quien lo meta en <b style={{ color:"var(--muted)" }}>Tengo un código</b> queda como amigo.
+            </div>
+          </>)}
+        </div>
+      )}
+
+      {modo === "canjear" && (
+        <div className="fh-in" style={{ marginTop:12 }}>
+          <input value={entrada} maxLength={6} inputMode="text" autoCapitalize="characters" autoCorrect="off"
+            onChange={e=>{ setEntrada(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"")); setMsg(null); }}
+            placeholder="ABC234" aria-label="Código de invitación"
+            style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:22, letterSpacing:".14em", fontWeight:700 }}/>
+          <button className="fh-btn" onClick={canjear} disabled={cargando || entrada.length !== 6}
+            style={{ width:"100%", marginTop:10, background:"var(--jade)", padding:12, fontSize:13, opacity:(cargando||entrada.length!==6)?.6:1 }}>
+            {cargando ? "Un momento…" : "Añadir amigo"}
+          </button>
+        </div>
+      )}
+
+      {msg && (
+        <div style={{ display:"flex", gap:9, alignItems:"flex-start", marginTop:12, padding:"10px 12px", background:"var(--bg2)", border:`1px solid ${msg.ok?"var(--jade)":"var(--crimson)"}`, borderRadius:11 }}>
+          {msg.ok ? <Check size={15} color="var(--jade)" style={{ flexShrink:0, marginTop:1 }}/>
+                  : <ShieldAlert size={15} color="var(--crimson)" style={{ flexShrink:0, marginTop:1 }}/>}
+          <div style={{ fontSize:12, color:"var(--txt)", lineHeight:1.45 }}>{msg.t}</div>
+        </div>
+      )}
+    </div>
+  </>);
+}
+
 function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onSalir, onRefrescar }){
   const [modo, setModo] = useState("entrar");          // entrar | registro
   const [f, setF] = useState({ email:"", password:"", handle:"", displayName:"" });
@@ -3088,6 +3222,8 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
   const [tabla, setTabla] = useState(null);
   const [cargandoTabla, setCargandoTabla] = useState(false);
   const [periodo, setPeriodo] = useState("semanal");
+  const [soloAmigos, setSoloAmigos] = useState(true);   // por defecto, tu círculo
+  const [amigos, setAmigos] = useState([]);
 
   const label = { padding:"0 2px 6px", fontSize:12, color:"var(--muted)", fontWeight:600 };
   const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
@@ -3104,14 +3240,24 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
     setF({ email:"", password:"", handle:"", displayName:"" });
   }
 
-  async function verTabla(p = periodo){
+  async function verTabla(p = periodo, amigosSolo = soloAmigos){
     setCargandoTabla(true);
-    const r = await onRefrescar(p);
+    const r = await onRefrescar(p, amigosSolo);
     setCargandoTabla(false);
     setTabla(r.ok ? r.filas : []);
     if (!r.ok) setMsg({ ok:false, t:r.msg });
   }
-  useEffect(()=>{ if (session && perfil) verTabla(periodo); /* eslint-disable-next-line */ }, [session?.user?.id, perfil?.handle, periodo]);
+  async function refrescarAmigos(){
+    const r = await cloud.listarAmigos();
+    if (r.ok) setAmigos(r.amigos);
+    verTabla();
+  }
+  async function quitarAmigo(id){
+    const r = await cloud.borrarAmigo(id);
+    if (r.ok) refrescarAmigos(); else setMsg({ ok:false, t:r.msg });
+  }
+  useEffect(()=>{ if (session && perfil) { verTabla(periodo, soloAmigos); } /* eslint-disable-next-line */ }, [session?.user?.id, perfil?.handle, periodo, soloAmigos]);
+  useEffect(()=>{ if (session && perfil) refrescarAmigos(); /* eslint-disable-next-line */ }, [session?.user?.id, perfil?.handle]);
 
   /* --- Sin sesión: entrar o registrarse --- */
   if (!session) return (
@@ -3209,7 +3355,15 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
         </div>
       )}
 
+      <AmigosPanel amigos={amigos} onRefrescarAmigos={refrescarAmigos} onQuitar={quitarAmigo}/>
+
       <div style={sectionTitle}>CLASIFICACIÓN</div>
+      <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+        {[[true,"Mi círculo"],[false,"Todos"]].map(([v,lab])=>(
+          <button key={lab} className="fh-btn" onClick={()=>setSoloAmigos(v)}
+            style={{ flex:1, padding:"8px", fontSize:12, background:soloAmigos===v?"var(--card2)":"var(--card)", color:soloAmigos===v?"var(--gold)":"var(--faint)", border:`1px solid ${soloAmigos===v?"var(--gold)":"var(--line)"}` }}>{lab}</button>
+        ))}
+      </div>
       <div style={{ display:"flex", gap:6, marginBottom:10 }}>
         {cloud.PERIODOS.map(p=>(
           <button key={p.id} className="fh-btn" onClick={()=>setPeriodo(p.id)}
@@ -3223,7 +3377,9 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
             : "XP total desde que empezaste, incluido lo de antes de tener cuenta."}
         </div>
         {cargandoTabla && <Empty text="Cargando clasificación…"/>}
-        {!cargandoTabla && tabla && tabla.length === 0 && <Empty text="Todavía no hay nadie más. Invita a alguien."/>}
+        {!cargandoTabla && tabla && tabla.length <= 1 && (
+          <Empty text={soloAmigos ? "Solo estás tú. Invita a alguien con tu código." : "Todavía no hay nadie más registrado."}/>
+        )}
         {!cargandoTabla && tabla && tabla.map((p,i)=>{
           const esYo = p.handle === yo;
           const sinActividad = periodo !== "historica" && !p.xp;

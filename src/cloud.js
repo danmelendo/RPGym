@@ -194,13 +194,67 @@ export const PERIODOS = [
   { id:"historica", vista:"leaderboard_historica", label:"Siempre" },
 ];
 
-export async function leaderboard(periodo = "semanal", limite = 50){
+/* soloAmigos: limita la tabla a tu círculo (tú + tus amigos). */
+export async function leaderboard(periodo = "semanal", soloAmigos = false, limite = 50){
   if (!supabase) return sinNube;
   const p = PERIODOS.find(x => x.id === periodo) || PERIODOS[0];
+  const vista = soloAmigos ? p.vista.replace("leaderboard_", "amigos_") : p.vista;
   try {
-    const { data, error } = await supabase.from(p.vista).select("*").limit(limite);
+    const { data, error } = await supabase.from(vista).select("*").limit(limite);
     if (error) return { ok:false, msg:traducir(error) };
     return { ok:true, filas:data || [], periodo:p.id };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* --- Amigos --------------------------------------------------------------
+   Círculo cerrado: se invita con un código de 6 caracteres que se manda por
+   WhatsApp. Quien lo canjea queda como amigo directamente, sin solicitudes. */
+
+export async function crearInvitacion(){
+  if (!supabase) return sinNube;
+  try {
+    const { data, error } = await supabase.rpc("crear_invitacion");
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, code:data };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function canjearInvitacion(code){
+  if (!supabase) return sinNube;
+  const c = String(code || "").trim().toUpperCase();
+  if (!/^[A-Z0-9]{6}$/.test(c)) return { ok:false, msg:"El código son 6 letras y números. Repásalo." };
+  try {
+    const { data, error } = await supabase.rpc("canjear_invitacion", { p_code: c });
+    if (error) return { ok:false, msg:traducir(error) };
+    // La función devuelve su propio {ok, msg} para los casos de negocio.
+    return data?.ok ? { ok:true, amigo:data.amigo, yaEra:!!data.yaEra } : { ok:false, msg:data?.msg || "Ese código no vale." };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function listarAmigos(){
+  if (!supabase) return sinNube;
+  try {
+    const { data: amistades, error } = await supabase.from("mis_amigos").select("amigo_id, created_at");
+    if (error) return { ok:false, msg:traducir(error) };
+    const ids = (amistades || []).map(a => a.amigo_id);
+    if (!ids.length) return { ok:true, amigos:[] };
+    const { data, error: e2 } = await supabase.from("profiles")
+      .select("id, handle, display_name, level, xp, total_workouts").in("id", ids);
+    if (e2) return { ok:false, msg:traducir(e2) };
+    return { ok:true, amigos:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function borrarAmigo(amigoId){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    // La fila está guardada con los uuid ordenados: hay que buscarla en ese orden.
+    const [a, b] = [user.id, amigoId].sort();
+    const { error } = await supabase.from("friendships").delete().eq("a", a).eq("b", b);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 

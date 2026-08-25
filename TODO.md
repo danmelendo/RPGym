@@ -56,6 +56,14 @@ rutina de un amigo → avisos → entrenar juntos.
 
 ## ✅ Hecho
 
+- **Clasificaciones semanal, mensual e histórica** (tabla `workout_points`: solo fecha
+  y XP por entreno, sin detalle) y **saludos** reescritos sin épica medieval.
+- **Amigos por código de invitación** de 6 caracteres, compartible por WhatsApp.
+  Verificado con tres usuarios: dos se hacen amigos, el tercero queda fuera de sus
+  clasificaciones. Probado que nadie puede autoañadirse como amigo (no hay política
+  de INSERT: solo la función de canje), ni listar códigos o amistades ajenas, ni
+  canjear su propio código.
+
 - **SMTP de Brevo funcionando de punta a punta**: alta real, correo de confirmación
   entregado **en bandeja de entrada, no en spam** (Brevo reescribe el remitente a su
   propio dominio, así que no hay conflicto de DMARC con gmail.com).

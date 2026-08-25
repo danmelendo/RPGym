@@ -110,7 +110,7 @@ Empezar por ahí y meter FCM solo si se echa de menos de verdad.
 |---|---|---|
 | **1. Cuenta** ✅ **HECHA** | Alta/login con **email + contraseña**, `handle` único (dos Danieles no chocan), perfil público mínimo, keep-alive, clasificación, SMTP propio y privacidad reescrita. | Se eligió contraseña en vez de magic link: en el gimnasio no apetece salir a buscar el correo para entrar. |
 | **2. Sincronización** | Subir/bajar rutinas y entrenos propios. Resolución de conflictos. | Es la fontanería de todo lo demás y, de regalo, resuelve el cambio de móvil sin copia manual. |
-| **3. Amigos** | Invitar por **código corto**, aceptar, lista de amigos, perfil del amigo con sus rutinas y su tabla de entrenos. | Ya se pueden mandar rutinas por código (`RPGYM-R1.`); esto lo hace cómodo, no lo inventa. |
+| **3. Amigos** ✅ **HECHA** | Invitar por **código de 6 caracteres** compartible por WhatsApp, lista de amigos, quitar amigo, y clasificaciones limitadas a tu círculo. Pendiente: ver las rutinas del amigo (va con la fase 4). | Sin solicitudes pendientes ni buscador, como se acordó para un círculo cerrado. |
 | **4. Hacer la rutina de un amigo** | Copiar su rutina y entrenarla, con atribución ("rutina de Dani") y XP extra la primera vez. | Reaprovecha `importRoutine` casi tal cual. |
 | **5. Avisos** | Primero **locales al abrir** (novedades desde la última visita). Push real con FCM solo si se echa en falta. | Da el valor sin arrastrar Google Play Services de entrada. **Ya hecho de aquí**: el aviso de fin de descanso, que es local y no necesita backend ni amigos. |
 | **6. Entrenar juntos** | Quedada con fecha/hora + sesión conjunta en tiempo real (Supabase Realtime). | Lo más caro y lo más frágil: al final. |
