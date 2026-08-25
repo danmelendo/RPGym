@@ -195,7 +195,7 @@ Guía completa y paso a paso en **[PLAYSTORE.md](PLAYSTORE.md)**. Resumen de lo 
 | [android/local.properties](android/local.properties) | Ruta local del SDK. |
 | [PLAYSTORE.md](PLAYSTORE.md) | Guía de publicación en Google Play (firma, versionado, AAB, migración de testers). |
 | [supabase/README.md](supabase/README.md) | **Empieza por aquí para la nube**: crear el proyecto, ejecutar el esquema y pegar las credenciales en `.env`. |
-| [supabase/schema.sql](supabase/schema.sql) | Tablas, funciones y políticas RLS de la fase 1. Idempotente. |
+| [supabase/migrations/](supabase/migrations/) | Tablas, funciones y políticas RLS. **Las migraciones van aquí**: es la única carpeta que mira la integración de GitHub de Supabase. |
 | [src/cloud.js](src/cloud.js) | Capa de Supabase. Todo devuelve `{ok,...}`, nunca lanza: sin red la app sigue igual. |
 | [ROADMAP-SOCIAL.md](ROADMAP-SOCIAL.md) | **Fase 1 hecha, 2-6 pendientes**: plan para la parte social con Supabase (amigos, rutinas compartidas, entrenos conjuntos, push), pensado para **uso privado sin Play**. Léelo antes de tocar nada de red. |
 | [android/version.properties](android/version.properties) | `versionCode` / `versionName` de la app. |

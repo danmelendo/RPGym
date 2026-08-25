@@ -15,10 +15,20 @@ local, exactamente como antes: ni siquiera aparece el botón de cuenta.**
 
 ## 2. Crear las tablas
 
-Copia [schema.sql](schema.sql) entero → **SQL Editor** → **Run**.
+El SQL vive como **migración** en
+[migrations/20260825000000_fase1_cuentas.sql](migrations/20260825000000_fase1_cuentas.sql).
+Hay dos formas de aplicarlo:
+
+- **Con la integración de GitHub** (si has enlazado el repo en *Project Settings →
+  Integrations → GitHub*): Supabase aplica solo lo que haya en `supabase/migrations/`
+  al hacer push a la rama de producción. Ojo: **solo mira esa carpeta**, por eso el
+  fichero está ahí y no suelto en `supabase/`.
+- **A mano**: copia el contenido de la migración → **SQL Editor** → **Run**.
 
 Es idempotente: puedes volver a ejecutarlo sin romper nada. Crea `profiles`,
 `heartbeat`, `app_versions`, la vista `leaderboard` y **todas las políticas RLS**.
+
+Para comprobar que se aplicó, en **Table Editor** deben aparecer las tres tablas.
 
 ## 3. Ajustar el login
 

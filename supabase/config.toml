@@ -1,0 +1,7 @@
+# Configuración del proyecto Supabase enlazado.
+# La integración de GitHub aplica automáticamente lo que haya en supabase/migrations/
+# al hacer push a la rama de producción.
+project_id = "svmxsnvjjddxgolkjwjb"
+
+[db]
+major_version = 17
