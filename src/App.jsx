@@ -1523,6 +1523,19 @@ const RANKS = [
 ];
 
 /* Ficha de personaje: cada ejercicio suma XP al atributo de su parte del cuerpo */
+/* Cuántas SESIONES incluyen cada ejercicio. No cuenta series: lo que interesa
+   es "cuál es su ejercicio", y repetir 4 series el mismo día no lo convierte en
+   favorito. Se sube junto a las marcas para poder señalarlo en la ficha. */
+function sesionesPorEjercicio(log){
+  const n = {};
+  (log||[]).forEach(rec=>(rec.exercises||[]).forEach(ex=>{
+    if(!ex?.name || !ex.logs?.length) return;
+    if(!ex.logs.some(l=>l.done)) return;
+    n[ex.name] = (n[ex.name] || 0) + 1;
+  }));
+  return n;
+}
+
 const BODY_MAP = {
   "Pecho":"Pecho", "Espalda":"Espalda", "Pierna":"Piernas", "Femoral":"Piernas", "Gemelo":"Piernas",
   "Hombro":"Hombros", "Bíceps":"Brazos", "Tríceps":"Brazos", "Brazo":"Brazos", "Core":"Core", "Cardio":"Aguante",
@@ -2228,8 +2241,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 6;
-const APP_VERSION_NAME = "1.0.5";
+const APP_VERSION_CODE = 7;
+const APP_VERSION_NAME = "1.0.6";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2501,6 +2514,7 @@ export default function App(){
   const [sinCuenta, setSinCuenta] = useState(false);       // ha elegido usar la app sin registrarse
   const [amigos, setAmigos] = useState([]);
   const [copiaNube, setCopiaNube] = useState(null);   // copia cifrada que ofrecer tras entrar
+  const [amigoAbierto, setAmigoAbierto] = useState(null);   // ficha de amigo que se está viendo
   const [superadoPor, setSuperadoPor] = useState([]);      // quién me ha adelantado a mí
   const [cargandoQuedadas, setCargandoQuedadas] = useState(false);
   const [draftIsNew, setDraftIsNew] = useState(false);
@@ -2905,15 +2919,16 @@ export default function App(){
     });
     setSession(null); setTab("results");
 
-    // Sube el estado de juego para la clasificación (si hay cuenta). Sin bloquear.
-    // El detalle del entreno NO sale del móvil: solo fecha y XP para los periodos.
+    // Sube el estado de juego (si hay cuenta). Sin bloquear.
+    // Desde la 1.0.x se sube también el detalle y las marcas: es lo que permite
+    // compararse. El ciclo y las rutinas privadas siguen sin salir del móvil.
     if(cloud.cloudEnabled && perfil){
       cloud.sincronizarPerfil({ level:finalLevel, xp:finalXp, totalWorkouts, bestStreak,
         displayName:state.profile?.name, appVersion:APP_VERSION_NAME });
       cloud.registrarEntreno({ clientId:`${record.date}-${session.startedAt}`,
         day:record.date, xp:record.xp, prs:prList.length,
         rutina:`${record.routineName} · ${record.dayName}`, detalle:record.exercises });
-      cloud.subirRecords(bests);
+      cloud.subirRecords(bests, sesionesPorEjercicio(nlog));
       // ¿He adelantado a alguien con los récords de hoy?
       if(prList.length){
         cloud.avisarAmigos("record");          // "X acaba de batir un récord"
@@ -2944,6 +2959,9 @@ export default function App(){
     const r = await cloud.listarAmigos();
     if(r.ok) setAmigos(r.amigos);
   }
+  function abrirAmigo(a){ setAmigoAbierto(a); setTab("amigo"); }
+  function cerrarAmigo(){ setAmigoAbierto(null); setTab("progreso"); }
+
   async function quitarAmigo(id){
     const r = await cloud.borrarAmigo(id);
     if(r.ok) refrescarAmigos();
@@ -3063,7 +3081,7 @@ export default function App(){
     await cloud.salir();
     setCloudSession(null); setPerfil(null);
     setAmigos([]); setQuedadas([]); setNovedades([]); setEntrenando([]); setSuperadoPor([]);
-    socialCargadoPara.current = null;
+    socialCargadoPara.current = null; setAmigoAbierto(null);
     setSinCuenta(false); setTab("home");    // al salir se vuelve a la pantalla de entrar
     showToast({ title:"Sesión cerrada", sub:"Tu progreso sigue en este móvil.", icon:Lock });
   }
@@ -3159,10 +3177,12 @@ export default function App(){
           copiaNube, onRestaurarNube:restaurarDeNube, onDescartarCopia:()=>setCopiaNube(null) }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina }}/>}
         {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines, setTab }}/>}
+        {tab==="amigo" && amigoAbierto && <AmigoView {...{ amigo:amigoAbierto, misBests:state.bests,
+          customRoutines, onVolver:cerrarAmigo, onToast:showToast }}/>}
         {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests, sesionConjunta }}/>}
         {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank }}/>}
         {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines,
-          cloudEnabled:cloud.cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos:refrescarAmigos, onQuitarAmigo:quitarAmigo,
+          cloudEnabled:cloud.cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos:refrescarAmigos, onQuitarAmigo:quitarAmigo, onAbrirAmigo:abrirAmigo,
           quedadas, onRefrescarQuedadas:refrescarQuedadas }}/>}
         {tab==="logros" && <AchievementsView {...{ state, level }}/>}
         {tab==="dieta" && <DietView {...{ state, useCheat, mealPlan, saveMealPlan, excludes, setExcludes, setTab, customDiet, saveCustomDiet }}/>}
@@ -3753,7 +3773,13 @@ function QuedadasPanel({ quedadas, onRefrescar, cargando, modo="lista" }){
   const soloCrear = modo === "crear";
 
   return (<>
-    <div style={sectionTitle}>{soloCrear ? "PROPONER UNA QUEDADA" : `QUEDADAS ${quedadas.length > 0 ? `· ${quedadas.length}` : ""}`}</div>
+    <div style={sectionTitle}>
+      {soloCrear ? "PROPONER UNA QUEDADA"
+        : `QUEDADAS ${quedadas.length > 0 ? `· ${quedadas.length}` : ""}`}
+      {!soloCrear && quedadas.some(q=>q.mi_respuesta==="invitado") && (
+        <span style={{ color:"var(--gold)" }}> · TE ESPERAN</span>
+      )}
+    </div>
     <div className="fh-card" style={{ padding:16 }}>
       {soloCrear && !creando && (
         <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
@@ -3771,8 +3797,15 @@ function QuedadasPanel({ quedadas, onRefrescar, cargando, modo="lista" }){
       {!soloCrear && quedadas.map((q,i)=>{
         const voy = q.mi_respuesta === "voy";
         const no  = q.mi_respuesta === "no";
+        // 'invitado' = te han llamado a ti por tu nombre y aún no has contestado.
+        const invitado = q.mi_respuesta === "invitado";
         return (
           <div key={q.id} style={{ padding:"11px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+            {invitado && (
+              <div style={{ display:"inline-flex", alignItems:"center", gap:5, marginBottom:7, padding:"3px 9px", borderRadius:999, background:"rgba(232,176,75,.15)", border:"1px solid var(--gold)", color:"var(--gold)", fontSize:10.5, fontWeight:700, letterSpacing:".04em" }}>
+                <User size={11}/> TE HA INVITADO
+              </div>
+            )}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
               <div style={{ flex:1, minWidth:0 }}>
                 <div className="disp" style={{ fontSize:14.5, fontWeight:700 }}>{cuandoTexto(q.cuando)}</div>
@@ -3858,7 +3891,7 @@ function QuedadasPanel({ quedadas, onRefrescar, cargando, modo="lista" }){
   </>);
 }
 
-function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar }){
+function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar, onAbrir }){
   const [modo, setModo] = useState(null);          // invitar | canjear
   const [codigo, setCodigo] = useState("");
   const [entrada, setEntrada] = useState("");
@@ -3908,13 +3941,17 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar }){
 
       {amigos.map((a,i)=>(
         <div key={a.id} style={{ display:"flex", alignItems:"center", gap:11, padding:"9px 0", borderTop:i?"1px solid var(--line)":"none" }}>
-          <div style={{ width:34, height:34, borderRadius:10, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <User size={16} color="var(--gold)"/>
-          </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:13.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.display_name || a.handle}</div>
-            <div className="mono" style={{ fontSize:11, color:"var(--faint)", marginTop:1 }}>@{a.handle} · nivel {a.level}</div>
-          </div>
+          <button onClick={()=>onAbrir(a)} aria-label={`Ver la ficha de ${a.handle}`}
+            style={{ flex:1, minWidth:0, display:"flex", alignItems:"center", gap:11, background:"none", border:"none", padding:0, cursor:"pointer", textAlign:"left", color:"inherit" }}>
+            <div style={{ width:34, height:34, borderRadius:10, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <User size={16} color="var(--gold)"/>
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:13.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"var(--txt)" }}>{a.display_name || a.handle}</div>
+              <div className="mono" style={{ fontSize:11, color:"var(--faint)", marginTop:1 }}>@{a.handle} · nivel {a.level}</div>
+            </div>
+            <ChevronRight size={15} color="var(--faint)" style={{ flexShrink:0 }}/>
+          </button>
           <button onClick={()=>setConfirmar(confirmar===a.id?null:a.id)} aria-label={`Quitar a ${a.handle}`}
             style={{ background:"var(--bg2)", border:"1px solid var(--line)", borderRadius:8, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--faint)", flexShrink:0 }}>
             <X size={14}/>
@@ -3988,6 +4025,299 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar }){
       )}
     </div>
   </>);
+}
+
+/* Ficha de un amigo: su nivel, sus atributos, sus marcas comparadas con las
+   tuyas, y lo que puedes hacer con él (quedar y pasarle una rutina).
+
+   Los atributos NO los calcula el servidor: se sacan aquí cruzando sus marcas
+   con EX_MUSCLE y BODY_MAP, el mismo catálogo que usa tu propia ficha. Así el
+   servidor solo guarda "ejercicio + peso" y no necesita saber de músculos. */
+function AmigoView({ amigo, misBests, customRoutines, onVolver, onToast }){
+  const [ficha, setFicha] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [accion, setAccion] = useState(null);          // quedar | rutina
+  const [ocupado, setOcupado] = useState(false);
+  const [rutinaSel, setRutinaSel] = useState("");
+  const [grupoAbierto, setGrupoAbierto] = useState(null);
+  const [f, setF] = useState(()=>{
+    const d = new Date(); d.setDate(d.getDate()+1); d.setHours(19,0,0,0);
+    return { fecha: isoOf(d), hora:"19:00", lugar:"", nota:"" };
+  });
+
+  useEffect(()=>{ let vivo=true; (async()=>{
+    setCargando(true);
+    const r = await cloud.fichaDeAmigo(amigo.id);
+    if(!vivo) return;
+    setCargando(false);
+    if(r.ok) setFicha(r);
+  })(); return ()=>{ vivo=false; }; }, [amigo.id]);
+
+  const perfilAmigo = ficha?.perfil || amigo;
+  const nombre = perfilAmigo.display_name || perfilAmigo.handle;
+  const nivel = perfilAmigo.level || 1;
+  const rango = rankFor(nivel);
+  const RankIcon = rango.icon;
+  const xpInto = (perfilAmigo.xp||0) - cumXpForLevel(nivel);
+  const xpNeed = Math.max(1, cumXpForLevel(nivel+1) - cumXpForLevel(nivel));
+
+  /* Atributos a partir de sus marcas. Un ejercicio con marca cuenta como
+     "trabajado": en el servidor no hay volumen, así que se mide amplitud
+     (cuántos ejercicios del grupo domina) y no kilos acumulados. */
+  const porGrupo = {};
+  BODY_STATS.forEach(g=>{ porGrupo[g.id] = { hechos:[], total:(EXERCISES_BY_GROUP[g.id]||[]).length }; });
+  (ficha?.records || []).forEach(r=>{
+    const grupo = BODY_MAP[EX_MUSCLE[r.ejercicio]];
+    if(grupo && porGrupo[grupo]) porGrupo[grupo].hechos.push(r);
+  });
+
+  /* Mis marcas: manda el historial de este móvil, y las del servidor rellenan
+     los huecos (móvil recién instalado, o marcas de antes de restaurar). */
+  const mis = { ...(ficha?.mios || {}), ...(misBests || {}) };
+
+  // Marcas comparadas: solo los ejercicios que hacéis los dos.
+  const comunes = (ficha?.records || [])
+    .filter(r => (mis[r.ejercicio] || 0) > 0)
+    .map(r => ({ ...r, mio: mis[r.ejercicio], dif: r.peso - mis[r.ejercicio] }));
+  const meGana = comunes.filter(c => c.dif > 0).sort((a,b)=>b.dif-a.dif);
+  const leGano = comunes.filter(c => c.dif < 0).sort((a,b)=>a.dif-b.dif);
+  const suyasSolas = (ficha?.records || []).filter(r => !(mis[r.ejercicio] > 0));
+
+  const mias = (customRoutines || []).filter(r => !r.privada);
+
+  async function quedar(){
+    setOcupado(true);
+    const cuando = new Date(`${f.fecha}T${f.hora}:00`).toISOString();
+    const r = await cloud.quedarCon({ amigoId:amigo.id, cuando, lugar:f.lugar, nota:f.nota });
+    setOcupado(false);
+    if(!r.ok){ onToast({ title:"No se ha podido", sub:r.msg, icon:ShieldAlert }); return; }
+    cloud.avisarAmigos("quedada");
+    setAccion(null);
+    onToast({ title:"Quedada propuesta", sub:`${nombre} la ve en su Inicio y te contesta.`, icon:CalendarDays });
+  }
+
+  async function pasarRutina(){
+    const rutina = mias.find(r => r.id === rutinaSel);
+    if(!rutina) return;
+    const codigo = encodeRoutine(rutina);
+    const texto = `Te paso mi rutina de RPGym "${rutina.name}". Ábrela en Rutinas → Importar rutina y pega esto:\n\n${codigo}`;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try { await navigator.share({ title:`Rutina RPGym: ${rutina.name}`, text:texto }); return; } catch {}
+    }
+    try {
+      await navigator.clipboard.writeText(texto);
+      onToast({ title:"Código copiado", sub:`Pégaselo a ${nombre} por donde queráis.`, icon:Copy });
+    } catch {
+      onToast({ title:"Cópialo a mano", sub:"Tu navegador no deja copiar solo.", icon:Info });
+    }
+  }
+
+  const label = { padding:"0 2px 6px", fontSize:12, color:"var(--muted)", fontWeight:600 };
+  const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
+
+  return (
+    <div className="fh-in">
+      <header style={{ padding:"22px 2px 12px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={onVolver} aria-label="Volver a amigos"
+          style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
+        <div style={{ minWidth:0 }}>
+          <h1 style={{ margin:0, fontSize:22, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nombre}</h1>
+          <p className="mono" style={{ margin:"3px 0 0", fontSize:12.5, color:"var(--muted)" }}>@{perfilAmigo.handle}</p>
+        </div>
+      </header>
+
+      <div className="fh-card fh-framed" style={{ padding:20, display:"flex", alignItems:"center", gap:18 }}>
+        <Ring pct={xpInto/xpNeed} size={104} stroke={9} color={rango.color}>
+          <RankIcon size={19} color={rango.color}/>
+          <div className="cinzel" style={{ fontSize:25, fontWeight:700, lineHeight:1, marginTop:2 }}>{nivel}</div>
+          <div style={{ fontSize:9, color:"var(--muted)", fontWeight:600 }}>NIVEL</div>
+        </Ring>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div className="cinzel" style={{ fontSize:19, fontWeight:700, color:rango.color }}>{rango.name}</div>
+          <div style={{ fontSize:12, color:"var(--muted)", marginTop:3 }}>{perfilAmigo.total_workouts || 0} entrenos · {perfilAmigo.xp || 0} XP</div>
+          {perfilAmigo.best_streak > 0 && (
+            <div style={{ fontSize:11.5, color:"var(--faint)", marginTop:4 }}>Mejor racha: {perfilAmigo.best_streak} días</div>
+          )}
+        </div>
+      </div>
+
+      {/* --- Qué puedes hacer con él --- */}
+      <div style={{ display:"flex", gap:8, marginTop:12 }}>
+        <button className="fh-btn" onClick={()=>setAccion(accion==="quedar"?null:"quedar")}
+          style={{ flex:1, background:accion==="quedar"?"var(--gold)":"var(--card2)", color:accion==="quedar"?"#0F131A":"var(--txt)", border:accion==="quedar"?"none":"1px solid var(--line2)", padding:12, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+          <CalendarDays size={15}/> Quedar
+        </button>
+        <button className="fh-btn" onClick={()=>setAccion(accion==="rutina"?null:"rutina")}
+          style={{ flex:1, background:accion==="rutina"?"var(--gold)":"var(--card2)", color:accion==="rutina"?"#0F131A":"var(--txt)", border:accion==="rutina"?"none":"1px solid var(--line2)", padding:12, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+          <Share2 size={15}/> Pasarle una rutina
+        </button>
+      </div>
+
+      {accion === "quedar" && (
+        <div className="fh-card fh-in" style={{ padding:16, marginTop:10 }}>
+          <div style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
+            Le llega la invitación a su Inicio y contesta desde ahí. Tus demás amigos también la ven y pueden apuntarse.
+          </div>
+          <div style={{ display:"flex", gap:10 }}>
+            <div style={{ flex:1.4 }}>
+              <div style={label}>Día</div>
+              <input type="date" value={f.fecha} min={todayISO()} onChange={e=>setF(p=>({ ...p, fecha:e.target.value }))} style={{ textAlign:"left" }}/>
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={label}>Hora</div>
+              <input type="time" value={f.hora} onChange={e=>setF(p=>({ ...p, hora:e.target.value }))} style={{ textAlign:"left" }}/>
+            </div>
+          </div>
+          <div style={{ ...label, marginTop:12 }}>Dónde <span style={{ color:"var(--faint)", fontWeight:400 }}>(opcional)</span></div>
+          <input value={f.lugar} maxLength={60} onChange={e=>setF(p=>({ ...p, lugar:e.target.value }))} placeholder="El gimnasio de siempre" style={{ textAlign:"left" }}/>
+          <div style={{ ...label, marginTop:12 }}>Nota <span style={{ color:"var(--faint)", fontWeight:400 }}>(opcional)</span></div>
+          <input value={f.nota} maxLength={200} onChange={e=>setF(p=>({ ...p, nota:e.target.value }))} placeholder="Toca pierna, avisado quedas" style={{ textAlign:"left" }}/>
+          <button className="fh-btn" onClick={quedar} disabled={ocupado}
+            style={{ width:"100%", marginTop:13, background:"var(--gold)", padding:12, fontSize:13, opacity:ocupado?.6:1 }}>
+            {ocupado ? "Un momento…" : `Invitar a ${nombre}`}
+          </button>
+        </div>
+      )}
+
+      {accion === "rutina" && (
+        <div className="fh-card fh-in" style={{ padding:16, marginTop:10 }}>
+          {!mias.length ? (
+            <p style={{ fontSize:12.5, color:"var(--muted)", margin:0, lineHeight:1.5 }}>
+              No tienes ninguna rutina propia todavía. Móntala en <b style={{ color:"var(--txt)" }}>Rutinas → Crear rutina</b> y podrás pasársela.
+            </p>
+          ) : (<>
+            <div style={label}>Cuál le mandas</div>
+            <select value={rutinaSel} onChange={e=>setRutinaSel(e.target.value)} style={{ textAlign:"left" }}>
+              <option value="">Elige una rutina…</option>
+              {mias.map(r=><option key={r.id} value={r.id}>{r.name} · {r.days?.length || 0} días</option>)}
+            </select>
+            <p style={{ fontSize:11.5, color:"var(--faint)", margin:"10px 2px 12px", lineHeight:1.45 }}>
+              Va como un código de texto: ni servidores ni cuentas de por medio. {nombre} lo pega en <b style={{ color:"var(--muted)" }}>Rutinas → Importar rutina</b>.
+            </p>
+            <button className="fh-btn" onClick={pasarRutina} disabled={!rutinaSel}
+              style={{ width:"100%", background:rutinaSel?"var(--gold)":"var(--card2)", color:rutinaSel?"#0F131A":"var(--faint)", padding:12, fontSize:13 }}>
+              Mandarle el código
+            </button>
+          </>)}
+        </div>
+      )}
+
+      {cargando && <Empty text="Cargando su ficha…"/>}
+
+      {!cargando && ficha && (<>
+        {/* --- Atributos: SOLO lo que hace de verdad ---
+            Nada de listar lo que le falta: aquí se viene a ver qué hace, para
+            proponerle el mismo ejercicio. El favorito (el que más repite) va
+            marcado, que es el que seguro que acepta. */}
+        <div style={sectionTitle}>QUÉ ENTRENA</div>
+        <div className="fh-card" style={{ padding:16 }}>
+          {BODY_STATS.filter(g=>porGrupo[g.id].hechos.length).map((g,i)=>{
+            const d = porGrupo[g.id];
+            const Icon = g.icon;
+            const abierto = grupoAbierto === g.id;
+            // Favorito = el que más sesiones acumula; a igualdad, el más pesado.
+            const orden = d.hechos.slice().sort((a,b)=> (b.veces||0)-(a.veces||0) || b.peso-a.peso);
+            const favorito = orden[0];
+            return (
+              <div key={g.id} style={{ borderTop:i?"1px solid var(--line)":"none" }}>
+                <button onClick={()=>setGrupoAbierto(abierto?null:g.id)}
+                  style={{ width:"100%", background:"none", border:"none", padding:"11px 0", cursor:"pointer", color:"inherit", textAlign:"left", display:"flex", alignItems:"center", gap:10 }}>
+                  <Icon size={15} color={g.color} style={{ flexShrink:0 }}/>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:600 }}>{g.id}</div>
+                    {favorito && (
+                      <div style={{ fontSize:11, color:"var(--faint)", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        Su fuerte: {favorito.ejercicio}
+                      </div>
+                    )}
+                  </div>
+                  <span className="mono" style={{ fontSize:11.5, color:"var(--faint)", flexShrink:0 }}>{d.hechos.length}</span>
+                  <ChevronRight size={14} color="var(--faint)" style={{ flexShrink:0, transform:abierto?"rotate(90deg)":"none", transition:"transform .2s" }}/>
+                </button>
+
+                {abierto && (
+                  <div className="fh-in" style={{ paddingBottom:11 }}>
+                    {orden.map(r=>{
+                      const esFav = r.ejercicio === favorito.ejercicio;
+                      const miMarca = mis[r.ejercicio] || 0;
+                      return (
+                        <div key={r.ejercicio} style={{ display:"flex", alignItems:"center", gap:9, padding:"7px 10px", marginTop:5, borderRadius:9,
+                          background: esFav ? "rgba(232,176,75,.13)" : "var(--bg2)",
+                          border: `1px solid ${esFav ? "var(--gold)" : "transparent"}` }}>
+                          {esFav && <Star size={12} color="var(--gold)" style={{ flexShrink:0 }}/>}
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:12.5, fontWeight:esFav?700:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.ejercicio}</div>
+                            <div style={{ fontSize:10.5, color:"var(--faint)", marginTop:2 }}>
+                              {r.veces ? `${r.veces} ${r.veces===1?"sesión":"sesiones"}` : "sin contar"}
+                              {miMarca ? ` · tú ${miMarca} kg` : " · tú no lo haces"}
+                            </div>
+                          </div>
+                          <span className="mono" style={{ fontSize:12, color:esFav?"var(--gold)":"var(--muted)", flexShrink:0 }}>{r.peso} kg</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {!BODY_STATS.some(g=>porGrupo[g.id].hechos.length) && (
+            <Empty text="Todavía no ha marcado ningún ejercicio."/>
+          )}
+          <div style={{ fontSize:11, color:"var(--faint)", marginTop:11, lineHeight:1.45 }}>
+            Toca un grupo para ver qué ejercicios hace. El marcado con estrella es el que más repite: buen candidato para quedar a hacerlo juntos.
+          </div>
+        </div>
+
+        {/* --- Marcas --- */}
+        <div style={sectionTitle}>SUS MARCAS {ficha.records.length > 0 && `· ${ficha.records.length}`}</div>
+        <div className="fh-card" style={{ padding:16 }}>
+          {!ficha.records.length && <Empty text="Todavía no ha subido ninguna marca."/>}
+
+          {meGana.length > 0 && (<>
+            <div style={{ fontSize:11.5, color:"var(--ember)", fontWeight:700, marginBottom:8 }}>TE GANA EN {meGana.length}</div>
+            {meGana.map((c,i)=>(
+              <div key={c.ejercicio} style={{ display:"flex", alignItems:"center", gap:9, padding:"7px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+                <ArrowUp size={13} color="var(--ember)" style={{ flexShrink:0 }}/>
+                <div style={{ flex:1, minWidth:0, fontSize:12.5, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.ejercicio}</div>
+                <span className="mono" style={{ fontSize:12, color:"var(--ember)", flexShrink:0 }}>{c.peso} kg</span>
+                <span className="mono" style={{ fontSize:11, color:"var(--faint)", flexShrink:0 }}>(tú {c.mio})</span>
+              </div>
+            ))}
+          </>)}
+
+          {leGano.length > 0 && (<>
+            <div style={{ fontSize:11.5, color:"var(--jade)", fontWeight:700, margin:`${meGana.length?16:0}px 0 8px` }}>LE GANAS EN {leGano.length}</div>
+            {leGano.map((c,i)=>(
+              <div key={c.ejercicio} style={{ display:"flex", alignItems:"center", gap:9, padding:"7px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+                <ArrowDown size={13} color="var(--jade)" style={{ flexShrink:0 }}/>
+                <div style={{ flex:1, minWidth:0, fontSize:12.5, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.ejercicio}</div>
+                <span className="mono" style={{ fontSize:12, color:"var(--muted)", flexShrink:0 }}>{c.peso} kg</span>
+                <span className="mono" style={{ fontSize:11, color:"var(--jade)", flexShrink:0 }}>(tú {c.mio})</span>
+              </div>
+            ))}
+          </>)}
+
+          {suyasSolas.length > 0 && (<>
+            <div style={{ fontSize:11.5, color:"var(--faint)", fontWeight:700, margin:`${comunes.length?16:0}px 0 8px` }}>
+              EJERCICIOS QUE TÚ NO HACES · {suyasSolas.length}
+            </div>
+            {suyasSolas.slice(0,12).map((r,i)=>(
+              <div key={r.ejercicio} style={{ display:"flex", alignItems:"center", gap:9, padding:"7px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+                <div style={{ flex:1, minWidth:0, fontSize:12.5, color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.ejercicio}</div>
+                <span className="mono" style={{ fontSize:12, color:"var(--muted)", flexShrink:0 }}>{r.peso} kg</span>
+              </div>
+            ))}
+            {suyasSolas.length > 12 && (
+              <div style={{ fontSize:11, color:"var(--faint)", marginTop:8 }}>y {suyasSolas.length - 12} más.</div>
+            )}
+          </>)}
+        </div>
+      </>)}
+
+      {!cargando && !ficha && <Empty text="No se ha podido cargar su ficha. ¿Sigues sin conexión?"/>}
+    </div>
+  );
 }
 
 function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle, arranque, onSinCuenta, onRestaurarTexto }){
@@ -6210,7 +6540,7 @@ function CycleCalendar({ cycle }){
   );
 }
 
-function ProgressView({ state, log, measures, addMeasurement, customRoutines, cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos, onQuitarAmigo, quedadas, onRefrescarQuedadas }){
+function ProgressView({ state, log, measures, addMeasurement, customRoutines, cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos, onQuitarAmigo, onAbrirAmigo, quedadas, onRefrescarQuedadas }){
   const [form, setForm] = useState({ weightKg:"", chest:"", waist:"", arm:"" });
   const volData=log.slice(-12).map((s,i)=>({ name:`S${i+1}`, v:s.volume }));
   const weightData=measures.map(m=>({ name:m.date.slice(5), v:m.weightKg }));
@@ -6246,7 +6576,7 @@ function ProgressView({ state, log, measures, addMeasurement, customRoutines, cl
 
       {cloudEnabled && perfil && (
         <>
-          <AmigosPanel amigos={amigos} onRefrescarAmigos={onRefrescarAmigos} onQuitar={onQuitarAmigo}/>
+          <AmigosPanel amigos={amigos} onRefrescarAmigos={onRefrescarAmigos} onQuitar={onQuitarAmigo} onAbrir={onAbrirAmigo}/>
           <QuedadasPanel modo="crear" quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={false}/>
           <div style={{ fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" }}>TU PROGRESO</div>
         </>
@@ -6350,6 +6680,7 @@ function ProgressView({ state, log, measures, addMeasurement, customRoutines, cl
 function CharacterView({ state, level, rank, log, customRoutines, setTab }){
   const RankIcon=rank.icon;
   const [openStat, setOpenStat] = useState(null);
+  const [openEx, setOpenEx] = useState(null);   // ejercicio recomendado desplegado
   const weekSets=weeklySetsByGroup(log, state.weekStart);
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
 
@@ -6431,7 +6762,7 @@ function CharacterView({ state, level, rank, log, customRoutines, setTab }){
         </div>
         {stats.map(s=>{ const I=s.icon; const isOpen=openStat===s.id; return (
           <div key={s.id} className="fh-stat" style={{ flexDirection:"column", alignItems:"stretch" }}>
-            <button onClick={()=>setOpenStat(isOpen?null:s.id)} style={{ background:"none", border:"none", padding:0, cursor:"pointer", color:"var(--txt)", display:"flex", alignItems:"center", gap:12, textAlign:"left", width:"100%" }}>
+            <button onClick={()=>{ setOpenStat(isOpen?null:s.id); setOpenEx(null); }} style={{ background:"none", border:"none", padding:0, cursor:"pointer", color:"var(--txt)", display:"flex", alignItems:"center", gap:12, textAlign:"left", width:"100%" }}>
               <div style={{ width:38, height:38, borderRadius:11, display:"flex", alignItems:"center", justifyContent:"center", background:"var(--bg2)", border:`1px solid ${s.color}`, flexShrink:0 }}>
                 <I size={18} color={s.color}/>
               </div>
@@ -6466,16 +6797,34 @@ function CharacterView({ state, level, rank, log, customRoutines, setTab }){
                 ) : <div style={{ fontSize:12, color:"var(--faint)", marginBottom:12 }}>Aún no has probado ninguno de este grupo. ¡Estrena uno!</div>}
 
                 <div style={{ fontSize:11, fontWeight:700, color:"var(--muted)", marginBottom:7, display:"flex", alignItems:"center", gap:6 }}><Target size={13} color={s.color}/> Recomendados para explorar</div>
-                {s.todo.length ? (
+                {s.todo.length ? (<>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
-                    {s.todo.slice(0,6).map(n=>{ const rec=inActive.has(n); return (
-                      <span key={n} style={{ fontSize:11.5, padding:"5px 10px", borderRadius:999, background:rec?"rgba(232,176,75,.14)":"var(--bg2)", color:rec?"var(--gold)":"var(--muted)", border:`1px solid ${rec?"var(--gold)":"var(--line)"}` }}>
+                    {s.todo.slice(0,6).map(n=>{ const rec=inActive.has(n); const abierto=openEx===n; return (
+                      <button key={n} onClick={()=>setOpenEx(abierto?null:n)}
+                        style={{ fontSize:11.5, padding:"5px 10px", borderRadius:999, cursor:"pointer",
+                          background:abierto?"var(--card2)":rec?"rgba(232,176,75,.14)":"var(--bg2)",
+                          color:rec?"var(--gold)":"var(--muted)",
+                          border:`1px solid ${abierto?"var(--gold)":rec?"var(--gold)":"var(--line)"}` }}>
                         {n}{rec?" · en tu rutina":""}
-                      </span>
+                      </button>
                     ); })}
                     {s.todo.length>6 && <span style={{ fontSize:11.5, color:"var(--faint)", alignSelf:"center" }}>+{s.todo.length-6} más</span>}
                   </div>
-                ) : <div style={{ fontSize:12, color:"var(--jade)" }}>¡Has probado todos los de este grupo! 💪</div>}
+                  {/* Con 231 ejercicios el nombre no basta para saber qué máquina
+                      es: al tocarlo se ve la demostración y cómo se hace. */}
+                  {openEx && s.todo.includes(openEx) && (
+                    <div className="fh-in" style={{ marginTop:10, padding:12, background:"var(--bg2)", borderRadius:11, border:"1px solid var(--line)" }}>
+                      <div style={{ fontSize:13, fontWeight:700, marginBottom:9 }}>{openEx}</div>
+                      <ExImage name={openEx}/>
+                      {EX_HOW[openEx] && (
+                        <p style={{ fontSize:12, color:"var(--muted)", margin:"10px 0 0", lineHeight:1.5 }}>{EX_HOW[openEx]}</p>
+                      )}
+                      {EX_BASE[openEx] > 0 && (
+                        <div style={{ fontSize:11, color:"var(--faint)", marginTop:8 }}>Peso de partida orientativo: {EX_BASE[openEx]} kg.</div>
+                      )}
+                    </div>
+                  )}
+                </>) : <div style={{ fontSize:12, color:"var(--jade)" }}>¡Has probado todos los de este grupo! 💪</div>}
               </div>
             )}
           </div>
@@ -6517,12 +6866,6 @@ function CharacterView({ state, level, rank, log, customRoutines, setTab }){
         </div>
       )}
 
-      <div className="fh-card" style={{ padding:16, marginTop:12, marginBottom:8 }}>
-        <div className="disp" style={{ fontWeight:600, fontSize:14, marginBottom:8 }}>Progresar sin lesionarte</div>
-        <p style={{ fontSize:12.5, color:"var(--muted)", margin:0, lineHeight:1.55 }}>
-          Empieza cada bloque con pocas series por músculo y sube 1-2 por semana. Cuando lleves 4-6 semanas o notes que baja el rendimiento, el sueño empeora o arrastras agujetas, haz una semana suave (deload) con la mitad de series. Sube peso o repeticiones poco a poco: no hace falta llegar al fallo en todo ni buscar agujetas para crecer.
-        </p>
-      </div>
     </div>
   );
 }

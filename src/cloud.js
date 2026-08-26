@@ -428,7 +428,9 @@ export async function avisarAmigos(tipo, extra = {}){
 /* --- Récords por ejercicio -----------------------------------------------
    Permiten compararse con los amigos y avisar de quién te ha adelantado. */
 
-export async function subirRecords(bests){
+/* `veces` es un mapa ejercicio -> nº de sesiones en las que aparece. Sirve para
+   señalar el ejercicio favorito de cada grupo en la ficha de un amigo. */
+export async function subirRecords(bests, veces = {}){
   if (!supabase) return sinNube;
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -437,7 +439,9 @@ export async function subirRecords(bests){
       .filter(([ej, peso]) => ej && Number(peso) > 0)
       .slice(0, 400)
       .map(([ejercicio, peso]) => ({ user_id:user.id, ejercicio:String(ejercicio).slice(0,60),
-        peso:Math.min(999, Number(peso) || 0), updated_at:new Date().toISOString() }));
+        peso:Math.min(999, Number(peso) || 0),
+        veces:Math.min(100000, Math.max(0, Number(veces[ejercicio]) || 0)),
+        updated_at:new Date().toISOString() }));
     if (!filas.length) return { ok:true };
     const { error } = await supabase.from("exercise_records").upsert(filas, { onConflict:"user_id,ejercicio" });
     if (error) return { ok:false, msg:traducir(error) };
@@ -631,6 +635,51 @@ export async function asistentes(meetupId){
       .select("*").eq("meetup_id", meetupId).eq("respuesta", "voy");
     if (error) return { ok:false, msg:traducir(error) };
     return { ok:true, gente:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* --- Ficha de un amigo --------------------------------------------------- */
+
+/* Todo lo de un amigo de una vez: su perfil y sus marcas. Con eso el móvil ya
+   puede pintarle la ficha (los atributos salen de cruzar los ejercicios con el
+   catálogo local, no hace falta que el servidor sepa de músculos). */
+export async function fichaDeAmigo(amigoId){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    const [perfil, records, mios] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", amigoId).maybeSingle(),
+      supabase.from("exercise_records").select("*").eq("user_id", amigoId).order("peso", { ascending:false }),
+      user ? supabase.from("exercise_records").select("ejercicio,peso").eq("user_id", user.id)
+           : Promise.resolve({ data:[] }),
+    ]);
+    if (perfil.error) return { ok:false, msg:traducir(perfil.error) };
+    if (!perfil.data)  return { ok:false, msg:"Ese perfil ya no existe." };
+    // Mis marcas del servidor sirven de red: en un móvil recién instalado el
+    // historial local está vacío y la comparación se quedaría en blanco.
+    const mapaMios = {};
+    (mios.data || []).forEach(r => { mapaMios[r.ejercicio] = Number(r.peso) || 0; });
+    // Sin amistad, RLS devuelve cero marcas en vez de fallar: no es un error.
+    return { ok:true, perfil:perfil.data, records:records.data || [], mios:mapaMios };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* Quedada con nombre y apellidos: se crea y se invita a alguien concreto.
+   El invitado la ve como "te ha invitado X" y contesta desde su Inicio. */
+export async function quedarCon({ amigoId, cuando, lugar, nota }){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"Necesitas cuenta para quedar con tus amigos." };
+    const { data, error } = await supabase.from("meetups")
+      .insert({ created_by:user.id, cuando, lugar:String(lugar || "").slice(0,60), nota:String(nota || "").slice(0,200) })
+      .select().single();
+    if (error) return { ok:false, msg:traducir(error) };
+    // Quien propone va; el invitado queda pendiente de contestar.
+    await supabase.from("meetup_guests").insert({ meetup_id:data.id, user_id:user.id, respuesta:"voy" });
+    const inv = await supabase.from("meetup_guests").insert({ meetup_id:data.id, user_id:amigoId, respuesta:"invitado" });
+    if (inv.error) return { ok:true, quedada:data, avisoFallido:true };
+    return { ok:true, quedada:data };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
