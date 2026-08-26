@@ -56,6 +56,19 @@ function traducir(error){
 
 const sinNube = { ok:false, msg:"La nube no está configurada en esta versión de la app." };
 
+/* Datos del registro a medias, para completar el alta cuando llegue el código.
+   Se guarda EN EL MÓVIL, no en memoria: entre registrarse y confirmar el correo
+   la app se cierra casi siempre, y si el nombre de usuario elegido se pierde,
+   asegurarPerfil acaba inventando uno aleatorio ("atletap5vn6"). Pasó de verdad. */
+const PENDIENTE = "gym:registroPendiente";
+function guardarPendiente(datos){
+  try { localStorage.setItem(PENDIENTE, JSON.stringify(datos)); } catch {}
+}
+export function registroPendiente(){
+  try { const s = localStorage.getItem(PENDIENTE); return s ? JSON.parse(s) : null; } catch { return null; }
+}
+function olvidarPendiente(){ try { localStorage.removeItem(PENDIENTE); } catch {} }
+
 /* --- Sesión ------------------------------------------------------------- */
 
 export async function getSession(){
@@ -99,7 +112,11 @@ export async function registrar({ email, password, handle, displayName }){
 
     // Si el proyecto exige confirmar el correo no hay sesión todavía: el perfil
     // se creará en el primer login (ver asegurarPerfil).
-    if (!data.session) return { ok:true, necesitaConfirmar:true, handle:h, displayName };
+    if (!data.session) {
+      // Sin sesión aún: se recuerda lo necesario para cuando meta el código.
+      guardarPendiente({ email:String(email).trim(), handle:h, displayName });   // sin la contraseña
+      return { ok:true, necesitaConfirmar:true, handle:h, displayName };
+    }
 
     await derivarYGuardarClave(password, data.user?.id);
     const p = await asegurarPerfil({ handle:h, displayName });
@@ -123,6 +140,36 @@ export async function entrar({ email, password }){
 async function derivarYGuardarClave(password, userId){
   if (!userId || !cripto.criptoDisponible) return;
   try { await cripto.guardarClave(await cripto.derivarClave(password, userId)); } catch {}
+}
+
+/* Verificación por CÓDIGO, no por enlace.
+   El enlace de confirmación apunta al "Site URL" del proyecto, que en una app
+   de Capacitor no lleva a ninguna parte (por defecto, localhost). Además, si
+   abres el correo en el portátil el enlace tampoco serviría. Con un código de
+   6 dígitos lo lees donde sea y lo escribes en el móvil. */
+export async function verificarCodigo({ email, codigo }){
+  if (!supabase) return sinNube;
+  const c = String(codigo || "").replace(/\D/g, "");
+  if (c.length !== 6) return { ok:false, msg:"El código son 6 dígitos." };
+  try {
+    const { data, error } = await supabase.auth.verifyOtp({ email:String(email).trim(), token:c, type:"signup" });
+    if (error) {
+      const m = String(error.message || "").toLowerCase();
+      if (m.includes("expired")) return { ok:false, msg:"El código ha caducado. Pide uno nuevo." };
+      if (m.includes("invalid")) return { ok:false, msg:"Ese código no es correcto. Repásalo." };
+      return { ok:false, msg:traducir(error) };
+    }
+    return { ok:true, user:data?.user };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function reenviarCodigo(email){
+  if (!supabase) return sinNube;
+  try {
+    const { error } = await supabase.auth.resend({ type:"signup", email:String(email).trim() });
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
 export async function salir(){
@@ -156,19 +203,39 @@ export async function asegurarPerfil({ handle, displayName }){
     const actual = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
     if (actual.data) return { ok:true, perfil:actual.data };
 
-    let h = String(handle || "").trim().toLowerCase();
+    // Orden: el que pidan > el que eligió al registrarse > uno inventado.
+    const pend = registroPendiente();
+    let h = String(handle || pend?.handle || "").trim().toLowerCase();
     if (!/^[a-z0-9_.]{3,20}$/.test(h)) h = ("atleta" + Math.random().toString(36).slice(2, 7));
 
     for (let intento = 0; intento < 5; intento++) {
       const candidato = intento === 0 ? h : `${h}${intento + 1}`.slice(0, 20);
       const { data, error } = await supabase.from("profiles")
-        .insert({ id:user.id, handle:candidato, display_name:String(displayName || "").slice(0, 40) })
+        .insert({ id:user.id, handle:candidato, display_name:String(displayName || pend?.displayName || "").slice(0, 40) })
         .select().single();
-      if (!error) return { ok:true, perfil:data };
+      if (!error) { olvidarPendiente(); return { ok:true, perfil:data }; }
       if (!String(error.message || "").toLowerCase().includes("duplicate")) return { ok:false, msg:traducir(error) };
       // handle pillado: probamos con sufijo
     }
     return { ok:false, msg:"No hemos podido reservarte un nombre de usuario. Prueba con otro." };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* Cambiar el nombre de usuario. Hace falta para arreglar a quien le tocó uno
+   aleatorio por el fallo de arriba. */
+export async function cambiarHandle(nuevo){
+  if (!supabase) return sinNube;
+  const h = String(nuevo || "").trim().toLowerCase();
+  if (!/^[a-z0-9_.]{3,20}$/.test(h))
+    return { ok:false, msg:"Entre 3 y 20 caracteres: letras, números, punto o guion bajo." };
+  try {
+    const libre = await handleLibre(h);
+    if (libre.ok && !libre.libre) return { ok:false, msg:"Ese nombre ya está cogido." };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { data, error } = await supabase.from("profiles").update({ handle:h }).eq("id", user.id).select().single();
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, perfil:data };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 

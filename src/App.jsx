@@ -2228,8 +2228,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 1;
-const APP_VERSION_NAME = "1.0.0";
+const APP_VERSION_CODE = 2;
+const APP_VERSION_NAME = "1.0.1";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2968,6 +2968,7 @@ export default function App(){
     const r = await cloud.entrar(datos);
     if(r.ok){
       // El perfil puede no existir aún si se registró y confirmó el correo fuera.
+      // Sin handle explícito, asegurarPerfil recupera el del registro pendiente.
       const p = await cloud.asegurarPerfil({ handle:datos.handle, displayName:state.profile?.name });
       if(p.ok) setPerfil(p.perfil);
       subirPerfil(p.ok ? p.perfil : null);
@@ -2984,6 +2985,25 @@ export default function App(){
     }
     return r;
   }
+  /* Verifica el código del correo. Al pasar hay sesión, así que se crea el
+     perfil con el usuario que eligió al registrarse. */
+  async function verificarCuenta({ email, codigo }){
+    const r = await cloud.verificarCodigo({ email, codigo });
+    if(!r.ok) return r;
+    const pend = cloud.registroPendiente();
+    const p = await cloud.asegurarPerfil({ handle:pend?.handle, displayName:pend?.displayName || state.profile?.name });
+    if(p.ok) setPerfil(p.perfil);
+    subirPerfil(p.ok ? p.perfil : null);
+    showToast({ title:"Cuenta confirmada", sub:`Hola, @${p.perfil?.handle || pend?.handle}`, icon:User });
+    return { ok:true };
+  }
+
+  async function cambiarMiHandle(nuevo){
+    const r = await cloud.cambiarHandle(nuevo);
+    if(r.ok){ setPerfil(r.perfil); showToast({ title:"Nombre cambiado", sub:`Ahora eres @${r.perfil.handle}`, icon:User }); }
+    return r;
+  }
+
   async function salirCuenta(){
     await cloud.salir();
     setCloudSession(null); setPerfil(null);
@@ -3070,7 +3090,7 @@ export default function App(){
         {tab==="editor" && <RoutineBuilderView {...{ draft:routineDraft, setDraft:setRoutineDraft, onSave:saveRoutineFromEditor, onCancel:closeEditor, isNew:draftIsNew }}/>}
         {tab==="ajustes" && <SettingsView {...{ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup }}/>}
         {tab==="cuenta" && <AccountView {...{ state, level, setTab, session:cloudSession, perfil,
-          onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onSalir:salirCuenta, onRefrescar:(p,soloAmigos)=>cloud.leaderboard(p, soloAmigos),
+          onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onVerificar:verificarCuenta, onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle, onRefrescar:(p,soloAmigos)=>cloud.leaderboard(p, soloAmigos),
           quedadas, onRefrescarQuedadas:refrescarQuedadas, cargandoQuedadas, exportBackup, importBackup }}/>}
       </div>
 
@@ -3842,14 +3862,18 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar }){
   </>);
 }
 
-function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onSalir, onRefrescar, quedadas, onRefrescarQuedadas, cargandoQuedadas, exportBackup, importBackup }){
+function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle, onRefrescar, quedadas, onRefrescarQuedadas, cargandoQuedadas, exportBackup, importBackup }){
   const [modo, setModo] = useState("entrar");          // entrar | registro
   const [f, setF] = useState({ email:"", password:"", handle:"", displayName:"" });
   const [msg, setMsg] = useState(null);
   const [cargando, setCargando] = useState(false);
+  const [pidiendoCodigo, setPidiendoCodigo] = useState(null);   // correo pendiente de verificar
+  const [codigo, setCodigo] = useState("");
   const [tabla, setTabla] = useState(null);
   const [cargandoTabla, setCargandoTabla] = useState(false);
   const [periodo, setPeriodo] = useState("semanal");
+  const [editandoHandle, setEditandoHandle] = useState(false);
+  const [handleNuevo, setHandleNuevo] = useState("");
   const [soloAmigos, setSoloAmigos] = useState(true);   // por defecto, tu círculo
   const [amigos, setAmigos] = useState([]);
 
@@ -3864,8 +3888,23 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
       : await onRegistrar({ email:f.email, password:f.password, handle:f.handle, displayName:f.displayName || state.profile?.name });
     setCargando(false);
     if (!r.ok) { setMsg({ ok:false, t:r.msg }); return; }
-    if (r.necesitaConfirmar) { setMsg({ ok:true, t:"Cuenta creada. Confirma el correo que te hemos mandado y vuelve a entrar aquí." }); return; }
+    if (r.necesitaConfirmar) { setPidiendoCodigo(f.email.trim()); setMsg(null); return; }
     setF({ email:"", password:"", handle:"", displayName:"" });
+  }
+
+  async function verificar(){
+    setCargando(true); setMsg(null);
+    const r = await onVerificar({ email:pidiendoCodigo, codigo });
+    setCargando(false);
+    if (!r.ok) { setMsg({ ok:false, t:r.msg }); return; }
+    setPidiendoCodigo(null); setCodigo("");
+    setF({ email:"", password:"", handle:"", displayName:"" });
+  }
+  async function reenviar(){
+    setCargando(true);
+    const r = await cloud.reenviarCodigo(pidiendoCodigo);
+    setCargando(false);
+    setMsg(r.ok ? { ok:true, t:"Te hemos mandado otro código." } : { ok:false, t:r.msg });
   }
 
   async function verTabla(p = periodo, amigosSolo = soloAmigos){
@@ -3886,6 +3925,51 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
   }
   useEffect(()=>{ if (session && perfil) { verTabla(periodo, soloAmigos); } /* eslint-disable-next-line */ }, [session?.user?.id, perfil?.handle, periodo, soloAmigos]);
   useEffect(()=>{ if (session && perfil) refrescarAmigos(); /* eslint-disable-next-line */ }, [session?.user?.id, perfil?.handle]);
+
+  /* --- Registro hecho, falta el código del correo --- */
+  if (!session && pidiendoCodigo) return (
+    <div className="fh-in">
+      <header style={{ padding:"22px 2px 8px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={()=>{ setPidiendoCodigo(null); setMsg(null); }} aria-label="Volver" style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
+        <div>
+          <h1 style={{ margin:0, fontSize:22 }}>Confirma tu correo</h1>
+          <p style={{ margin:"3px 0 0", fontSize:13, color:"var(--muted)" }}>Te hemos mandado un código de 6 dígitos.</p>
+        </div>
+      </header>
+
+      <div className="fh-card" style={{ padding:16, marginTop:8 }}>
+        <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 14px", lineHeight:1.5 }}>
+          Mira en <b style={{ color:"var(--txt)" }}>{pidiendoCodigo}</b> y escribe aquí el código.
+          Si no lo ves, revisa la carpeta de spam.
+        </p>
+        <input value={codigo} inputMode="numeric" maxLength={6} autoComplete="one-time-code"
+          onChange={e=>{ setCodigo(e.target.value.replace(/\D/g,"")); setMsg(null); }}
+          placeholder="000000" aria-label="Código de confirmación"
+          style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:28, letterSpacing:".3em", fontWeight:700 }}/>
+
+        {msg && (
+          <div style={{ display:"flex", gap:9, alignItems:"flex-start", marginTop:13, padding:"10px 12px", background:"var(--bg2)", border:`1px solid ${msg.ok?"var(--jade)":"var(--crimson)"}`, borderRadius:11 }}>
+            {msg.ok ? <Check size={15} color="var(--jade)" style={{ flexShrink:0, marginTop:1 }}/>
+                    : <ShieldAlert size={15} color="var(--crimson)" style={{ flexShrink:0, marginTop:1 }}/>}
+            <div style={{ fontSize:12, color:"var(--txt)", lineHeight:1.45 }}>{msg.t}</div>
+          </div>
+        )}
+
+        <button className="fh-btn" onClick={verificar} disabled={cargando || codigo.length !== 6}
+          style={{ width:"100%", marginTop:14, background:"var(--gold)", padding:13, fontSize:14, opacity:(cargando||codigo.length!==6)?.6:1 }}>
+          {cargando ? "Comprobando…" : "Confirmar"}
+        </button>
+        <button className="fh-btn" onClick={reenviar} disabled={cargando}
+          style={{ width:"100%", marginTop:9, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:11, fontSize:12.5 }}>
+          Mandarme otro código
+        </button>
+      </div>
+
+      <p style={{ fontSize:11.5, color:"var(--faint)", textAlign:"center", marginTop:14, lineHeight:1.55 }}>
+        Puedes cerrar la app: al volver, entra con tu correo y contraseña.
+      </p>
+    </div>
+  );
 
   /* --- Sin sesión: entrar o registrarse --- */
   if (!session) return (
@@ -3975,10 +4059,36 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
           </div>
           <div style={{ flex:1, minWidth:0 }}>
             <div className="disp" style={{ fontWeight:700, fontSize:16 }}>{perfil.display_name || perfil.handle}</div>
-            <div className="mono" style={{ fontSize:11.5, color:"var(--muted)", marginTop:2 }}>@{perfil.handle}</div>
+            <button onClick={()=>{ setEditandoHandle(v=>!v); setHandleNuevo(perfil.handle); setMsg(null); }}
+              style={{ background:"none", border:"none", padding:0, marginTop:2, cursor:"pointer", display:"flex", alignItems:"center", gap:5 }}>
+              <span className="mono" style={{ fontSize:11.5, color:"var(--muted)" }}>@{perfil.handle}</span>
+              <Pencil size={11} color="var(--faint)"/>
+            </button>
             <div style={{ fontSize:11.5, color:"var(--faint)", marginTop:5 }}>
               Nivel {perfil.level} · {perfil.xp} XP · {perfil.total_workouts} entrenos
             </div>
+          </div>
+        </div>
+      )}
+
+      {editandoHandle && (
+        <div className="fh-card fh-in" style={{ padding:16, marginTop:10 }}>
+          <div style={{ fontSize:12, color:"var(--muted)", fontWeight:600, marginBottom:6 }}>Nombre de usuario</div>
+          <input value={handleNuevo} maxLength={20} autoCapitalize="none" autoCorrect="off"
+            onChange={e=>{ setHandleNuevo(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g,"")); setMsg(null); }}
+            aria-label="Nuevo nombre de usuario"
+            style={{ textAlign:"left", fontFamily:"'JetBrains Mono',monospace" }}/>
+          <div style={{ fontSize:11.5, color:"var(--faint)", margin:"7px 2px 0", lineHeight:1.45 }}>
+            Es como te ven tus amigos. Único para todo el grupo, 3-20 caracteres.
+          </div>
+          <div style={{ display:"flex", gap:8, marginTop:12 }}>
+            <button className="fh-btn" onClick={()=>setEditandoHandle(false)}
+              style={{ flex:1, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:11, fontSize:12.5 }}>Cancelar</button>
+            <button className="fh-btn" onClick={async()=>{
+              const r = await onCambiarHandle(handleNuevo);
+              if(r.ok) setEditandoHandle(false); else setMsg({ ok:false, t:r.msg });
+            }} disabled={handleNuevo.length < 3 || handleNuevo === perfil.handle}
+              style={{ flex:1.3, background:"var(--gold)", padding:11, fontSize:12.5, opacity:(handleNuevo.length<3||handleNuevo===perfil.handle)?.6:1 }}>Guardar</button>
           </div>
         </div>
       )}

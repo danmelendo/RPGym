@@ -1,6 +1,6 @@
 <!-- Supabase → Authentication → Email Templates → "Magic Link"
-     La app usa contraseña, no enlaces mágicos: esta plantilla está por si algún día
-     se activa esa opción, para que no salga el texto en inglés por defecto. -->
+     La app entra con contraseña; esta plantilla está por si algún día se
+     activa esa opción, para que no salga el texto en inglés por defecto. -->
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:8px">
 
   <div style="font-size:22px;font-weight:700;letter-spacing:.02em;color:#1a1a1a;margin-bottom:4px">RPGym</div>
@@ -8,22 +8,18 @@
 
   <h1 style="font-size:19px;color:#1a1a1a;margin:0 0 14px">Entra en RPGym</h1>
 
-  <p style="font-size:15px;line-height:1.55;color:#333;margin:0 0 20px">
-    Pulsa el botón para entrar en tu cuenta. El enlace caduca en poco tiempo y solo se puede usar una vez.
+  <p style="font-size:15px;line-height:1.55;color:#333;margin:0 0 22px">
+    Escribe este código en la app para entrar en tu cuenta.
   </p>
 
-  <p style="margin:0 0 24px">
-    <a href="{{ .ConfirmationURL }}"
-       style="display:inline-block;background:#B8862B;color:#fff;text-decoration:none;
-              padding:13px 26px;border-radius:10px;font-size:15px;font-weight:600">
-      Entrar en RPGym
-    </a>
-  </p>
+  <div style="text-align:center;background:#faf7f0;border:1px solid #e6ddc9;border-radius:12px;padding:22px 16px;margin:0 0 22px">
+    <div style="font-size:12px;color:#8a8272;letter-spacing:.1em;font-weight:700;margin-bottom:8px">TU CÓDIGO</div>
+    <div style="font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:34px;font-weight:700;color:#B8862B;letter-spacing:.22em">{{ .Token }}</div>
+  </div>
 
-  <p style="font-size:13px;line-height:1.5;color:#777;margin:0 0 6px">
-    Si el botón no funciona, copia esta dirección en tu navegador:
+  <p style="font-size:13px;line-height:1.5;color:#777;margin:0">
+    Caduca en una hora. No se lo pases a nadie.
   </p>
-  <p style="font-size:12px;color:#B8862B;word-break:break-all;margin:0 0 24px">{{ .ConfirmationURL }}</p>
 
   <hr style="border:none;border-top:1px solid #e5e5e5;margin:24px 0">
 
