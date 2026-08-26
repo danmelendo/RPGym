@@ -744,14 +744,16 @@ export async function responderSolicitud(id, acepto){
 /* El payload es el MISMO que viaja en el código de texto: ejercicios por
    nombre. Así el receptor lo reconstruye con su catálogo, igual que al pegar
    un código, y una versión distinta de la app no rompe nada. */
-export async function mandarRutina({ amigoId, name, dias, payload }){
+export async function mandarRutina({ amigoId, clientId, name, dias, payload }){
   if (!supabase) return sinNube;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok:false, msg:"No hay sesión." };
     const { error } = await supabase.from("routine_sends")
-      .insert({ de:user.id, para:amigoId, name:String(name||"").slice(0,60), dias:Number(dias)||0, payload });
+      .insert({ de:user.id, para:amigoId, client_id:String(clientId||""), name:String(name||"").slice(0,60), dias:Number(dias)||0, payload });
     if (error) return { ok:false, msg:traducir(error) };
+    // Para que la copia del otro pueda seguir tus cambios luego.
+    await asegurarFilaCompartida({ userId:user.id, clientId, name, dias, payload });
     return { ok:true };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
@@ -773,6 +775,72 @@ export async function responderRutina(id, acepto){
       .eq("id", id);
     if (error) return { ok:false, msg:traducir(error) };
     return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* --- Rutinas que siguen a su dueño --------------------------------------- */
+
+/* Mandar una rutina crea también su fila en shared_routines para que el
+   seguidor pueda leerla luego. Se crea PRIVADA: mandársela a una persona no es
+   publicarla para todo el círculo. En una fila que ya existía no se toca ese
+   flag, solo el contenido. */
+async function asegurarFilaCompartida({ userId, clientId, name, dias, payload }){
+  await supabase.from("shared_routines").upsert(
+    { owner_id:userId, client_id:clientId, name:String(name||"").slice(0,60), dias:Number(dias)||0, payload, privada:true },
+    { onConflict:"owner_id,client_id", ignoreDuplicates:true });
+  await supabase.from("shared_routines")
+    .update({ name:String(name||"").slice(0,60), dias:Number(dias)||0, payload, updated_at:new Date().toISOString() })
+    .eq("owner_id", userId).eq("client_id", clientId);
+}
+
+/* El dueño ha editado una rutina: si tiene fila (porque la publicó o se la
+   mandó a alguien), se actualiza. Si no la tiene, esto NO crea nada — por
+   defecto las rutinas no salen del móvil y eso no cambia. */
+export async function actualizarRutinaCompartida({ clientId, name, dias, payload }){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("shared_routines")
+      .update({ name:String(name||"").slice(0,60), dias:Number(dias)||0, payload, updated_at:new Date().toISOString() })
+      .eq("owner_id", user.id).eq("client_id", clientId);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* Quedar apuntado como seguidor de la rutina de un amigo, para recibir sus
+   cambios. `localId` es el id que tiene la copia en MI móvil. */
+export async function seguirRutina({ ownerId, clientId, localId }){
+  if (!supabase || !ownerId || !clientId) return { ok:false };
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("routine_followers").upsert(
+      { owner_id:ownerId, client_id:clientId, follower_id:user.id, local_id:String(localId||"") },
+      { onConflict:"owner_id,client_id,follower_id" });
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function dejarDeSeguirRutina({ ownerId, clientId }){
+  if (!supabase) return { ok:true };
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:true };
+    await supabase.from("routine_followers").delete()
+      .eq("owner_id", ownerId).eq("client_id", clientId).eq("follower_id", user.id);
+    return { ok:true };
+  } catch { return { ok:true }; }
+}
+
+export async function rutinasSeguidas(){
+  if (!supabase) return sinNube;
+  try {
+    const { data, error } = await supabase.from("rutinas_seguidas").select("*").limit(40);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, rutinas:data || [] };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 

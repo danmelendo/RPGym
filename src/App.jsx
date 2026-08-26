@@ -738,6 +738,11 @@ function pickInitialRoutine({ goal, experience, sex }){
    Si vuelves a renombrar un ejercicio, añádelo aquí. No borres entradas viejas.
    ========================================================================= */
 const RENOMBRES = {
+  /* "Pájaros" es el nombre bueno del ejercicio en castellano y se queda. Lo que
+     despistaba era que ninguna máquina se llama así: la máquina es la
+     CONTRACTORA, usada del revés. Ahora el nombre lleva a la máquina. */
+  "Pájaros en máquina": "Pájaros en contractora",
+  "Contractor de pecho": "Contractora de pecho",
   "Elevación de gemelos": "Elevación de talones de pie",
   "Elevación de gemelos sentado": "Elevación de talones sentado",
   "Elevación de gemelos en prensa": "Gemelo en prensa",
@@ -818,7 +823,7 @@ const EX_BASE = {
   "Jalón agarre neutro":32, "Curl con barra":20, "Curl femoral tumbado":25, "Curl femoral sentado":25,
   "Aperturas en polea":12, "Extensión de tríceps en polea":15, "Sentadilla frontal":30,
   "Press mancuernas sentado":14, "Dominadas lastradas":0, "Fondos en paralelas lastrados":0, "Plancha con lastre":0,
-  "Zancadas con mancuernas":12, "Elevaciones laterales en polea":8, "Pullover en polea":20, "Pájaros en polea":8,
+  "Zancadas con mancuernas":12, "Elevaciones laterales en polea":8, "Pullover en polea":12, "Pájaros en polea":8,
   "Hip thrust":40, "Puente de glúteo":20, "Patada de glúteo en polea":10, "Abductores en máquina":30,
   "Aductores en máquina":30, "Peso muerto sumo":40, "Sentadilla sumo con mancuerna":16, "Zancada caminando":10,
   "Good morning":20,
@@ -830,7 +835,7 @@ const EX_BASE = {
   "Remo al mentón":20, "Peso muerto piernas rígidas":35, "Elevación de talones sentado":30,
   "Crunch abdominal":0, "Russian twist":0, "Sentadilla hack":40, "Dominada supina":0, "Bicicleta abdominal":0,
   /* --- Catálogo ampliado (free-exercise-db): solo se usan en rutinas propias --- */
-  "Press declinado con barra":28, "Contractor de pecho":25, "Press de pecho en máquina":30, "Pullover con mancuerna":14,
+  "Press declinado con barra":28, "Contractora de pecho":25, "Press de pecho en máquina":30, "Pullover con mancuerna":14,
   "Jalón agarre supino":32, "Remo con dos mancuernas":14, "Peso muerto parcial":60,
   "Encogimientos con barra":40, "Elevación frontal":7, "Press de hombro en máquina":20, "Press de hombro en polea":15, "Pájaros con mancuernas":7,
   "Zancada inversa":10, "Subida al cajón":10, "Sentadilla en multipower":30, "Sentadilla con mancuernas":14,
@@ -845,10 +850,10 @@ const EX_BASE = {
   "Press declinado en multipower":30, "Aperturas en banco con poleas":12, "Press inclinado en polea":18,
   "Press de pecho en máquina de discos":25, "Cruce de poleas a una mano":10, "Press declinado guiado":30,
   "Remo alto en máquina":30, "Remo en máquina a un brazo":20, "Remo en polea a una mano":20,
-  "Jalón a una mano":20, "Remo en multipower":30, "Pullover en polea inclinado":18,
+  "Jalón a una mano":20, "Remo en multipower":30, "Pullover en polea inclinado":12,
   "Remo en polea alto":30, "Jalón con recorrido completo":30, "Remo en polea alta de rodillas":25,
   "Remo en polea alta a una mano":15,
-  "Pájaros en máquina":20, "Elevación frontal en polea":10, "Encogimientos en máquina":40,
+  "Pájaros en contractora":12, "Elevación frontal en polea":10, "Encogimientos en máquina":40,
   "Encogimientos en polea":35, "Press militar en multipower":25, "Rotación externa en polea":5,
   "Press de hombro en polea alterno":12, "Pájaros en polea a una mano":6, "Rotación interna en polea":5,
   "Pájaros en polea cruzada":8, "Remo a la cara con cuerda":15, "Press de hombro en polea de pie":15,
@@ -914,7 +919,7 @@ ROUTINES.forEach(r=>r.days.forEach(d=>d.exercises.forEach(ex=>{ if(!(ex.name in 
    esto no tendrían músculo y el configurador de rutinas no podría ofrecerlos. */
 const EX_MUSCLE_EXTRA = {
   "Aductores en máquina":"Pierna", "Good morning":"Femoral", "Patada de tríceps":"Tríceps",
-  "Press declinado con barra":"Pecho", "Contractor de pecho":"Pecho", "Press de pecho en máquina":"Pecho", "Flexiones declinadas":"Pecho", "Pullover con mancuerna":"Pecho",
+  "Press declinado con barra":"Pecho", "Contractora de pecho":"Pecho", "Press de pecho en máquina":"Pecho", "Flexiones declinadas":"Pecho", "Pullover con mancuerna":"Pecho",
   "Hiperextensiones":"Espalda", "Jalón agarre supino":"Espalda", "Remo con dos mancuernas":"Espalda", "Peso muerto parcial":"Espalda",
   "Encogimientos con barra":"Hombro", "Elevación frontal":"Hombro", "Press de hombro en máquina":"Hombro", "Press de hombro en polea":"Hombro", "Pájaros con mancuernas":"Hombro",
   "Zancada inversa":"Pierna", "Subida al cajón":"Pierna", "Sentadilla en multipower":"Pierna", "Sentadilla con mancuernas":"Pierna", "Sentadilla con salto":"Pierna", "Sentadilla sin peso":"Pierna", "Puente de glúteo a una pierna":"Pierna",
@@ -939,7 +944,7 @@ const EX_MUSCLE_EXTRA = {
   "Pullover en polea inclinado":"Espalda", "Remo en polea alto":"Espalda",
   "Jalón con recorrido completo":"Espalda", "Remo en polea alta de rodillas":"Espalda",
   "Remo en polea alta a una mano":"Espalda",
-  "Pájaros en máquina":"Hombro", "Elevación frontal en polea":"Hombro",
+  "Pájaros en contractora":"Hombro", "Elevación frontal en polea":"Hombro",
   "Encogimientos en máquina":"Hombro", "Encogimientos en polea":"Hombro",
   "Press militar en multipower":"Hombro", "Rotación externa en polea":"Hombro",
   "Press de hombro en polea alterno":"Hombro", "Pájaros en polea a una mano":"Hombro",
@@ -1125,7 +1130,7 @@ const EX_HOW = {
   "Press inclinado con barra":"Banco inclinado 30-45°, agarre algo más ancho que los hombros. Baja la barra controlada hasta la parte alta del pecho con los codos a ~45° y empuja arriba sin bloquear de golpe. Omóplatos apretados y pies firmes en el suelo.",
   /* --- Catálogo ampliado (free-exercise-db) --- */
   "Press declinado con barra":"Tumbado en un banco declinado y bien sujeto por los pies, baja la barra controlada hasta la parte baja del pecho con los codos algo recogidos, y empuja arriba sin bloquear de golpe. Pide que te ayuden a sacar y dejar la barra: en declinado cuesta más.",
-  "Contractor de pecho":"Sentado con la espalda pegada al respaldo y los codos a la altura del pecho, junta los brazos delante apretando el pectoral y vuelve despacio hasta notar estiramiento sin forzar el hombro. No dejes que las placas descansen entre repeticiones.",
+  "Contractora de pecho":"Sentado con la espalda pegada al respaldo y los codos a la altura del pecho, junta los brazos delante apretando el pectoral y vuelve despacio hasta notar estiramiento sin forzar el hombro. No dejes que las placas descansen entre repeticiones.",
   "Press de pecho en máquina":"Ajusta el asiento para que las asas queden a la altura media del pecho. Empuja hacia delante hasta casi estirar los brazos y vuelve controlando, sin adelantar los hombros ni despegar la espalda del respaldo.",
   "Flexiones declinadas":"Flexión con los pies elevados sobre un banco o cajón: cuanto más alto, más peso llevan los hombros y el pecho alto. Cuerpo en línea recta, abdomen apretado y codos a unos 45°, sin dejar caer la cadera.",
   "Pullover con mancuerna":"Tumbado en el banco, sujeta una mancuerna con las dos manos sobre el pecho con los codos algo flexionados. Llévala por detrás de la cabeza hasta notar el estiramiento en el pecho y el dorsal, y vuelve sin arquear la lumbar.",
@@ -1192,7 +1197,7 @@ const EX_HOW = {
   "Jalón con recorrido completo":"Jalón en el que dejas que los hombros suban del todo arriba (estirando el dorsal) antes de tirar abajo. Ese estiramiento extra de arriba es justo lo que se pierde al hacerlo con demasiado peso.",
   "Remo en polea alta de rodillas":"De rodillas frente a la polea alta, tira de la cuerda hacia la cara llevando los codos atrás y abriendo el pecho. Trabaja dorsal y espalda alta con el core sujetando la postura.",
   "Remo en polea alta a una mano":"De rodillas frente a la polea alta, tira con un brazo llevando el codo al costado y girando ligeramente el tronco al final. A una mano llegas a un rango que con barra es imposible.",
-  "Pájaros en máquina":"Sentado del revés en la máquina de contractor, con el pecho apoyado, abre los brazos hacia atrás hasta la altura de los hombros apretando la parte trasera del hombro, y vuelve despacio. Lidera con los codos, no con las manos.",
+  "Pájaros en contractora":"Sentado del revés en la contractora (la máquina de aperturas de pecho, usada al contrario), con el pecho apoyado, abre los brazos hacia atrás hasta la altura de los hombros apretando la parte trasera del hombro, y vuelve despacio. Lidera con los codos, no con las manos.",
   "Elevación frontal en polea":"De espaldas a la polea baja con el asa por delante del muslo, sube el brazo estirado hasta la altura del hombro y baja controlado. La polea mantiene la tensión desde el primer grado, a diferencia de la mancuerna.",
   "Encogimientos en máquina":"De pie o sentado en la máquina con las asas a los lados, sube los hombros hacia las orejas todo lo que puedas, aguanta un segundo arriba y baja despacio. Nada de girar los hombros: solo suben y bajan.",
   "Encogimientos en polea":"De pie frente a una polea baja con la barra en las manos y los brazos estirados, encoge los hombros hacia arriba y baja controlando. La polea da tensión constante y te permite cargar sin agarres incómodos.",
@@ -1363,7 +1368,7 @@ const EX_IMG = {
   "Superserie de bíceps y tríceps": "/exercises/Dumbbell_Bicep_Curl/0.jpg",
   /* --- Catálogo ampliado (free-exercise-db) --- */
   "Press declinado con barra": "/exercises/Decline_Barbell_Bench_Press/0.jpg",
-  "Contractor de pecho": "/exercises/Butterfly/0.jpg",
+  "Contractora de pecho": "/exercises/Butterfly/0.jpg",
   "Press de pecho en máquina": "/exercises/Machine_Bench_Press/0.jpg",
   "Flexiones declinadas": "/exercises/Decline_Push-Up/0.jpg",
   "Pullover con mancuerna": "/exercises/Bent-Arm_Dumbbell_Pullover/0.jpg",
@@ -1430,7 +1435,7 @@ const EX_IMG = {
   "Jalón con recorrido completo": "/exercises/Full_Range-Of-Motion_Lat_Pulldown/0.jpg",
   "Remo en polea alta de rodillas": "/exercises/Kneeling_High_Pulley_Row/0.jpg",
   "Remo en polea alta a una mano": "/exercises/Kneeling_Single-Arm_High_Pulley_Row/0.jpg",
-  "Pájaros en máquina": "/exercises/Reverse_Machine_Flyes/0.jpg",
+  "Pájaros en contractora": "/exercises/Reverse_Machine_Flyes/0.jpg",
   "Elevación frontal en polea": "/exercises/Front_Cable_Raise/0.jpg",
   "Encogimientos en máquina": "/exercises/Leverage_Shrug/0.jpg",
   "Encogimientos en polea": "/exercises/Cable_Shrugs/0.jpg",
@@ -1587,7 +1592,12 @@ function normalizeCustomRoutine(r){
         muscle:EX_MUSCLE[ex.name] })),
   }));
   const clean = days.length ? days : [{ name:"Día 1", exercises:[] }];
-  return { ...r, custom:true, cat:CUSTOM_CAT, id:r?.id || newRoutineId(), privada:!!r?.privada,
+  /* `origen` marca de quién es la rutina original. Sin él la copia no sabría a
+     quién seguir y se quedaría congelada en la versión del día que se importó. */
+  const origen = r?.origen?.ownerId && r?.origen?.clientId
+    ? { ownerId:String(r.origen.ownerId), clientId:String(r.origen.clientId), updatedAt:r.origen.updatedAt || null }
+    : undefined;
+  return { ...r, custom:true, cat:CUSTOM_CAT, id:r?.id || newRoutineId(), privada:!!r?.privada, origen,
     name:String(r?.name || "Mi rutina").slice(0,40),
     subtitle:String(r?.subtitle || "").slice(0,60),
     rpe:String(r?.rpe || "7-8"), blurb:String(r?.blurb || "").slice(0,300),
@@ -2241,8 +2251,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 9;
-const APP_VERSION_NAME = "1.0.8";
+const APP_VERSION_CODE = 10;
+const APP_VERSION_NAME = "1.0.9";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2508,6 +2518,11 @@ export default function App(){
   const [mealPlan, setMealPlan] = useState(null);
   const [excludes, setExcludesState] = useState([]);
   const [customRoutines, setCustomRoutinesState] = useState([]);
+  /* El temporizador de refresco captura la función del primer render, con la
+     lista de rutinas de entonces. Un ref le da siempre la lista de ahora: sin
+     esto, una rutina importada DESPUÉS de abrir la app no se sincronizaba. */
+  const customRoutinesRef = useRef(customRoutines);
+  useEffect(()=>{ customRoutinesRef.current = customRoutines; }, [customRoutines]);
   const [customDiet, setCustomDietState] = useState(blankCustomDiet);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [theme, setThemeState] = useState("dark");
@@ -3003,6 +3018,7 @@ export default function App(){
       if(q.ok)   setQuedadas(q.quedadas);
       if(ea.ok)  setEntrenando(ea.sesiones);
       if(sup.ok) setSuperadoPor(sup.filas);
+      await sincronizarRutinasSeguidas();
     } finally { refrescandoRef.current = false; }
   }
 
@@ -3030,8 +3046,44 @@ export default function App(){
     if(loading || !cloud.cloudEnabled || !perfil || perfilSubidoRef.current) return;
     perfilSubidoRef.current = true;
     subirPerfil(perfil);
+    sincronizarRutinasSeguidas();     // ahora sí: las rutinas locales ya están leídas
     // eslint-disable-next-line
   },[loading, perfil?.handle]);
+
+  /* Pone al día las rutinas importadas. El dueño manda: si su versión es más
+     nueva que la que guardaste, se sustituyen días y nombre. Lo tuyo que no
+     viaja (el id local, si está activa, el bono de estrenarla) se conserva. */
+  async function sincronizarRutinasSeguidas(){
+    if(!cloud.cloudEnabled || !cloudSession) return;
+    const actuales = customRoutinesRef.current || [];
+    if(!actuales.some(r => r.origen?.ownerId && r.origen?.clientId)) return;
+    const r = await cloud.rutinasSeguidas();
+    if(!r.ok || !r.rutinas.length) return;
+
+    const cambiadas = [];
+    const next = actuales.map(local => {
+      if(!local.origen?.clientId) return local;
+      const remota = r.rutinas.find(x => x.owner_id === local.origen.ownerId && x.client_id === local.origen.clientId);
+      if(!remota || !remota.updated_at) return local;
+      if(local.origen.updatedAt && local.origen.updatedAt >= remota.updated_at) return local;
+
+      const dec = decodeRoutine(SHARE_PREFIX + b64urlEncode(JSON.stringify(remota.payload)), []);
+      if(!dec.ok) return local;
+      cambiadas.push(remota.name || local.name);
+      return normalizeCustomRoutine({ ...local,
+        name: remota.name || local.name,
+        days: dec.routine.days,
+        rpe: dec.routine.rpe, subtitle: dec.routine.subtitle, blurb: dec.routine.blurb,
+        origen: { ...local.origen, updatedAt: remota.updated_at } });
+    });
+
+    if(!cambiadas.length) return;
+    setCustomRoutinesState(next); saveKey("gym:routines", next);
+    showToast({ title: cambiadas.length===1 ? "Rutina actualizada" : "Rutinas actualizadas",
+      sub: cambiadas.length===1 ? `«${cambiadas[0]}» ha cambiado: su autor la ha editado.`
+                                : `${cambiadas.length} rutinas compartidas han cambiado.`,
+      icon: Download });
+  }
 
   async function quitarAmigo(id){
     const r = await cloud.borrarAmigo(id);
@@ -3083,11 +3135,29 @@ export default function App(){
 
   /* --- Rutinas propias (configurador) --- */
   function saveCustomRoutine(routine){
-    const r = normalizeCustomRoutine(routine);
+    const previa = customRoutines.find(x=>x.id===routine?.id);
+    // Editar una rutina seguida la convierte en tuya: fuera el vínculo.
+    const r = normalizeCustomRoutine(previa?.origen ? { ...routine, origen:undefined } : routine);
+    if(previa?.origen) r.origen = undefined;
     const exists = customRoutines.some(x=>x.id===r.id);
     const next = exists ? customRoutines.map(x=>x.id===r.id ? r : x) : [...customRoutines, r];
     setCustomRoutinesState(next); saveKey("gym:routines", next);
     showToast({ title: exists ? "Rutina actualizada" : "Rutina creada", sub:`${r.name} · ${r.days.length} día${r.days.length===1?"":"s"}`, icon:ClipboardList });
+    if(cloud.cloudEnabled && perfil){
+      if(previa?.origen){
+        /* Has tocado una rutina que seguías: a partir de aquí es TUYA y deja de
+           recibir los cambios de su autor. Si no, la próxima sincronización te
+           borraría lo que acabas de escribir. */
+        cloud.dejarDeSeguirRutina({ ownerId:previa.origen.ownerId, clientId:previa.origen.clientId });
+        showToast({ title:"Ahora es tuya", sub:"Al editarla deja de seguir los cambios de su autor.", icon:Pencil });
+      } else {
+        // Si esta rutina la tiene alguien (publicada o mandada), le llega el
+        // cambio. Si no tiene fila en el servidor esto no crea nada: por
+        // defecto no sale del móvil y editarla no debe cambiar eso.
+        cloud.actualizarRutinaCompartida({ clientId:r.id, name:r.name, dias:r.days.length,
+          payload: JSON.parse(b64urlDecode(encodeRoutine(r).slice(SHARE_PREFIX.length))) });
+      }
+    }
     return r;
   }
   /* --- Cuenta (opcional) ------------------------------------------------- */
@@ -3174,9 +3244,15 @@ export default function App(){
 
   /* Mete una rutina que te han compartido (ya viene validada por decodeRoutine). */
   function importRoutine(routine){
-    const next = [...customRoutines, normalizeCustomRoutine(routine)];   // conserva sharedFrom si viene
+    const r = normalizeCustomRoutine(routine);      // conserva sharedFrom y origen si vienen
+    const next = [...customRoutines, r];
     setCustomRoutinesState(next); saveKey("gym:routines", next);
-    showToast({ title:"Rutina importada", sub:`${routine.name} · ${routine.days.length} día${routine.days.length===1?"":"s"}`, icon:Download });
+    // Queda apuntado como seguidor: cuando el dueño la edite, esta copia se
+    // pone al día sola en vez de quedarse en la versión del día que la cogiste.
+    if(cloud.cloudEnabled && perfil && r.origen?.ownerId && r.origen?.clientId){
+      cloud.seguirRutina({ ownerId:r.origen.ownerId, clientId:r.origen.clientId, localId:r.id });
+    }
+    showToast({ title:"Rutina importada", sub:`${r.name} · ${r.days.length} día${r.days.length===1?"":"s"}`, icon:Download });
   }
   /* --- Avisos: solicitudes de amistad y rutinas que te mandan ------------- */
 
@@ -3206,6 +3282,7 @@ export default function App(){
     }
     importRoutine({ ...decodificada.routine,
       sharedFrom: { handle:envio.handle, displayName:envio.display_name },
+      origen: envio.client_id ? { ownerId:envio.de, clientId:envio.client_id } : undefined,
       bonusHecho: false });
     await cloud.responderRutina(envio.id, true);
     setEnviosRutina(prev => prev.filter(x => x.id !== envio.id));
@@ -4406,7 +4483,7 @@ function AmigoView({ amigo, misBests, customRoutines, onVolver, onToast }){
     if(!rutina) return;
     setOcupado(true);
     const payload = JSON.parse(b64urlDecode(encodeRoutine(rutina).slice(SHARE_PREFIX.length)));
-    const r = await cloud.mandarRutina({ amigoId:amigo.id, name:rutina.name, dias:rutina.days.length, payload });
+    const r = await cloud.mandarRutina({ amigoId:amigo.id, clientId:rutina.id, name:rutina.name, dias:rutina.days.length, payload });
     setOcupado(false);
     if(!r.ok){ onToast({ title:"No se ha podido mandar", sub:r.msg, icon:ShieldAlert }); return; }
     cloud.avisarAmigos("rutina", { nombre:rutina.name });
@@ -5617,6 +5694,7 @@ function RutinasDeAmigos({ onImportar, yaTengo }){
     if (!decodificada.ok) { setMsg(decodificada.msg); return; }
     onImportar({ ...decodificada.routine,
       sharedFrom: { handle: fila.handle, displayName: fila.display_name },
+      origen: { ownerId: fila.owner_id, clientId: fila.client_id, updatedAt: fila.updated_at },
       bonusHecho: false });
     setMsg(`«${fila.name}» añadida. La primera vez que la entrenes te llevas ${XP_RUTINA_AMIGO} XP extra.`);
   }
