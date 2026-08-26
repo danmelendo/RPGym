@@ -2228,8 +2228,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 4;
-const APP_VERSION_NAME = "1.0.3";
+const APP_VERSION_CODE = 5;
+const APP_VERSION_NAME = "1.0.4";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2519,6 +2519,39 @@ export default function App(){
     setLoading(false);
   })(); },[]);
 
+  /* Todo lo que se trae de la nube en cuanto hay sesión. Se llama desde los DOS
+     sitios donde puede aparecer una: al abrir la app con la sesión guardada y al
+     iniciar sesión a mano. El ref evita repetir la carga cuando supabase-js
+     reemite el evento (arranque, refresco de token) para el mismo usuario. */
+  const socialCargadoPara = useRef(null);
+  async function cargarSocial(userId){
+    if(!cloud.cloudEnabled) return;
+    if(userId && socialCargadoPara.current === userId) return;
+    socialCargadoPara.current = userId || null;
+    const p = await cloud.miPerfil();
+    if(p.ok) setPerfil(p.perfil);
+    cloud.ping();                                   // keep-alive, sin esperar
+    const pub = await cloud.misRutinasPublicadas();
+    if(pub.ok) setPublicadas(pub.ids);
+    const q = await cloud.listarQuedadas();
+    if(q.ok) setQuedadas(q.quedadas);
+    // Novedades desde la última visita. La marca es local: no hace falta
+    // guardar en el servidor cuándo abriste la app por última vez.
+    const desde = await loadGlobal("gym:ultimaVisita", null);
+    const nv = await cloud.novedades(desde);
+    if(nv.ok) setNovedades(nv.novedades);
+    const ea = await cloud.quienEntrenaAhora();
+    if(ea.ok) setEntrenando(ea.sesiones);
+    const sup = await cloud.meHanSuperado();
+    if(sup.ok) setSuperadoPor(sup.filas);
+    const am = await cloud.listarAmigos();
+    if(am.ok) setAmigos(am.amigos);
+    // Registra el dispositivo en FCM. Sin google-services.json el plugin no
+    // existe y esto no hace nada: la app funciona igual.
+    if(push.pushDisponible()) push.activarPush();
+    saveGlobal("gym:ultimaVisita", new Date().toISOString());
+  }
+
   /* Al abrir con sesión: ping (mantiene vivo el proyecto gratis de Supabase, que
      se pausa tras ~1 semana sin actividad) y comprobación de versión nueva.
      Todo en segundo plano: si falla, la app ni se entera. */
@@ -2530,40 +2563,18 @@ export default function App(){
       if(!vivo) return;
       setCloudSession(ses);
       setSesionResuelta(true);
-      if(ses){
-        const p = await cloud.miPerfil();
-        if(vivo && p.ok) setPerfil(p.perfil);
-        cloud.ping();                                   // keep-alive, sin esperar
-        const pub = await cloud.misRutinasPublicadas();
-        if(vivo && pub.ok) setPublicadas(pub.ids);
-        const q = await cloud.listarQuedadas();
-        if(vivo && q.ok) setQuedadas(q.quedadas);
-        // Novedades desde la última visita. La marca es local: no hace falta
-        // guardar en el servidor cuándo abriste la app por última vez.
-        const desde = await loadGlobal("gym:ultimaVisita", null);
-        const nv = await cloud.novedades(desde);
-        if(vivo && nv.ok) setNovedades(nv.novedades);
-        const ea = await cloud.quienEntrenaAhora();
-        if(vivo && ea.ok) setEntrenando(ea.sesiones);
-        const sup = await cloud.meHanSuperado();
-        if(vivo && sup.ok) setSuperadoPor(sup.filas);
-        const am = await cloud.listarAmigos();
-        if(vivo && am.ok) setAmigos(am.amigos);
-        // Registra el dispositivo en FCM. Sin google-services.json el plugin no
-        // existe y esto no hace nada: la app funciona igual.
-        if(push.pushDisponible()) push.activarPush();
-        saveGlobal("gym:ultimaVisita", new Date().toISOString());
-      }
+      if(ses) await cargarSocial(ses.user?.id);
       const v = await cloud.versionMasNueva(APP_VERSION_CODE);
       if(vivo && v.ok && v.hayNueva) setUpdateInfo(v.version);
     })();
     const off = cloud.onAuthChange(async(ses)=>{
       if(!vivo) return;
       setCloudSession(ses);
-      if(!ses){ setPerfil(null); return; }
-      const p = await cloud.miPerfil();
-      if(vivo && p.ok) setPerfil(p.perfil);
-      cloud.ping();
+      if(!ses){ setPerfil(null); socialCargadoPara.current = null; return; }
+      // Entrar a mano pasa por aquí, no por el arranque: sin esto, quien
+      // iniciaba sesión se quedaba sin quedadas, sin amigos y sin novedades
+      // hasta cerrar y volver a abrir la app.
+      cargarSocial(ses.user?.id);
     });
     // Con la app abierta, Android no muestra la notificación: se enseña como aviso.
     const offPush = push.alRecibirEnPrimerPlano(({ texto })=>{
@@ -3027,6 +3038,7 @@ export default function App(){
     await cloud.salir();
     setCloudSession(null); setPerfil(null);
     setAmigos([]); setQuedadas([]); setNovedades([]); setEntrenando([]); setSuperadoPor([]);
+    socialCargadoPara.current = null;
     setSinCuenta(false); setTab("home");    // al salir se vuelve a la pantalla de entrar
     showToast({ title:"Sesión cerrada", sub:"Tu progreso sigue en este móvil.", icon:Lock });
   }
@@ -3125,7 +3137,7 @@ export default function App(){
         {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank }}/>}
         {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines,
           cloudEnabled:cloud.cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos:refrescarAmigos, onQuitarAmigo:quitarAmigo,
-          exportBackup, importBackup }}/>}
+          exportBackup, importBackup, quedadas }}/>}
         {tab==="logros" && <AchievementsView {...{ state, level }}/>}
         {tab==="dieta" && <DietView {...{ state, useCheat, mealPlan, saveMealPlan, excludes, setExcludes, setTab, customDiet, saveCustomDiet }}/>}
         {tab==="editor" && <RoutineBuilderView {...{ draft:routineDraft, setDraft:setRoutineDraft, onSave:saveRoutineFromEditor, onCancel:closeEditor, isNew:draftIsNew }}/>}
@@ -5919,7 +5931,7 @@ function ResultsView({ results, setTab, level, rank }){
 
 const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
-function WorkoutCalendar({ log, sub }){
+function WorkoutCalendar({ log, sub, quedadas }){
   const [month, setMonth] = useState(()=>{ const d=new Date(); return { y:d.getFullYear(), m:d.getMonth() }; });
   const [sel, setSel] = useState(null);
 
@@ -5934,12 +5946,24 @@ function WorkoutCalendar({ log, sub }){
   const iso = d => `${month.y}-${String(month.m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
   const today = todayISO();
   const payISO = sub?.enabled && sub.renewalDay ? nextRenewalDate(sub.renewalDay) : null;
+  // Quedadas por día. `cuando` viene en UTC del servidor: se pasa a fecha LOCAL
+  // con isoOf, nunca con toISOString (una quedada de las 00:30 caería en la
+  // víspera y el punto saldría en el día que no es).
+  const quedadasPorDia = {};
+  (quedadas||[]).forEach(q=>{
+    if(!q?.cuando) return;
+    const d = new Date(q.cuando);
+    if(isNaN(d)) return;
+    (quedadasPorDia[isoOf(d)] = quedadasPorDia[isoOf(d)] || []).push(q);
+  });
   const monthCount = Object.keys(byDate).filter(k=>k.startsWith(`${month.y}-${String(month.m+1).padStart(2,"0")}`)).length;
 
   function shift(n){ let m=month.m+n, y=month.y; if(m<0){ m=11; y--; } if(m>11){ m=0; y++; } setMonth({ y, m }); setSel(null); }
 
   const navBtn = { background:"var(--card2)", border:"1px solid var(--line2)", borderRadius:8, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)" };
   const selWorkouts = sel ? (byDate[sel] || []) : [];
+  const selQuedadas = sel ? (quedadasPorDia[sel] || []) : [];
+  const hayQuedadas = Object.keys(quedadasPorDia).length > 0;
 
   return (
     <div className="fh-card" style={{ padding:16, marginTop:12 }}>
@@ -5958,18 +5982,25 @@ function WorkoutCalendar({ log, sub }){
           if(d===null) return <div key={"b"+i}/>;
           const dISO = iso(d);
           const has = !!byDate[dISO];
+          const hasQ = !!quedadasPorDia[dISO];
+          const abrible = has || hasQ;
           const isToday = dISO===today;
           const isPay = dISO===payISO;
           const isSel = dISO===sel;
           return (
-            <button key={dISO} onClick={()=>has ? setSel(isSel?null:dISO) : null}
-              style={{ aspectRatio:"1", borderRadius:9, position:"relative", cursor:has?"pointer":"default",
-                background: has ? "rgba(232,176,75,.16)" : "transparent",
+            <button key={dISO} onClick={()=>abrible ? setSel(isSel?null:dISO) : null}
+              style={{ aspectRatio:"1", borderRadius:9, position:"relative", cursor:abrible?"pointer":"default",
+                background: has ? "rgba(232,176,75,.16)" : hasQ ? "rgba(123,180,255,.14)" : "transparent",
                 border: `1px solid ${isSel?"var(--gold)":isToday?"var(--sky)":"transparent"}`,
-                color: has?"var(--txt)":"var(--faint)", fontSize:12.5, fontWeight:has?700:500,
+                color: abrible?"var(--txt)":"var(--faint)", fontSize:12.5, fontWeight:abrible?700:500,
                 display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'JetBrains Mono',monospace" }}>
               {d}
-              {has && <span style={{ position:"absolute", bottom:4, width:4, height:4, borderRadius:"50%", background:"var(--gold)" }}/>}
+              {(has || hasQ) && (
+                <span style={{ position:"absolute", bottom:4, display:"flex", gap:2 }}>
+                  {has  && <span style={{ width:4, height:4, borderRadius:"50%", background:"var(--gold)" }}/>}
+                  {hasQ && <span style={{ width:4, height:4, borderRadius:"50%", background:"var(--sky)" }}/>}
+                </span>
+              )}
               {isPay && <span style={{ position:"absolute", top:2, right:3, fontSize:9, color:"var(--ember)", fontWeight:700 }}>€</span>}
             </button>
           );
@@ -5978,13 +6009,29 @@ function WorkoutCalendar({ log, sub }){
 
       <div style={{ display:"flex", gap:14, marginTop:12, flexWrap:"wrap", fontSize:10.5, color:"var(--faint)" }}>
         <span style={{ display:"flex", alignItems:"center", gap:5 }}><span style={{ width:6, height:6, borderRadius:"50%", background:"var(--gold)" }}/> Entreno</span>
+        {hayQuedadas && <span style={{ display:"flex", alignItems:"center", gap:5 }}><span style={{ width:6, height:6, borderRadius:"50%", background:"var(--sky)" }}/> Quedada</span>}
         <span style={{ display:"flex", alignItems:"center", gap:5 }}><span style={{ width:8, height:8, borderRadius:3, border:"1px solid var(--sky)" }}/> Hoy</span>
         {payISO && <span style={{ display:"flex", alignItems:"center", gap:5 }}><span style={{ color:"var(--ember)", fontWeight:700 }}>€</span> Renovación</span>}
       </div>
 
-      {sel && selWorkouts.length>0 && (
+      {sel && (selWorkouts.length>0 || selQuedadas.length>0) && (
         <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid var(--line)" }}>
           <div style={{ fontSize:12, color:"var(--muted)", marginBottom:8 }}>{sel.slice(8,10)}/{sel.slice(5,7)}/{sel.slice(0,4)}</div>
+          {selQuedadas.map((q,i)=>{
+            const h = new Date(q.cuando);
+            const hora = isNaN(h) ? "" : `${String(h.getHours()).padStart(2,"0")}:${String(h.getMinutes()).padStart(2,"0")}`;
+            return (
+              <div key={"q"+i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"6px 0", fontSize:13 }}>
+                <span style={{ display:"flex", alignItems:"center", gap:8, minWidth:0 }}>
+                  <Users size={14} color="var(--sky)" style={{ flexShrink:0 }}/>
+                  <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {hora}{q.lugar ? ` · ${q.lugar}` : ""}{q.es_mia ? " · tuya" : q.display_name ? ` · ${q.display_name}` : ""}
+                  </span>
+                </span>
+                <span className="disp" style={{ color:"var(--muted)", fontSize:12, flexShrink:0 }}>{q.van || 0} {(q.van||0)===1?"va":"van"}</span>
+              </div>
+            );
+          })}
           {selWorkouts.map((w,i)=>(
             <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"6px 0", fontSize:13 }}>
               <span style={{ display:"flex", alignItems:"center", gap:8 }}><Dumbbell size={14} color="var(--gold)"/> {w.routineName}{w.dayName?` · ${w.dayName}`:""}</span>
@@ -6067,7 +6114,7 @@ function CycleCalendar({ cycle }){
   );
 }
 
-function ProgressView({ state, log, measures, addMeasurement, customRoutines, cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos, onQuitarAmigo, exportBackup, importBackup }){
+function ProgressView({ state, log, measures, addMeasurement, customRoutines, cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos, onQuitarAmigo, exportBackup, importBackup, quedadas }){
   const [form, setForm] = useState({ weightKg:"", chest:"", waist:"", arm:"" });
   const volData=log.slice(-12).map((s,i)=>({ name:`S${i+1}`, v:s.volume }));
   const weightData=measures.map(m=>({ name:m.date.slice(5), v:m.weightKg }));
@@ -6109,7 +6156,7 @@ function ProgressView({ state, log, measures, addMeasurement, customRoutines, cl
         </>
       )}
 
-      <WorkoutCalendar log={log} sub={state.sub}/>
+      <WorkoutCalendar log={log} sub={state.sub} quedadas={quedadas}/>
 
       {state.cycle?.enabled && <CycleCalendar cycle={state.cycle}/>}
 
