@@ -45,7 +45,14 @@ function stripApkFromBuild() {
 }
 
 // Base relativa para que los assets carguen dentro del WebView de Capacitor.
+/* Las notificaciones push solo se activan si Firebase está configurado. Sin
+   google-services.json, el plugin de Android llama a FirebaseMessaging y la app
+   CRASHEA: pasó en la v1.0.0. Esta bandera lo impide desde el build. */
+const pushConfigurado = fs.existsSync("android/app/google-services.json");
+if (!pushConfigurado) console.log("[push] sin google-services.json: notificaciones push desactivadas en este build");
+
 export default defineConfig({
+  define: { __PUSH_CONFIGURADO__: JSON.stringify(pushConfigurado) },
   plugins: [react(), serveApk(), stripApkFromBuild()],
   base: "./",
   build: { outDir: "dist", chunkSizeWarningLimit: 1500 },

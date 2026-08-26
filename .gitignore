@@ -23,3 +23,6 @@ android/keystore.properties
 
 # Firebase: identifica la app, no da permisos de envío. Fuera por costumbre.
 android/app/google-services.json
+
+# Capturas y volcados de Playwright (pruebas locales)
+.playwright-mcp/

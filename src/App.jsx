@@ -2228,8 +2228,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 2;
-const APP_VERSION_NAME = "1.0.1";
+const APP_VERSION_CODE = 3;
+const APP_VERSION_NAME = "1.0.2";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2487,6 +2487,9 @@ export default function App(){
   /* --- Nube (opcional). Si no hay credenciales, todo esto se queda a null y la
      app va 100% local, exactamente como antes. Ver ROADMAP-SOCIAL.md. --- */
   const [cloudSession, setCloudSession] = useState(null);
+  /* Hasta que no se sabe si había sesión guardada NO se decide qué pantalla
+     mostrar: si no, el login parpadea un instante en cada arranque. */
+  const [sesionResuelta, setSesionResuelta] = useState(!cloud.cloudEnabled);
   const [perfil, setPerfil] = useState(null);
   const [updateInfo, setUpdateInfo] = useState(null);
   const [publicadas, setPublicadas] = useState([]);   // ids de mis rutinas visibles para amigos
@@ -2495,6 +2498,8 @@ export default function App(){
   const [entrenando, setEntrenando] = useState([]);   // amigos entrenando ahora mismo
   const [sesionConjunta, setSesionConjunta] = useState(null);
   const [adelantados, setAdelantados] = useState([]);      // a quién he superado con el último récord
+  const [sinCuenta, setSinCuenta] = useState(false);       // ha elegido usar la app sin registrarse
+  const [amigos, setAmigos] = useState([]);
   const [superadoPor, setSuperadoPor] = useState([]);      // quién me ha adelantado a mí
   const [cargandoQuedadas, setCargandoQuedadas] = useState(false);
   const [draftIsNew, setDraftIsNew] = useState(false);
@@ -2524,6 +2529,7 @@ export default function App(){
       const ses = await cloud.getSession();
       if(!vivo) return;
       setCloudSession(ses);
+      setSesionResuelta(true);
       if(ses){
         const p = await cloud.miPerfil();
         if(vivo && p.ok) setPerfil(p.perfil);
@@ -2541,6 +2547,8 @@ export default function App(){
         if(vivo && ea.ok) setEntrenando(ea.sesiones);
         const sup = await cloud.meHanSuperado();
         if(vivo && sup.ok) setSuperadoPor(sup.filas);
+        const am = await cloud.listarAmigos();
+        if(vivo && am.ok) setAmigos(am.amigos);
         // Registra el dispositivo en FCM. Sin google-services.json el plugin no
         // existe y esto no hace nada: la app funciona igual.
         if(push.pushDisponible()) push.activarPush();
@@ -2912,6 +2920,17 @@ export default function App(){
   function saveMealPlan(mp){ setMealPlan(mp); saveKey("gym:mealplan", mp); }
   function setExcludes(next){ setExcludesState(next); saveKey("gym:excludes", next); }
 
+  async function refrescarAmigos(){
+    if(!cloud.cloudEnabled) return;
+    const r = await cloud.listarAmigos();
+    if(r.ok) setAmigos(r.amigos);
+  }
+  async function quitarAmigo(id){
+    const r = await cloud.borrarAmigo(id);
+    if(r.ok) refrescarAmigos();
+    else showToast({ title:"No se ha podido", sub:r.msg, icon:ShieldAlert });
+  }
+
   async function refrescarEntrenando(){
     if(!cloud.cloudEnabled || !perfil) return;
     const r = await cloud.quienEntrenaAhora();
@@ -3007,6 +3026,8 @@ export default function App(){
   async function salirCuenta(){
     await cloud.salir();
     setCloudSession(null); setPerfil(null);
+    setAmigos([]); setQuedadas([]); setNovedades([]); setEntrenando([]); setSuperadoPor([]);
+    setSinCuenta(false); setTab("home");    // al salir se vuelve a la pantalla de entrar
     showToast({ title:"Sesión cerrada", sub:"Tu progreso sigue en este móvil.", icon:Lock });
   }
   /* Sube SOLO lo que se ve en la clasificación. Nada de peso, medidas ni ciclo. */
@@ -3066,6 +3087,22 @@ export default function App(){
     </div>
   );
 
+  /* Si la nube está configurada y no hay sesión recordada, lo primero es entrar.
+     Con sesión guardada se va directo a Inicio, sin pedir nada. "Seguir sin
+     cuenta" deja usar la app entera en local, como siempre. */
+  if(cloud.cloudEnabled && sesionResuelta && !cloudSession && !sinCuenta && !needsOnboarding) return (
+    <div className="fh" id="rpgym-root" data-theme={theme}>
+      <StyleTag/>
+      <Toast toast={toast}/>
+      <div className="fh-shell">
+        <AccountView {...{ state, level, setTab, session:cloudSession, perfil,
+          onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onVerificar:verificarCuenta,
+          onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle,
+          arranque:true, onSinCuenta:()=>setSinCuenta(true) }}/>
+      </div>
+    </div>
+  );
+
   if(needsOnboarding) return (
     <div className="fh" data-theme={theme}>
       <StyleTag/>
@@ -3079,24 +3116,28 @@ export default function App(){
       <Toast toast={toast}/>
       <div className="fh-shell">
         {tab==="home" && <HomeView {...{ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines,
-          cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), quedadas, novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno, superadoPor }}/>}
+          cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), quedadas, novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno, superadoPor,
+          onRefrescarQuedadas:refrescarQuedadas, cargandoQuedadas,
+          onCargarTabla:(p,a)=>cloud.leaderboard(p, a) }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina }}/>}
         {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines }}/>}
         {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests, sesionConjunta }}/>}
         {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank }}/>}
-        {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines }}/>}
+        {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines,
+          cloudEnabled:cloud.cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos:refrescarAmigos, onQuitarAmigo:quitarAmigo,
+          exportBackup, importBackup }}/>}
         {tab==="logros" && <AchievementsView {...{ state, level }}/>}
         {tab==="dieta" && <DietView {...{ state, useCheat, mealPlan, saveMealPlan, excludes, setExcludes, setTab, customDiet, saveCustomDiet }}/>}
         {tab==="editor" && <RoutineBuilderView {...{ draft:routineDraft, setDraft:setRoutineDraft, onSave:saveRoutineFromEditor, onCancel:closeEditor, isNew:draftIsNew }}/>}
         {tab==="ajustes" && <SettingsView {...{ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup }}/>}
         {tab==="cuenta" && <AccountView {...{ state, level, setTab, session:cloudSession, perfil,
-          onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onVerificar:verificarCuenta, onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle, onRefrescar:(p,soloAmigos)=>cloud.leaderboard(p, soloAmigos),
-          quedadas, onRefrescarQuedadas:refrescarQuedadas, cargandoQuedadas, exportBackup, importBackup }}/>}
+          onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onVerificar:verificarCuenta,
+          onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle }}/>}
       </div>
 
       {tab!=="workout" && tab!=="results" && tab!=="editor" && (
         <nav className="fh-nav"><div className="fh-nav-inner">
-          {[{id:"home",icon:Home,label:"Inicio"},{id:"rutinas",icon:Dumbbell,label:"Rutinas"},{id:"ficha",icon:ScrollText,label:"Ficha"},{id:"progreso",icon:TrendingUp,label:"Progreso"},{id:"logros",icon:Trophy,label:"Logros"},{id:"dieta",icon:Utensils,label:"Dieta"}].map(t=>{
+          {[{id:"home",icon:Home,label:"Inicio"},{id:"rutinas",icon:Dumbbell,label:"Rutinas"},{id:"ficha",icon:ScrollText,label:"Ficha"},{id:"progreso",icon:Swords,label:"RPGym"},{id:"logros",icon:Trophy,label:"Logros"},{id:"dieta",icon:Utensils,label:"Dieta"}].map(t=>{
             const I=t.icon; return <button key={t.id} className={tab===t.id?"on":""} onClick={()=>setTab(t.id)}><I size={20}/><span>{t.label}</span></button>;
           })}
         </div></nav>
@@ -3423,6 +3464,75 @@ function CopiaNubePanel({ exportBackup, importBackup }){
   </>);
 }
 
+/* Clasificación: tres periodos y dos alcances (tu círculo o todos).
+   Vive en Inicio, que es donde se mira de verdad. */
+function ClasificacionCard({ perfil, cargar }){
+  const [periodo, setPeriodo] = useState("semanal");
+  const [soloAmigos, setSoloAmigos] = useState(true);
+  const [tabla, setTabla] = useState(null);
+  const [cargandoTabla, setCargandoTabla] = useState(false);
+  const yo = perfil?.handle;
+
+  async function ver(p = periodo, a = soloAmigos){
+    setCargandoTabla(true);
+    const r = await cargar(p, a);
+    setCargandoTabla(false);
+    setTabla(r.ok ? r.filas : []);
+  }
+  useEffect(()=>{ ver(periodo, soloAmigos); /* eslint-disable-next-line */ }, [periodo, soloAmigos, perfil?.handle]);
+
+  const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
+
+  return (<>
+      <div style={sectionTitle}>CLASIFICACIÓN</div>
+      <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+        {[[true,"Mi círculo"],[false,"Todos"]].map(([v,lab])=>(
+          <button key={lab} className="fh-btn" onClick={()=>setSoloAmigos(v)}
+            style={{ flex:1, padding:"8px", fontSize:12, background:soloAmigos===v?"var(--card2)":"var(--card)", color:soloAmigos===v?"var(--gold)":"var(--faint)", border:`1px solid ${soloAmigos===v?"var(--gold)":"var(--line)"}` }}>{lab}</button>
+        ))}
+      </div>
+      <div style={{ display:"flex", gap:6, marginBottom:10 }}>
+        {cloud.PERIODOS.map(p=>(
+          <button key={p.id} className="fh-btn" onClick={()=>setPeriodo(p.id)}
+            style={{ flex:1, padding:"9px", fontSize:12.5, background:periodo===p.id?"var(--gold)":"var(--card)", color:periodo===p.id?"#0F131A":"var(--muted)", border:periodo===p.id?"none":"1px solid var(--line)" }}>{p.label}</button>
+        ))}
+      </div>
+      <div className="fh-card" style={{ padding:16 }}>
+        <div style={{ fontSize:11.5, color:"var(--faint)", marginBottom:10, lineHeight:1.45 }}>
+          {periodo==="semanal" ? "XP ganado desde el lunes."
+            : periodo==="mensual" ? "XP ganado este mes."
+            : "XP total desde que empezaste, incluido lo de antes de tener cuenta."}
+        </div>
+        {cargandoTabla && <Empty text="Cargando clasificación…"/>}
+        {!cargandoTabla && tabla && tabla.length <= 1 && (
+          <Empty text={soloAmigos ? "Solo estás tú. Invita a alguien con tu código." : "Todavía no hay nadie más registrado."}/>
+        )}
+        {!cargandoTabla && tabla && tabla.map((p,i)=>{
+          const esYo = p.handle === yo;
+          const sinActividad = periodo !== "historica" && !p.xp;
+          return (
+            <div key={p.id} style={{ display:"flex", alignItems:"center", gap:11, padding:"9px 0", borderTop:i?"1px solid var(--line)":"none", opacity:sinActividad?.55:1 }}>
+              <span className="cinzel" style={{ width:22, textAlign:"center", fontSize:14, fontWeight:700, color:i===0&&!sinActividad?"var(--gold)":i===1&&!sinActividad?"var(--muted)":i===2&&!sinActividad?"var(--ember)":"var(--faint)" }}>{i+1}</span>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13.5, fontWeight:esYo?700:500, color:esYo?"var(--gold)":"var(--txt)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {p.display_name || p.handle}{esYo && " · tú"}
+                </div>
+                <div style={{ fontSize:11, color:"var(--faint)", marginTop:1 }}>
+                  Nivel {p.level} · {p.entrenos ?? 0} entreno{(p.entrenos ?? 0)===1?"":"s"}{periodo!=="historica" && sinActividad ? " · sin actividad" : ""}
+                </div>
+              </div>
+              <span className="mono" style={{ fontSize:12.5, color:esYo?"var(--gold)":"var(--muted)", flexShrink:0 }}>{p.xp} XP</span>
+            </div>
+          );
+        })}
+        <button className="fh-btn" onClick={()=>ver()} disabled={cargandoTabla}
+          style={{ width:"100%", marginTop:12, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:10, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+          <Shuffle size={14}/> Actualizar
+        </button>
+      </div>
+  </>);
+}
+
 /* El pique: amigos que te han adelantado en algún ejercicio.
    Es lo que de verdad pica y hace volver al gimnasio. */
 function MeHanSuperado({ filas, setTab }){
@@ -3534,10 +3644,6 @@ function NovedadesCard({ novedades, onCerrar, setTab }){
           );
         })}
       </div>
-      <button className="fh-btn" onClick={()=>setTab("cuenta")}
-        style={{ width:"100%", marginTop:12, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:10, fontSize:12.5 }}>
-        Ver la clasificación
-      </button>
     </div>
   );
 }
@@ -3703,33 +3809,6 @@ function QuedadasPanel({ quedadas, onRefrescar, cargando }){
   </>);
 }
 
-/* Tarjeta compacta para Inicio: la próxima quedada a la que has dicho que vas. */
-function ProximaQuedada({ quedadas, setTab }){
-  const prox = (quedadas || []).find(q => q.mi_respuesta === "voy") || (quedadas || [])[0];
-  if (!prox) return null;
-  const voy = prox.mi_respuesta === "voy";
-  return (
-    <div className="fh-card" style={{ padding:14, marginTop:12, borderColor:voy?"var(--jade)":"var(--line)", display:"flex", gap:11, alignItems:"flex-start" }}>
-      <CalendarDays size={18} color={voy?"var(--jade)":"var(--gold)"} style={{ flexShrink:0, marginTop:1 }}/>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:12.5, color:"var(--txt)", lineHeight:1.45 }}>
-          {voy ? <>Has quedado <b>{cuandoTexto(prox.cuando)}</b></> : <>{prox.display_name || "@"+prox.handle} propone entrenar <b>{cuandoTexto(prox.cuando)}</b></>}
-          {prox.lugar ? ` · ${prox.lugar}` : ""}
-        </div>
-        <div style={{ fontSize:11.5, color:"var(--faint)", marginTop:3 }}>
-          {prox.van === 1 ? "va 1 persona" : `van ${prox.van} personas`}
-          {" · "}
-          <button onClick={()=>setTab("cuenta")} style={{ background:"none", border:"none", padding:0, color:"var(--gold)", cursor:"pointer", font:"inherit" }}>
-            {voy ? "ver" : "contestar"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* Sección de amigos: invitar por código y canjear el que te pasen.
-   Círculo cerrado, sin buscador de usuarios ni solicitudes pendientes. */
 function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar }){
   const [modo, setModo] = useState(null);          // invitar | canjear
   const [codigo, setCodigo] = useState("");
@@ -3862,20 +3941,15 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar }){
   </>);
 }
 
-function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle, onRefrescar, quedadas, onRefrescarQuedadas, cargandoQuedadas, exportBackup, importBackup }){
+function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle, arranque, onSinCuenta }){
   const [modo, setModo] = useState("entrar");          // entrar | registro
   const [f, setF] = useState({ email:"", password:"", handle:"", displayName:"" });
   const [msg, setMsg] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [pidiendoCodigo, setPidiendoCodigo] = useState(null);   // correo pendiente de verificar
   const [codigo, setCodigo] = useState("");
-  const [tabla, setTabla] = useState(null);
-  const [cargandoTabla, setCargandoTabla] = useState(false);
-  const [periodo, setPeriodo] = useState("semanal");
   const [editandoHandle, setEditandoHandle] = useState(false);
   const [handleNuevo, setHandleNuevo] = useState("");
-  const [soloAmigos, setSoloAmigos] = useState(true);   // por defecto, tu círculo
-  const [amigos, setAmigos] = useState([]);
 
   const label = { padding:"0 2px 6px", fontSize:12, color:"var(--muted)", fontWeight:600 };
   const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
@@ -3907,24 +3981,6 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
     setMsg(r.ok ? { ok:true, t:"Te hemos mandado otro código." } : { ok:false, t:r.msg });
   }
 
-  async function verTabla(p = periodo, amigosSolo = soloAmigos){
-    setCargandoTabla(true);
-    const r = await onRefrescar(p, amigosSolo);
-    setCargandoTabla(false);
-    setTabla(r.ok ? r.filas : []);
-    if (!r.ok) setMsg({ ok:false, t:r.msg });
-  }
-  async function refrescarAmigos(){
-    const r = await cloud.listarAmigos();
-    if (r.ok) setAmigos(r.amigos);
-    verTabla();
-  }
-  async function quitarAmigo(id){
-    const r = await cloud.borrarAmigo(id);
-    if (r.ok) refrescarAmigos(); else setMsg({ ok:false, t:r.msg });
-  }
-  useEffect(()=>{ if (session && perfil) { verTabla(periodo, soloAmigos); } /* eslint-disable-next-line */ }, [session?.user?.id, perfil?.handle, periodo, soloAmigos]);
-  useEffect(()=>{ if (session && perfil) refrescarAmigos(); /* eslint-disable-next-line */ }, [session?.user?.id, perfil?.handle]);
 
   /* --- Registro hecho, falta el código del correo --- */
   if (!session && pidiendoCodigo) return (
@@ -3975,10 +4031,14 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
   if (!session) return (
     <div className="fh-in">
       <header style={{ padding:"22px 2px 8px", display:"flex", alignItems:"center", gap:10 }}>
-        <button onClick={()=>setTab("home")} aria-label="Volver" style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
+        {!arranque && (
+          <button onClick={()=>setTab("home")} aria-label="Volver" style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
+        )}
         <div>
-          <h1 style={{ margin:0, fontSize:22 }}>Cuenta</h1>
-          <p style={{ margin:"3px 0 0", fontSize:13, color:"var(--muted)" }}>Para compartir rutinas y verte con tus amigos.</p>
+          <h1 style={{ margin:0, fontSize:22 }}>{arranque ? "RPGym" : "Cuenta"}</h1>
+          <p style={{ margin:"3px 0 0", fontSize:13, color:"var(--muted)" }}>
+            {arranque ? "Entra para verte con tus amigos." : "Para compartir rutinas y verte con tus amigos."}
+          </p>
         </div>
       </header>
 
@@ -4032,8 +4092,16 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
         </button>
       </div>
 
+      {arranque && (
+        <button className="fh-btn" onClick={onSinCuenta}
+          style={{ width:"100%", marginTop:12, background:"none", color:"var(--muted)", border:"1px solid var(--line)", padding:12, fontSize:13 }}>
+          Seguir sin cuenta
+        </button>
+      )}
+
       <p style={{ fontSize:11.5, color:"var(--faint)", textAlign:"center", marginTop:14, lineHeight:1.55 }}>
-        Tu progreso actual no se pierde al crear la cuenta: sigue en el móvil.
+        {arranque ? "Sin cuenta la app funciona entera: solo te pierdes la parte de amigos."
+                  : "Tu progreso actual no se pierde al crear la cuenta: sigue en el móvil."}
       </p>
     </div>
   );
@@ -4093,58 +4161,6 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
         </div>
       )}
 
-      <AmigosPanel amigos={amigos} onRefrescarAmigos={refrescarAmigos} onQuitar={quitarAmigo}/>
-
-      <QuedadasPanel quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={cargandoQuedadas}/>
-
-      <CopiaNubePanel exportBackup={exportBackup} importBackup={importBackup}/>
-
-      <div style={sectionTitle}>CLASIFICACIÓN</div>
-      <div style={{ display:"flex", gap:6, marginBottom:8 }}>
-        {[[true,"Mi círculo"],[false,"Todos"]].map(([v,lab])=>(
-          <button key={lab} className="fh-btn" onClick={()=>setSoloAmigos(v)}
-            style={{ flex:1, padding:"8px", fontSize:12, background:soloAmigos===v?"var(--card2)":"var(--card)", color:soloAmigos===v?"var(--gold)":"var(--faint)", border:`1px solid ${soloAmigos===v?"var(--gold)":"var(--line)"}` }}>{lab}</button>
-        ))}
-      </div>
-      <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-        {cloud.PERIODOS.map(p=>(
-          <button key={p.id} className="fh-btn" onClick={()=>setPeriodo(p.id)}
-            style={{ flex:1, padding:"9px", fontSize:12.5, background:periodo===p.id?"var(--gold)":"var(--card)", color:periodo===p.id?"#0F131A":"var(--muted)", border:periodo===p.id?"none":"1px solid var(--line)" }}>{p.label}</button>
-        ))}
-      </div>
-      <div className="fh-card" style={{ padding:16 }}>
-        <div style={{ fontSize:11.5, color:"var(--faint)", marginBottom:10, lineHeight:1.45 }}>
-          {periodo==="semanal" ? "XP ganado desde el lunes."
-            : periodo==="mensual" ? "XP ganado este mes."
-            : "XP total desde que empezaste, incluido lo de antes de tener cuenta."}
-        </div>
-        {cargandoTabla && <Empty text="Cargando clasificación…"/>}
-        {!cargandoTabla && tabla && tabla.length <= 1 && (
-          <Empty text={soloAmigos ? "Solo estás tú. Invita a alguien con tu código." : "Todavía no hay nadie más registrado."}/>
-        )}
-        {!cargandoTabla && tabla && tabla.map((p,i)=>{
-          const esYo = p.handle === yo;
-          const sinActividad = periodo !== "historica" && !p.xp;
-          return (
-            <div key={p.id} style={{ display:"flex", alignItems:"center", gap:11, padding:"9px 0", borderTop:i?"1px solid var(--line)":"none", opacity:sinActividad?.55:1 }}>
-              <span className="cinzel" style={{ width:22, textAlign:"center", fontSize:14, fontWeight:700, color:i===0&&!sinActividad?"var(--gold)":i===1&&!sinActividad?"var(--muted)":i===2&&!sinActividad?"var(--ember)":"var(--faint)" }}>{i+1}</span>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:13.5, fontWeight:esYo?700:500, color:esYo?"var(--gold)":"var(--txt)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                  {p.display_name || p.handle}{esYo && " · tú"}
-                </div>
-                <div style={{ fontSize:11, color:"var(--faint)", marginTop:1 }}>
-                  Nivel {p.level} · {p.entrenos ?? 0} entreno{(p.entrenos ?? 0)===1?"":"s"}{periodo!=="historica" && sinActividad ? " · sin actividad" : ""}
-                </div>
-              </div>
-              <span className="mono" style={{ fontSize:12.5, color:esYo?"var(--gold)":"var(--muted)", flexShrink:0 }}>{p.xp} XP</span>
-            </div>
-          );
-        })}
-        <button className="fh-btn" onClick={()=>verTabla()} disabled={cargandoTabla}
-          style={{ width:"100%", marginTop:12, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:10, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-          <Shuffle size={14}/> Actualizar
-        </button>
-      </div>
 
       {msg && !msg.ok && (
         <div className="fh-card" style={{ padding:13, marginTop:12, borderColor:"var(--ember)", display:"flex", gap:10, alignItems:"flex-start" }}>
@@ -4628,7 +4644,7 @@ function CyclePhaseCard({ state, setTab }){
   );
 }
 
-function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor }){
+function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, onRefrescarQuedadas, cargandoQuedadas, onCargarTabla }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const RankIcon=rank.icon;
@@ -4647,7 +4663,7 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
         <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
           <div className="fh-chip" style={{ background:"rgba(232,176,75,.14)", color:"var(--gold)", display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap", flexShrink:0 }} title="Racha de días entrenados (los descansos no la rompen)"><Flame size={13}/> {habitStreak(log, state.reminders?.days)} d</div>
           {cloudEnabled && (
-            <button onClick={()=>setTab("cuenta")} aria-label="Cuenta y clasificación" style={{ background:"var(--card)", border:`1px solid ${perfil?"var(--gold)":"var(--line)"}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:perfil?"var(--gold)":"var(--muted)", flexShrink:0 }}><User size={17}/></button>
+            <button onClick={()=>setTab("cuenta")} aria-label="Tu cuenta" style={{ background:"var(--card)", border:`1px solid ${perfil?"var(--gold)":"var(--line)"}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:perfil?"var(--gold)":"var(--muted)", flexShrink:0 }}><User size={17}/></button>
           )}
           <button onClick={()=>setTab("ajustes")} aria-label="Ajustes" style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><Settings size={17}/></button>
         </div>
@@ -4691,7 +4707,8 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
       {cloudEnabled && perfil && <EntrenandoAhora sesiones={entrenando} onUnirme={onUnirme} setTab={setTab}/>}
       {cloudEnabled && perfil && <MeHanSuperado filas={superadoPor} setTab={setTab}/>}
       {cloudEnabled && perfil && <NovedadesCard novedades={novedades} onCerrar={onCerrarNovedades} setTab={setTab}/>}
-      {cloudEnabled && perfil && <ProximaQuedada quedadas={quedadas} setTab={setTab}/>}
+      {cloudEnabled && perfil && <QuedadasPanel quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={cargandoQuedadas}/>}
+      {cloudEnabled && perfil && <ClasificacionCard perfil={perfil} cargar={onCargarTabla}/>}
 
       {/* Racha (respeta descansos) */}
       <StreakCard log={log} plannedDays={state.reminders?.days} bestStreak={state.bestStreak} setTab={setTab}/>
@@ -6050,7 +6067,7 @@ function CycleCalendar({ cycle }){
   );
 }
 
-function ProgressView({ state, log, measures, addMeasurement, customRoutines }){
+function ProgressView({ state, log, measures, addMeasurement, customRoutines, cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos, onQuitarAmigo, exportBackup, importBackup }){
   const [form, setForm] = useState({ weightKg:"", chest:"", waist:"", arm:"" });
   const volData=log.slice(-12).map((s,i)=>({ name:`S${i+1}`, v:s.volume }));
   const weightData=measures.map(m=>({ name:m.date.slice(5), v:m.weightKg }));
@@ -6071,10 +6088,26 @@ function ProgressView({ state, log, measures, addMeasurement, customRoutines }){
 
   return (
     <div className="fh-in">
-      <header style={{ padding:"22px 2px 8px" }}>
-        <h1 style={{ margin:0, fontSize:22 }}>Progreso</h1>
-        <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Aquí ves el cambio antes que en el espejo.</p>
+      <header style={{ padding:"22px 2px 8px", display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10 }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <h1 style={{ margin:0, fontSize:22 }}>RPGym</h1>
+          <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Tu progreso y tu gente.</p>
+        </div>
+        {cloudEnabled && (
+          <button onClick={()=>setTab("cuenta")} aria-label="Cuenta"
+            style={{ background:"var(--card)", border:`1px solid ${perfil?"var(--gold)":"var(--line)"}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:perfil?"var(--gold)":"var(--muted)", flexShrink:0 }}>
+            <User size={17}/>
+          </button>
+        )}
       </header>
+
+      {cloudEnabled && perfil && (
+        <>
+          <AmigosPanel amigos={amigos} onRefrescarAmigos={onRefrescarAmigos} onQuitar={onQuitarAmigo}/>
+          <CopiaNubePanel exportBackup={exportBackup} importBackup={importBackup}/>
+          <div style={{ fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" }}>TU PROGRESO</div>
+        </>
+      )}
 
       <WorkoutCalendar log={log} sub={state.sub}/>
 

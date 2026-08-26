@@ -16,14 +16,23 @@ import * as cloud from "./cloud.js";
 
 const PN = () => (typeof window !== "undefined" && window.Capacitor?.Plugins?.PushNotifications) || null;
 
-/* ¿Estamos dentro del APK con el plugin disponible? */
-export const pushDisponible = () => !!PN();
+/* CUIDADO: que el plugin exista NO basta. En Android llama a
+   FirebaseMessaging.getInstance(), que revienta con una excepción nativa si no
+   hay google-services.json. Comprobar solo el puente hizo que la app CRASHEARA
+   en la v1.0.0: el plugin estaba, Firebase no.
+   Por eso hace falta además la bandera de build, que solo es cierta cuando el
+   fichero de Firebase existe (ver vite.config.js). */
+export const pushDisponible = () => PUSH_CONFIGURADO && !!PN();
+
+/* La define la inyecta Vite al compilar. Si no existe (dev), se asume que no. */
+const PUSH_CONFIGURADO = typeof __PUSH_CONFIGURADO__ !== "undefined" ? __PUSH_CONFIGURADO__ : false;
 
 let yaRegistrado = false;
 
 /* Pide permiso, registra el dispositivo en FCM y guarda el token en Supabase
    para que la Edge Function sepa a quién avisar. */
 export async function activarPush(){
+  if (!PUSH_CONFIGURADO) return { ok:false, msg:"Las notificaciones push todavía no están configuradas en esta versión." };
   const pn = PN();
   if (!pn) return { ok:false, msg:"Las notificaciones push solo funcionan en la app instalada." };
   if (yaRegistrado) return { ok:true, yaEstaba:true };
