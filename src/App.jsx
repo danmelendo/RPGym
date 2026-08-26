@@ -1003,6 +1003,112 @@ function cardioRecordText(rec){
 /* Etiqueta de cada métrica de cardio (para contar el récord batido). */
 const CARDIO_UNITS = { min:"min", km:"km", kcal:"kcal", pace:"km/h" };
 
+/* =========================================================================
+   CARDIO · ESTIMACIÓN DE KILÓMETROS Y CALORÍAS
+
+   La consola de la máquina manda siempre: esto solo rellena el hueco cuando
+   no la miras (o cuando la máquina no lo enseña), y se puede corregir a mano.
+   Por eso los campos quedan marcados como estimados hasta que los tocas.
+
+   Las fórmulas no son inventadas. Vienen de:
+
+   · Ecuaciones metabólicas del ACSM (American College of Sports Medicine):
+       - Marcha:   VO2 = 0,1·S + 1,8·S·G + 3,5     (S en m/min, G pendiente)
+       - Carrera:  VO2 = 0,2·S + 0,9·S·G + 3,5
+       - Cicloergómetro (piernas): VO2 = 10,8·W/kg + 7
+     VO2 en ml/kg/min; 1 MET = 3,5 ml/kg/min.
+   · Calorías: kcal/min = MET · 3,5 · peso(kg) / 200.
+   · Velocidad en bici desde la potencia, por resistencia aerodinámica:
+       P = ½·ρ·CdA·v³  ->  v = (P / (½·ρ·CdA))^(1/3)
+     con ρ = 1,225 kg/m³ y CdA ≈ 0,4 m² (postura erguida de gimnasio).
+   · Remo: fórmula de Concept2, P = 2,80 / ritmo³ (ritmo en s/m).
+
+   EL NIVEL DE LA MÁQUINA NO ESTÁ NORMALIZADO entre marcas: la conversión a
+   vatios es una aproximación razonable para una máquina de gimnasio con
+   niveles 1-20, no una medida. De ahí que se enseñe como "aprox.".
+   ========================================================================= */
+
+/* Qué se le pide a cada máquina y cómo se convierte en esfuerzo.
+   - "velocidad": la cinta, donde el usuario pone km/h y la distancia sale
+     exacta (velocidad × tiempo). No hay nada que estimar.
+   - "nivel": el resto, donde el nivel se traduce a vatios. */
+const CARDIO_MAQUINAS = {
+  "Cinta de correr":          { modo:"velocidad", vDef:9 },
+  "Caminar en cinta":         { modo:"velocidad", vDef:5.5 },
+  "Calentamiento en cinta o bici": { modo:"velocidad", vDef:6 },
+  /* Vatios ≈ base + paso·nivel. Valores típicos de una bici de gimnasio a
+     unas 70 rpm: nivel 1 ronda los 30 W y nivel 20 pasa de 250 W. */
+  "Bici estática":            { modo:"nivel", wBase:20, wPaso:12, distancia:"bici" },
+  "Elíptica":                 { modo:"nivel", wBase:25, wPaso:11, distancia:"zancada" },
+  "Máquina de remo":          { modo:"nivel", wBase:40, wPaso:14, distancia:"remo" },
+  "Escaladora":               { modo:"nivel", wBase:35, wPaso:13, distancia:null },
+};
+
+const METS_REPOSO = 3.5;                       // ml/kg/min
+
+/* VO2 de la marcha o la carrera, en ml/kg/min. Sin pendiente: las cintas del
+   gimnasio se usan casi siempre en llano y pedir la inclinación por serie era
+   una casilla más para algo que casi nadie toca. */
+function vo2Cinta(kmh){
+  const S = (Number(kmh) || 0) * 1000 / 60;    // m/min
+  if(S <= 0) return METS_REPOSO;
+  return S < 134                               // ~8 km/h: por debajo se camina
+    ? 0.1 * S + METS_REPOSO
+    : 0.2 * S + METS_REPOSO;
+}
+
+/* VO2 del cicloergómetro del ACSM. Necesita el peso porque los vatios son
+   absolutos: los mismos 150 W cuestan mucho más a quien pesa menos. */
+function vo2Vatios(watts, pesoKg){
+  const kg = Math.max(35, Number(pesoKg) || 75);
+  return 10.8 * (Number(watts) || 0) / kg + 7;
+}
+
+/* Velocidad en bici estática a partir de la potencia (m/s -> km/h). */
+function kmhDeVatios(watts){
+  const w = Math.max(0, Number(watts) || 0);
+  const v = Math.cbrt(w / (0.5 * 1.225 * 0.4));       // m/s
+  return v * 3.6;
+}
+
+/* Ritmo de remo (segundos por 500 m) a partir de la potencia, Concept2. */
+function kmhRemo(watts){
+  const w = Math.max(1, Number(watts) || 0);
+  const ritmo = Math.cbrt(2.80 / w);                   // s/m
+  return ritmo > 0 ? (1 / ritmo) * 3.6 : 0;            // m/s -> km/h
+}
+
+/* Estimación completa de una tirada de cardio.
+   Devuelve { km, kcal, aprox } — aprox=false cuando la distancia es exacta
+   (cinta), true cuando sale de una conversión de nivel a vatios. */
+function estimarCardio({ nombre, minutos, nivel, kmh, pesoKg }){
+  const min = Number(minutos) || 0;
+  const m = CARDIO_MAQUINAS[nombre];
+  if(!m || min <= 0) return null;
+
+  let vo2, velocidad = 0, exacta = false;
+
+  if(m.modo === "velocidad"){
+    const v = Number(kmh) || m.vDef;
+    vo2 = vo2Cinta(v);
+    velocidad = v;
+    exacta = true;                                     // km = velocidad × tiempo
+  } else {
+    const lv = Math.max(1, Math.min(30, Number(nivel) || 0));
+    if(!nivel) return null;                            // sin nivel no hay nada que estimar
+    const watts = m.wBase + m.wPaso * lv;
+    vo2 = vo2Vatios(watts, pesoKg);
+    if(m.distancia === "bici")     velocidad = kmhDeVatios(watts);
+    if(m.distancia === "zancada")  velocidad = kmhDeVatios(watts) * 0.55;   // la zancada avanza menos que una rueda
+    if(m.distancia === "remo")     velocidad = kmhRemo(watts);
+  }
+
+  const mets = vo2 / METS_REPOSO;
+  const kcal = Math.round(mets * METS_REPOSO * (Math.max(35, Number(pesoKg) || 75)) / 200 * min);
+  const km = velocidad > 0 ? Math.round(velocidad * (min / 60) * 100) / 100 : null;
+  return { km, kcal, aprox: !exacta, mets: Math.round(mets * 10) / 10 };
+}
+
 /* Descanso sugerido por defecto al añadir un ejercicio en el configurador (segundos). */
 /* --- CARDIO ---------------------------------------------------------------
    No lleva carga (ya está en BODYWEIGHT_EX) y, en el cardio continuo, tampoco
@@ -1020,6 +1126,9 @@ const MACHINE_CARDIO = new Set([
 /* Solo pedimos datos de consola si es máquina Y el objetivo va en minutos
    (en intervalos de segundos no tiene sentido apuntar km por serie). */
 const hasConsole = ex => isCardio(ex.name) && MACHINE_CARDIO.has(ex.name) && repUnit(ex.reps) === "MIN";
+/* La cinta se ajusta por velocidad, no por "nivel": ahí la distancia sale
+   exacta (velocidad × tiempo) y no hay nada que estimar. */
+const porVelocidad = nombre => CARDIO_MAQUINAS[nombre]?.modo === "velocidad";
 /* Un tiempo solo entra en los récords si está medido en minutos. */
 const tracksTime = ex => isCardio(ex.name) && repUnit(ex.reps) === "MIN";
 
@@ -2265,8 +2374,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 11;
-const APP_VERSION_NAME = "1.0.10";
+const APP_VERSION_CODE = 12;
+const APP_VERSION_NAME = "1.0.11";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -3389,7 +3498,8 @@ export default function App(){
           onVolver:()=>setTab("home") }}/>}
         {tab==="amigo" && amigoAbierto && <AmigoView {...{ amigo:amigoAbierto, misBests:state.bests,
           customRoutines, onVolver:cerrarAmigo, onToast:showToast }}/>}
-        {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests, sesionConjunta }}/>}
+        {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests, sesionConjunta,
+          peso:state.profile?.weightKg, sexo:state.profile?.sex, misBests:state.bests }}/>}
         {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank }}/>}
         {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines,
           cloudEnabled:cloud.cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos:refrescarAmigos, onQuitarAmigo:quitarAmigo, onAbrirAmigo:abrirAmigo,
@@ -6280,9 +6390,84 @@ function RoutineBuilderView({ draft, setDraft, onSave, onCancel, isNew }){
    ENTRENAMIENTO EN CURSO
    ========================================================================= */
 
-function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStart, bests, sesionConjunta }){
+/* Cambiar un ejercicio a media sesión: la máquina está ocupada, rota, o
+   simplemente hoy no te apetece. Sin esto la única salida era marcar como
+   hecho algo que no hiciste, y entonces las marcas y el historial mienten.
+
+   Se ofrecen primero los del MISMO grupo muscular, que es lo que hace que el
+   cambio no descuadre la rutina: si tocaba espalda, sigues haciendo espalda. */
+function SustituirPanel({ ex, onElegir, onCerrar }){
+  const [busca, setBusca] = useState("");
+  const grupo = BODY_MAP[ex.muscle || EX_MUSCLE[ex.name]];
+
+  const mismoGrupo = useMemo(()=>{
+    const t = String(busca||"").trim().toLowerCase();
+    return Object.keys(EX_MUSCLE)
+      .filter(n => n !== ex.name && BODY_MAP[EX_MUSCLE[n]] === grupo)
+      .filter(n => !t || n.toLowerCase().includes(t))
+      .sort((a,b)=>a.localeCompare(b,"es"))
+      .slice(0, 40);
+  }, [busca, grupo, ex.name]);
+
+  const otros = useMemo(()=>{
+    const t = String(busca||"").trim().toLowerCase();
+    if(t.length < 2) return [];
+    return Object.keys(EX_MUSCLE)
+      .filter(n => n !== ex.name && BODY_MAP[EX_MUSCLE[n]] !== grupo && n.toLowerCase().includes(t))
+      .sort((a,b)=>a.localeCompare(b,"es"))
+      .slice(0, 15);
+  }, [busca, grupo, ex.name]);
+
+  const Fila = ({ n, fuera }) => (
+    <button key={n} onClick={()=>onElegir(n)}
+      style={{ width:"100%", textAlign:"left", background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, padding:"10px 12px", marginBottom:6, cursor:"pointer", color:"var(--txt)", display:"flex", alignItems:"center", gap:9 }}>
+      <span style={{ flex:1, minWidth:0, fontSize:12.5, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n}</span>
+      {fuera && <span className="fh-chip" style={{ background:"var(--bg2)", color:"var(--faint)", border:"none", flexShrink:0, fontSize:10 }}>{BODY_MAP[EX_MUSCLE[n]]}</span>}
+      <Plus size={14} color="var(--gold)" style={{ flexShrink:0 }}/>
+    </button>
+  );
+
+  return (
+    <div className="fh-in" style={{ background:"var(--bg2)", border:"1px solid var(--line)", borderRadius:11, padding:"12px 13px", marginBottom:12 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:8 }}>
+        <span className="disp" style={{ fontWeight:600, fontSize:13 }}>Cambiar «{ex.name}»</span>
+        <button onClick={onCerrar} aria-label="Cerrar" style={{ background:"none", border:"none", padding:2, cursor:"pointer", color:"var(--faint)" }}><X size={15}/></button>
+      </div>
+      <p style={{ fontSize:11.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.45 }}>
+        ¿Ocupada o fuera de servicio? Elige otro y se apunta lo que has hecho de verdad. Las series de este ejercicio se vacían.
+      </p>
+      <input value={busca} onChange={e=>setBusca(e.target.value)} maxLength={30}
+        placeholder={`Buscar en ${grupo || "el catálogo"}…`} aria-label="Buscar un ejercicio"
+        style={{ textAlign:"left", marginBottom:10 }}/>
+
+      <div style={{ maxHeight:240, overflowY:"auto" }}>
+        {mismoGrupo.map(n => <Fila key={n} n={n}/>)}
+        {!mismoGrupo.length && !otros.length && (
+          <div style={{ fontSize:12, color:"var(--faint)", padding:"6px 2px" }}>Nada con ese nombre.</div>
+        )}
+        {otros.length > 0 && (<>
+          <div style={{ fontSize:10.5, color:"var(--faint)", fontWeight:700, letterSpacing:".06em", margin:"10px 2px 6px" }}>DE OTROS GRUPOS</div>
+          {otros.map(n => <Fila key={n} n={n} fuera/>)}
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStart, bests, sesionConjunta, peso, sexo, misBests }){
   const [rest, setRest] = useState(null);
   const [howOpen, setHowOpen] = useState(null);
+  /* Cronómetro del cardio: { exI, setI, desde }. Cuenta HACIA ARRIBA desde que
+     le das a Comenzar; el tiempo real es el que decides tú al parar, no un
+     objetivo que hay que teclear al acabar. */
+  const [crono, setCrono] = useState(null);
+  const [ahora, setAhora] = useState(Date.now());
+  const [sustituyendo, setSustituyendo] = useState(null);   // índice del ejercicio a cambiar
+  useEffect(()=>{
+    if(!crono) return;
+    const t = setInterval(()=>setAhora(Date.now()), 250);
+    return ()=>clearInterval(t);
+  }, [crono]);
   if(!session){ setTab("rutinas"); return null; }
   const isRecomp = session.isRecomp ?? (ROUTINES.find(r=>r.id===session.routineId)?.cat==="Recomposición");
 
@@ -6327,6 +6512,77 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
     update(exI,setI,"done",!wasDone);
     // El cardio continuo va con rest 0: no tiene sentido abrir el cronómetro de descanso.
     if(!wasDone && ex.rest>0) setRest(ex.rest);
+  }
+
+  /* --- Cronómetro de cardio ---------------------------------------------- */
+
+  function arrancarCrono(exI, setI){ setAhora(Date.now()); setCrono({ exI, setI, desde:Date.now() }); }
+
+  /* Al parar se apuntan los minutos de verdad y se rellenan km y kcal con la
+     estimación. Son un punto de partida: si miras la consola y dice otra cosa,
+     la escribes encima. Nunca se pisa un valor ya escrito a mano. */
+  function pararCrono(){
+    if(!crono) return;
+    const { exI, setI, desde } = crono;
+    const ex = session.exercises[exI];
+    const segundos = Math.max(1, Math.round((Date.now() - desde) / 1000));
+    const unidad = repUnit(ex.reps);
+    const valor = unidad === "MIN" ? Math.max(1, Math.round(segundos / 60)) : segundos;
+
+    const l = ex.logs[setI];
+    const est = hasConsole(ex)
+      ? estimarCardio({ nombre:ex.name, minutos:segundos/60, pesoKg:peso,
+          nivel: porVelocidad(ex.name) ? null : l.level,
+          kmh:   porVelocidad(ex.name) ? l.level : null })
+      : null;
+
+    const exercises = session.exercises.map((e,i)=> i!==exI ? e : ({ ...e, logs:e.logs.map((x,j)=>{
+      if(j!==setI) return x;
+      const n = { ...x, reps:String(valor), segundos };
+      if(est){
+        if(est.km != null && !x.km)  { n.km = String(est.km); n.kmEstimado = true; }
+        if(est.kcal && !x.kcal)      { n.kcal = String(est.kcal); n.kcalEstimado = true; }
+      }
+      return n;
+    }) }));
+    setSession({ ...session, exercises });
+    setCrono(null);
+  }
+
+  /* --- Sustituir un ejercicio -------------------------------------------- */
+
+  /* La máquina está ocupada o rota y haces otra cosa. Cambiarlo aquí evita la
+     única alternativa que había: apuntar como hecho algo que no hiciste. */
+  function sustituirEjercicio(exI, nombreNuevo){
+    const viejo = session.exercises[exI];
+    if(!nombreNuevo || nombreNuevo === viejo.name) { setSustituyendo(null); return; }
+    const reps = defaultReps(nombreNuevo);
+    const sinCarga = isBodyweight(nombreNuevo) || isCardio(nombreNuevo);
+    /* Mismo criterio que al empezar la sesión: marca conocida si la hay, y si
+       no el peso base ajustado por sexo. Sin esto el desplegable de peso salía
+       vacío y había que teclearlo. */
+    const conocida = misBests?.[nombreNuevo];
+    const base = sinCarga ? 0
+      : (conocida != null ? conocida : baseFor(nombreNuevo, sexo) * startWeightMult(session.rpe));
+    const sug = sinCarga ? "" : round25(base) || "";
+    const objetivo = String(reps).match(/^(\d+)/);
+    const nuevo = {
+      ...viejo,
+      name: nombreNuevo,
+      muscle: EX_MUSCLE[nombreNuevo] || viejo.muscle,
+      base,
+      reps,
+      rest: defaultRest(nombreNuevo),
+      sustituyeA: viejo.sustituyeA || viejo.name,
+      // Las series ya hechas no se arrastran: eran de otro ejercicio.
+      logs: viejo.logs.map(()=>(isCardio(nombreNuevo)
+        ? { weight:"", reps: objetivo ? objetivo[1] : "", km:"", kcal:"", level:"", done:false }
+        : { weight:sug, reps: parseTargetReps(reps), done:false })),
+    };
+    const exercises = session.exercises.map((e,i)=> i===exI ? nuevo : e);
+    setSession({ ...session, exercises });
+    setSustituyendo(null);
+    if(crono?.exI === exI) setCrono(null);
   }
 
   const mult=ENERGY[session.energy].mult;
@@ -6391,11 +6647,23 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
           <div key={exI} className="fh-card" style={{ padding:15, marginBottom:11 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10, gap:8 }}>
               <div><div className="disp" style={{ fontWeight:700, fontSize:15 }}>{ex.name}</div>
-                <div style={{ fontSize:11, color:"var(--faint)" }}>objetivo {ex.reps}{ex.rest>0?` · descanso ${ex.rest}s`:""}{ex.note?<span style={{ color:"var(--ember)" }}> · {ex.note}</span>:""}</div></div>
-              <button onClick={()=>setHowOpen(howOpen===exI?null:exI)} style={{ flexShrink:0, background:"var(--bg2)", border:`1px solid ${howOpen===exI?"var(--gold)":"var(--line2)"}`, borderRadius:9, padding:"6px 10px", cursor:"pointer", color:howOpen===exI?"var(--gold)":"var(--muted)", display:"flex", alignItems:"center", gap:4, fontSize:11, fontFamily:"'Space Grotesk',sans-serif", fontWeight:600 }}>
-                <Info size={13}/> Cómo
-              </button>
+                <div style={{ fontSize:11, color:"var(--faint)" }}>objetivo {ex.reps}{ex.rest>0?` · descanso ${ex.rest}s`:""}{ex.note?<span style={{ color:"var(--ember)" }}> · {ex.note}</span>:""}</div>
+                {ex.sustituyeA && <div style={{ fontSize:10.5, color:"var(--sky)", marginTop:3 }}>en lugar de {ex.sustituyeA}</div>}</div>
+              <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+                <button onClick={()=>{ setSustituyendo(sustituyendo===exI?null:exI); setHowOpen(null); }}
+                  aria-label={`Sustituir ${ex.name}`} title="La máquina está ocupada o rota"
+                  style={{ background:"var(--bg2)", border:`1px solid ${sustituyendo===exI?"var(--gold)":"var(--line2)"}`, borderRadius:9, padding:"6px 10px", cursor:"pointer", color:sustituyendo===exI?"var(--gold)":"var(--muted)", display:"flex", alignItems:"center", gap:4, fontSize:11, fontFamily:"'Space Grotesk',sans-serif", fontWeight:600 }}>
+                  <Shuffle size={13}/> Cambiar
+                </button>
+                <button onClick={()=>{ setHowOpen(howOpen===exI?null:exI); setSustituyendo(null); }} style={{ background:"var(--bg2)", border:`1px solid ${howOpen===exI?"var(--gold)":"var(--line2)"}`, borderRadius:9, padding:"6px 10px", cursor:"pointer", color:howOpen===exI?"var(--gold)":"var(--muted)", display:"flex", alignItems:"center", gap:4, fontSize:11, fontFamily:"'Space Grotesk',sans-serif", fontWeight:600 }}>
+                  <Info size={13}/> Cómo
+                </button>
+              </div>
             </div>
+            {sustituyendo===exI && (
+              <SustituirPanel ex={ex} onElegir={n=>sustituirEjercicio(exI, n)} onCerrar={()=>setSustituyendo(null)}/>
+            )}
+
             {howOpen===exI && (
               <div className="fh-in" style={{ background:"var(--bg2)", border:"1px solid var(--line)", borderRadius:11, padding:"11px 13px", marginBottom:12 }}>
                 <ExImage name={ex.name}/>
@@ -6433,10 +6701,15 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
             {/* Nivel de la máquina: el mismo para toda la tirada */}
             {consola && (
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                <span style={{ fontSize:11, color:"var(--muted)", whiteSpace:"nowrap" }}>Nivel de la máquina</span>
-                <input inputMode="numeric" placeholder="—" value={curLevel}
-                  onChange={e=>setExerciseField(exI, "level", e.target.value.replace(/[^\d]/g,"").slice(0,2))}
-                  aria-label="Nivel de la máquina" style={{ flex:1, padding:"8px 12px", fontSize:14 }}/>
+                <span style={{ fontSize:11, color:"var(--muted)", whiteSpace:"nowrap" }}>
+                  {porVelocidad(ex.name) ? "Velocidad (km/h)" : "Nivel de la máquina"}
+                </span>
+                <input inputMode="decimal" placeholder="—" value={curLevel}
+                  onChange={e=>setExerciseField(exI, "level", porVelocidad(ex.name)
+                    ? e.target.value.replace(/[^\d.,]/g,"").replace(",",".").slice(0,4)
+                    : e.target.value.replace(/[^\d]/g,"").slice(0,2))}
+                  aria-label={porVelocidad(ex.name) ? "Velocidad en km por hora" : "Nivel de la máquina"}
+                  style={{ flex:1, padding:"8px 12px", fontSize:14 }}/>
               </div>
             )}
 
@@ -6457,21 +6730,56 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
               {consola && <><span style={{ textAlign:"center" }}>KM</span><span style={{ textAlign:"center" }}>KCAL</span></>}
               <span></span>
             </div>
-            {ex.logs.map((l,setI)=>(
-              <div key={setI} style={{ display:"grid", gridTemplateColumns:cols, gap:consola?6:8, alignItems:"center", marginBottom:7 }}>
-                <span className="mono" style={{ fontSize:13, color:"var(--muted)", textAlign:"center" }}>{setI+1}</span>
-                {!bw && <input inputMode="decimal" placeholder="0" value={l.weight} onChange={e=>update(exI,setI,"weight",e.target.value)} disabled={l.done} style={{ opacity:l.done?.5:1 }}/>}
-                <input inputMode="numeric" placeholder="0" value={l.reps} onChange={e=>update(exI,setI,"reps",e.target.value)} disabled={l.done} style={{ opacity:l.done?.5:1, padding:consola?"10px 6px":undefined }}/>
-                {consola && <>
-                  <input inputMode="decimal" placeholder="—" value={l.km||""} onChange={e=>update(exI,setI,"km",e.target.value)} disabled={l.done} aria-label="Kilómetros recorridos" style={{ opacity:l.done?.5:1, padding:"10px 6px" }}/>
-                  <input inputMode="numeric" placeholder="—" value={l.kcal||""} onChange={e=>update(exI,setI,"kcal",e.target.value)} disabled={l.done} aria-label="Calorías quemadas" style={{ opacity:l.done?.5:1, padding:"10px 6px" }}/>
-                </>}
-                <button className="fh-btn" onClick={()=>completeSet(exI,setI)}
-                  style={{ height:40, background:l.done?"var(--jade)":"var(--card2)", color:l.done?"#0F131A":"var(--muted)", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", gap:4, border:l.done?"none":"1px solid var(--line2)" }}>
-                  {l.done ? <><Check size={15}/> Hecho</> : ex.rest>0 ? <><Timer size={13}/> Descanso</> : <><Check size={14}/> Marcar</>}
-                </button>
+            {ex.logs.map((l,setI)=>{
+              const contando = crono?.exI===exI && crono?.setI===setI;
+              const seg = contando ? Math.max(0, Math.round((ahora - crono.desde)/1000)) : 0;
+              return (
+              <div key={setI}>
+                <div style={{ display:"grid", gridTemplateColumns:cols, gap:consola?6:8, alignItems:"center", marginBottom:7 }}>
+                  <span className="mono" style={{ fontSize:13, color:"var(--muted)", textAlign:"center" }}>{setI+1}</span>
+                  {!bw && <input inputMode="decimal" placeholder="0" value={l.weight} onChange={e=>update(exI,setI,"weight",e.target.value)} disabled={l.done} style={{ opacity:l.done?.5:1 }}/>}
+                  <input inputMode="numeric" placeholder="0" value={l.reps} onChange={e=>update(exI,setI,"reps",e.target.value)} disabled={l.done} style={{ opacity:l.done?.5:1, padding:consola?"10px 6px":undefined }}/>
+                  {consola && <>
+                    <input inputMode="decimal" placeholder="—" value={l.km||""}
+                      onChange={e=>{ update(exI,setI,"km",e.target.value); update(exI,setI,"kmEstimado",false); }}
+                      disabled={l.done} aria-label="Kilómetros recorridos"
+                      style={{ opacity:l.done?.5:1, padding:"10px 6px", color:l.kmEstimado?"var(--sky)":undefined }}/>
+                    <input inputMode="numeric" placeholder="—" value={l.kcal||""}
+                      onChange={e=>{ update(exI,setI,"kcal",e.target.value); update(exI,setI,"kcalEstimado",false); }}
+                      disabled={l.done} aria-label="Calorías quemadas"
+                      style={{ opacity:l.done?.5:1, padding:"10px 6px", color:l.kcalEstimado?"var(--sky)":undefined }}/>
+                  </>}
+                  <button className="fh-btn" onClick={()=>completeSet(exI,setI)}
+                    style={{ height:40, background:l.done?"var(--jade)":"var(--card2)", color:l.done?"#0F131A":"var(--muted)", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", gap:4, border:l.done?"none":"1px solid var(--line2)" }}>
+                    {l.done ? <><Check size={15}/> Hecho</> : ex.rest>0 ? <><Timer size={13}/> Descanso</> : <><Check size={14}/> Marcar</>}
+                  </button>
+                </div>
+
+                {/* Cardio: el tiempo se mide, no se teclea. */}
+                {cardio && !l.done && (
+                  contando ? (
+                    <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:9, padding:"9px 11px", background:"rgba(63,185,132,.10)", border:"1px solid var(--jade)", borderRadius:11 }}>
+                      <span className="mono" style={{ fontSize:22, fontWeight:700, color:"var(--jade)", minWidth:78, fontVariantNumeric:"tabular-nums" }}>
+                        {String(Math.floor(seg/60)).padStart(2,"0")}:{String(seg%60).padStart(2,"0")}
+                      </span>
+                      <span style={{ flex:1, fontSize:11, color:"var(--muted)", lineHeight:1.4 }}>En marcha. Para cuando acabes.</span>
+                      <button className="fh-btn" onClick={pararCrono}
+                        style={{ background:"var(--jade)", padding:"9px 15px", fontSize:12.5, flexShrink:0 }}>Detener</button>
+                    </div>
+                  ) : (
+                    <button className="fh-btn" onClick={()=>arrancarCrono(exI,setI)} disabled={!!crono}
+                      style={{ width:"100%", marginBottom:9, background:"var(--card2)", color:crono?"var(--faint)":"var(--txt)", border:"1px solid var(--line2)", padding:10, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                      <Timer size={14} color={crono?"var(--faint)":"var(--jade)"}/> {l.segundos ? "Repetir la toma" : "Comenzar"}
+                    </button>
+                  )
+                )}
+                {cardio && !l.done && (l.kmEstimado || l.kcalEstimado) && (
+                  <div style={{ fontSize:10.5, color:"var(--sky)", margin:"-4px 2px 9px", lineHeight:1.4 }}>
+                    Km y calorías son un cálculo aproximado{consola && !curLevel ? " (pon el nivel para afinarlo)" : ""}. Si la consola dice otra cosa, escríbela encima.
+                  </div>
+                )}
               </div>
-            ))}
+            );})}
           </div>
         );
       })}

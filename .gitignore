@@ -26,3 +26,11 @@ android/app/google-services.json
 
 # Capturas y volcados de Playwright (pruebas locales)
 .playwright-mcp/
+
+# Firebase: la clave del service account es SECRETA y no se sube nunca.
+# google-services.json tampoco: cada uno pone el suyo (y de él depende que el
+# build active el push, ver vite.config.js).
+android/app/google-services.json
+android/app/*firebase-adminsdk*.json
+supabase/.env.firebase
+supabase/.temp/
