@@ -23,19 +23,24 @@ tumbaba la app al arrancar. Para reactivarlo, por orden:
 
 Sin ello la app funciona igual, con los avisos locales al abrir.
 
-## 🟡 2. Traducir los correos de Supabase
+## 🟡 2. Dejar el código del correo en 6 dígitos
+
+El proyecto está en **8** y la app espera 6, así que el registro no se puede
+terminar. *Authentication → Sign In / Providers → Email → **Email OTP Length** → 6*.
+
+## 🟡 3. Traducir los correos de Supabase
 
 Siguen llegando en inglés. Las plantillas en español están escritas en
 [supabase/email-templates/](supabase/email-templates/): solo hay que pegarlas en
 *Authentication → Email Templates*.
 
-## 🟠 3. Higiene pendiente
+## 🟠 4. Higiene pendiente
 
 - [ ] **Rotar la contraseña de la base de datos**: se compartió por chat para aplicar la
       migración. *Settings → Database → Reset password*. La app **no la usa** (solo la
       anon key), así que rotarla no rompe nada.
 
-## 🔵 4. Higiene de credenciales
+## 🔵 5. Higiene de credenciales
 
 En `.env` (ignorado por git) conviven ahora públicas y secretas. **Regla: el prefijo
 `VITE_` hace que Vite incruste la variable dentro del APK.**
@@ -52,7 +57,7 @@ secret key.
 
 Si añades un secreto, **nunca** le pongas `VITE_` delante.
 
-## ⚪ 5. Fases siguientes (ver [ROADMAP-SOCIAL.md](ROADMAP-SOCIAL.md))
+## ⚪ 6. Fases siguientes (ver [ROADMAP-SOCIAL.md](ROADMAP-SOCIAL.md))
 
 Sincronización de rutinas y entrenos → amigos por código de invitación → hacer la
 rutina de un amigo → avisos → entrenar juntos.

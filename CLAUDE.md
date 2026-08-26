@@ -174,6 +174,30 @@ Guía completa y paso a paso en **[PLAYSTORE.md](PLAYSTORE.md)**. Resumen de lo 
   `app.melendo.forjahabito` conserva el nombre antiguo a propósito: es permanente y, una vez
   publicado en Play, no se puede cambiar.
 
+## Firma del APK que se reparte (IMPORTANTE)
+
+Los APK de las *releases* van firmados con la **clave de depuración**, no con el
+almacén de release. Se construyen con `npm run apk` (`assembleDebug`).
+
+**No cambies a `assembleRelease` para repartir por GitHub.** Android se niega a
+actualizar una app si la firma cambia: sale *"hay una diferencia de paquetes"* y la
+única salida es desinstalar, lo que **borra el progreso local**. Pasó en la 1.0.2, que
+hubo que retirar y reemplazar por la 1.0.3 firmada como las anteriores.
+
+Para comprobar con qué clave está firmado un APK:
+
+```bash
+JAVA_HOME="C:/Program Files/Android/Android Studio/jbr"   "$ANDROID_HOME/build-tools/35.0.0/apksigner.bat" verify --print-certs ruta/al.apk
+```
+
+- Depuración → `CN=Android Debug`, SHA-256 `4f7c3189…` ← **la que usan todos**
+- Release → `CN=RPGym, O=RPGym, C=ES`, SHA-256 `85fb9fcd…`
+
+El almacén de release (`npm run apk:release` / `npm run bundle`) sigue existiendo para
+el día que se suba a Play. Migrar a esa firma exige avisar antes, que todo el mundo
+exporte su copia (`Ajustes → Copia de seguridad`), desinstalar e instalar de cero. No
+se hace por accidente.
+
 ## Gotchas
 
 - **Fechas de día: NUNCA uses `toISOString()`.** `new Date("2026-08-24T00:00:00")` es medianoche **local**, así que `toISOString()` la pasa a UTC y en España devuelve el día anterior. Encadenar `mondayOf()` + `addDaysISO()` desplazaba el calendario **dos días** y por eso los días de entreno salían mal en Inicio. Usa siempre `isoOf(date)` y `parseISO(iso)`.
@@ -187,6 +211,7 @@ Guía completa y paso a paso en **[PLAYSTORE.md](PLAYSTORE.md)**. Resumen de lo 
 - No metas binarios grandes en `public/`: acaban dentro del APK. Si hace falta servirlos solo en dev, excluye del build como con `RPGym.apk`.
 - **Qué se sincroniza**: la app es de uso privado entre amigos, así que se suben entrenos con su detalle, marcas por ejercicio, medidas y rutinas. **Dos excepciones que NO se tocan**: los datos del **ciclo menstrual** y las rutinas marcadas como **privadas** por su dueño. Si añades sincronización nueva, respétalas.
 - **La parte social está en FASE 1** (cuentas, clasificación, keep-alive) y el resto planificado en [ROADMAP-SOCIAL.md](ROADMAP-SOCIAL.md) para **uso privado, repartiendo el APK a mano y sin pasar por Play**. Lo primero que rompe es el texto de `Ajustes → Privacidad`, que hoy promete al usuario que **no se recoge ni se envía nada**. No añadas red sin leer ese documento.
+- **Nunca cambies la firma del APK que se reparte** (ver la sección de arriba): rompe la actualización y obliga a desinstalar.
 - **Nada de recursos remotos** (fuentes, CDN, analítica, iconos por URL). La app debe seguir siendo 100% offline y sin llamadas a terceros, o la política de privacidad deja de ser cierta. Descarga y sirve desde `public/`.
 
 ---
