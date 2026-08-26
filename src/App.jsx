@@ -1531,6 +1531,16 @@ const RANKS = [
 /* Cuántas SESIONES incluyen cada ejercicio. No cuenta series: lo que interesa
    es "cuál es su ejercicio", y repetir 4 series el mismo día no lo convierte en
    favorito. Se sube junto a las marcas para poder señalarlo en la ficha. */
+/* Series completadas de un entreno. Los registros viejos (anteriores a que se
+   guardara el contador) no traen `series`, así que se cuentan de sus ejercicios
+   en vez de enseñar un cero que no es verdad. */
+function seriesDe(rec){
+  if(Number.isFinite(rec?.series)) return rec.series;
+  let n = 0;
+  (rec?.exercises || []).forEach(ex => (ex.logs || []).forEach(l => { if(l.done) n++; }));
+  return n;
+}
+
 function sesionesPorEjercicio(log){
   const n = {};
   (log||[]).forEach(rec=>(rec.exercises||[]).forEach(ex=>{
@@ -1721,8 +1731,12 @@ const ACHIEVEMENTS = [
   { id:"cien_ses", title:"Centurión", desc:"100 entrenamientos completados", xp:1500, icon:Crown },
   { id:"primer_pr", title:"Récord roto", desc:"Consigue tu primer récord personal", xp:75, icon:TrendingUp },
   { id:"pr_5", title:"Día de gloria", desc:"5 récords personales en una sola sesión", xp:250, icon:Star },
-  { id:"volumen_5k", title:"Toneladas", desc:"Mueve 5.000 kg en una sesión", xp:100, icon:Target },
-  { id:"volumen_10k", title:"Grúa humana", desc:"Mueve 10.000 kg en una sesión", xp:300, icon:Target },
+  /* Series, no kilos. Los kilos premian al que ya levanta mucho y no dicen nada
+     del esfuerzo del día; las series son las que se pueden decidir en el
+     momento: "me queda una, la hago". */
+  { id:"series_20", title:"Currante", desc:"20 series en una sesión", xp:100, icon:Target },
+  { id:"series_30", title:"Sin freno", desc:"30 series en una sesión", xp:300, icon:Target },
+  { id:"series_500", title:"Media vida aquí", desc:"500 series completadas en total", xp:600, icon:Target },
   { id:"semana_ok", title:"Semana perfecta", desc:"Cumple tu objetivo semanal por primera vez", xp:120, icon:Check },
   { id:"racha_4", title:"Constante", desc:"4 semanas seguidas cumpliendo el objetivo", xp:500, icon:Flame },
   { id:"racha_8", title:"Inquebrantable", desc:"8 semanas seguidas cumpliendo el objetivo", xp:1000, icon:Flame },
@@ -2251,8 +2265,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 10;
-const APP_VERSION_NAME = "1.0.9";
+const APP_VERSION_CODE = 11;
+const APP_VERSION_NAME = "1.0.10";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2863,7 +2877,7 @@ export default function App(){
 
     // Comparación con la última sesión igual
     const prevSame=[...log].reverse().find(s=>s.routineName===session.routineName && s.dayName===session.dayName);
-    const volDelta = prevSame ? Math.round(((volume-prevSame.volume)/(prevSame.volume||1))*100) : null;
+    const seriesDelta = prevSame ? seriesDone - seriesDe(prevSame) : null;
 
     // Logros
     const ach={ ...state.achievements }; const unlocked=[];
@@ -2872,7 +2886,8 @@ export default function App(){
     U("primer_paso", totalWorkouts>=1); U("diez_ses", totalWorkouts>=10); U("treinta_ses", totalWorkouts>=30);
     U("cincuenta_ses", totalWorkouts>=50); U("cien_ses", totalWorkouts>=100);
     U("primer_pr", prs>0||Object.keys(bests).length>=1); U("pr_5", prs>=5);
-    U("volumen_5k", volume>=5000); U("volumen_10k", volume>=10000);
+    U("series_20", seriesDone>=20); U("series_30", seriesDone>=30);
+    U("series_500", nlog.reduce((a,r)=>a + seriesDe(r), 0) >= 500);
     U("semana_ok", weekGoalMet); U("racha_4", weekStreak>=4); U("racha_8", weekStreak>=8);
     U("nivel_10", tentLevel>=10); U("nivel_20", tentLevel>=20); U("nivel_35", tentLevel>=35);
     U("fuerza_x2", doubled); U("explorador", routinesUsed.length>=5);
@@ -2951,7 +2966,7 @@ export default function App(){
     setResults({
       routineName:session.routineName, dayName:session.dayName, durationMin, seriesDone,
       volume:Math.round(volume), xpBase, xpSets, xpPr, xpGoal, missionXp, achXp, xpAmigo, amigoDe, xpConjunto, companeros, sessionXp:sessionXp+achXp+missionXp+xpAmigo+xpConjunto,
-      prs:prList, volDelta, unlocked, cheatEarned:goalJustMet, levelUp: finalLevel>prevLevel ? finalLevel : null,
+      prs:prList, seriesDelta, unlocked, cheatEarned:goalJustMet, levelUp: finalLevel>prevLevel ? finalLevel : null,
       muscleLevelUps, mGains, progressed, missionsDone, newStreak, bestStreak, bestStreakBeat: newStreak>(state.bestStreak||0),
       rankName: rankFor(finalLevel).name,
     });
@@ -5467,7 +5482,7 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const RankIcon=rank.icon;
   const phase=recommendedPhase(state.startDate);
-  const last=log.slice(-6).map((s,i)=>({ i, v:s.volume }));
+  const last=log.slice(-6).map((s,i)=>({ i, v:seriesDe(s) }));
   const week=weeksBetween(state.startDate, todayISO())+1;
   const greeting=useMemo(()=>greetingFor(state.profile?.name), [state.profile?.name]);
 
@@ -5619,7 +5634,7 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
             {last.length>1 ? <ResponsiveContainer width="100%" height="100%"><LineChart data={last}><Line type="monotone" dataKey="v" stroke="var(--gold)" strokeWidth={2} dot={false}/></LineChart></ResponsiveContainer>
               : <div style={{ fontSize:11, color:"var(--faint)", paddingTop:14 }}>Entrena para ver tu curva</div>}
           </div>
-          <div style={{ fontSize:11, color:"var(--muted)" }}>volumen reciente</div>
+          <div style={{ fontSize:11, color:"var(--muted)" }}>series recientes</div>
         </div>
       </div>
     </div>
@@ -6507,7 +6522,7 @@ function ResultsView({ results, setTab, level, rank }){
 
       {/* Stats principales */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:12 }}>
-        {[["+"+r.sessionXp,"XP","var(--gold)"],[r.volume+" kg","movidos","var(--jade)"],[r.durationMin+" min","duración","var(--sky)"]].map((s,i)=>(
+        {[["+"+r.sessionXp,"XP","var(--gold)"],[seriesDe(r),"series","var(--jade)"],[r.durationMin+" min","duración","var(--sky)"]].map((s,i)=>(
           <div key={i} className="fh-card" style={{ padding:14, textAlign:"center" }}>
             <div className="disp" style={{ fontSize:20, fontWeight:700, color:s[2] }}>{s[0]}</div>
             <div style={{ fontSize:10, color:"var(--muted)", marginTop:2 }}>{s[1]}</div>
@@ -6532,14 +6547,20 @@ function ResultsView({ results, setTab, level, rank }){
       </div>
 
       {/* Comparación */}
-      {r.volDelta!=null && (
+      {r.seriesDelta!=null && r.seriesDelta!==0 && (
         <div className="fh-card" style={{ padding:14, marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
-          <TrendingUp size={18} color={r.volDelta>=0?"var(--jade)":"var(--ember)"}/>
+          <TrendingUp size={18} color={r.seriesDelta>0?"var(--jade)":"var(--ember)"}/>
           <div style={{ fontSize:13 }}>
-            {r.volDelta>=0
-              ? <>Has movido un <b style={{ color:"var(--jade)" }}>{r.volDelta}% más</b> que la última vez en este día. Eso es progreso real.</>
-              : <>Hoy un <b style={{ color:"var(--ember)" }}>{Math.abs(r.volDelta)}% menos</b> que la última vez. Pasa: descansa y a por la próxima.</>}
+            {r.seriesDelta>0
+              ? <><b style={{ color:"var(--jade)" }}>{r.seriesDelta} serie{r.seriesDelta===1?"":"s"} más</b> que la última vez en este día. Eso es trabajo que suma.</>
+              : <><b style={{ color:"var(--ember)" }}>{Math.abs(r.seriesDelta)} serie{Math.abs(r.seriesDelta)===1?"":"s"} menos</b> que la última vez. Pasa: descansa y a por la próxima.</>}
           </div>
+        </div>
+      )}
+      {r.seriesDelta===0 && (
+        <div className="fh-card" style={{ padding:14, marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
+          <Check size={18} color="var(--jade)"/>
+          <div style={{ fontSize:13 }}>Mismas series que la última vez en este día. Constancia es exactamente esto.</div>
         </div>
       )}
 
@@ -6754,7 +6775,7 @@ function WorkoutCalendar({ log, sub, quedadas }){
           {selWorkouts.map((w,i)=>(
             <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"6px 0", fontSize:13 }}>
               <span style={{ display:"flex", alignItems:"center", gap:8 }}><Dumbbell size={14} color="var(--gold)"/> {w.routineName}{w.dayName?` · ${w.dayName}`:""}</span>
-              <span className="disp" style={{ color:"var(--muted)", fontSize:12 }}>{(w.volume||0).toLocaleString("es-ES")} kg</span>
+              <span className="disp" style={{ color:"var(--muted)", fontSize:12 }}>{seriesDe(w)} series</span>
             </div>
           ))}
         </div>
@@ -6835,7 +6856,7 @@ function CycleCalendar({ cycle }){
 
 function ProgressView({ state, log, measures, addMeasurement, customRoutines, cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos, onQuitarAmigo, onAbrirAmigo, quedadas, onRefrescarQuedadas }){
   const [form, setForm] = useState({ weightKg:"", chest:"", waist:"", arm:"" });
-  const volData=log.slice(-12).map((s,i)=>({ name:`S${i+1}`, v:s.volume }));
+  const volData=log.slice(-12).map((s,i)=>({ name:`S${i+1}`, v:seriesDe(s) }));
   const weightData=measures.map(m=>({ name:m.date.slice(5), v:m.weightKg }));
   const waistData=measures.filter(m=>m.waist).map(m=>({ name:m.date.slice(5), v:m.waist }));
   const bests=Object.entries(state.bests||{}).sort((a,b)=>b[1]-a[1]).slice(0,6);
@@ -6887,17 +6908,17 @@ function ProgressView({ state, log, measures, addMeasurement, customRoutines, cl
       </div>
 
       <div className="fh-card" style={{ padding:16, marginTop:12 }}>
-        <div className="disp" style={{ fontWeight:600, fontSize:15, marginBottom:4 }}>Fuerza total por sesión</div>
-        <div style={{ fontSize:11, color:"var(--muted)", marginBottom:10 }}>Kg totales movidos. Si sube, estás progresando.</div>
+        <div className="disp" style={{ fontWeight:600, fontSize:15, marginBottom:4 }}>Series por sesión</div>
+        <div style={{ fontSize:11, color:"var(--muted)", marginBottom:10 }}>Series completadas. Es el trabajo que sí depende de ti cada día.</div>
         {volData.length>1 ? (
           <ResponsiveContainer width="100%" height={150}><BarChart data={volData}>
             <CartesianGrid vertical={false} stroke="var(--line)"/>
             <XAxis dataKey="name" tick={{ fill:"var(--faint)", fontSize:10 }} axisLine={false} tickLine={false}/>
             <YAxis tick={{ fill:"var(--faint)", fontSize:10 }} axisLine={false} tickLine={false} width={34}/>
             <Tooltip contentStyle={{ background:"var(--card2)", border:"1px solid var(--line2)", borderRadius:10, fontSize:12 }} labelStyle={{ color:"var(--muted)" }} cursor={{ fill:"rgba(232,176,75,.08)" }}/>
-            <Bar dataKey="v" fill="var(--gold)" radius={[4,4,0,0]}/>
+            <Bar dataKey="v" name="Series" fill="var(--gold)" radius={[4,4,0,0]}/>
           </BarChart></ResponsiveContainer>
-        ) : <Empty text="Completa 2 sesiones para ver tu curva de fuerza"/>}
+        ) : <Empty text="Completa 2 sesiones para ver tu curva de trabajo"/>}
       </div>
 
       <div className="fh-card" style={{ padding:16, marginTop:12 }}>
@@ -6998,7 +7019,10 @@ function CharacterView({ state, level, rank, log, customRoutines, setTab }){
     return { ...s, xp, lv, into, need, rem:Math.max(0,need-into), all, done, todo }; });
   const power=stats.reduce((a,s)=>a+s.lv,0);
   const tier=powerTier(power);
-  const sorted=[...stats].sort((a,b)=>b.lv-a.lv);
+  /* Aguante queda fuera del "punto fuerte / punto débil": es cardio, un
+     complementario. Recomendarlo siempre (que es lo que pasaba, porque casi
+     nunca es el más alto) tapaba el grupo muscular que de verdad va retrasado. */
+  const sorted=[...stats].filter(s=>s.id!=="Aguante").sort((a,b)=>b.lv-a.lv);
   const strongest=sorted[0], weakest=sorted[sorted.length-1];
   const weakPick=weakest.todo.find(n=>inActive.has(n)) || weakest.todo[0] || weakest.done[0];
 
