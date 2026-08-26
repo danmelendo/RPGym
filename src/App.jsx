@@ -2241,8 +2241,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 8;
-const APP_VERSION_NAME = "1.0.7";
+const APP_VERSION_CODE = 9;
+const APP_VERSION_NAME = "1.0.8";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2253,6 +2253,23 @@ const BACKUP_FORMAT = 1;
 /* Claves globales (no dependen del perfil activo) */
 async function loadGlobal(key, fb){ try{ const r=await window.storage.get(key); return r?JSON.parse(r.value):fb; }catch{ return fb; } }
 async function saveGlobal(key, val){ try{ await window.storage.set(key, JSON.stringify(val)); }catch(e){ console.error(e); } }
+
+/* Avisos que se cierran PARA SIEMPRE. Antes vivían en un useState y volvían a
+   salir en cada arranque: cerrar algo y que reaparezca cansa más que el propio
+   aviso. Se guarda global (no por perfil): es una preferencia de lectura, no
+   progreso, y por eso tampoco va en BACKUP_KEYS.
+
+   Empieza en "cerrado" a propósito: así no parpadea mientras se lee el disco. */
+function useAvisoCerrado(clave){
+  const [cerrado, setCerrado] = useState(true);
+  useEffect(()=>{
+    let vivo = true;
+    loadGlobal("gym:aviso:" + clave, false).then(v => { if(vivo) setCerrado(!!v); });
+    return ()=>{ vivo = false; };
+  }, [clave]);
+  const cerrar = ()=>{ setCerrado(true); saveGlobal("gym:aviso:" + clave, true); };
+  return [cerrado, cerrar];
+}
 
 /* =========================================================================
    ESTILOS
@@ -2930,7 +2947,7 @@ export default function App(){
     // compararse. El ciclo y las rutinas privadas siguen sin salir del móvil.
     if(cloud.cloudEnabled && perfil){
       cloud.sincronizarPerfil({ level:finalLevel, xp:finalXp, totalWorkouts, bestStreak,
-        displayName:state.profile?.name, appVersion:APP_VERSION_NAME });
+        displayName:state.profile?.name, appVersion:APP_VERSION_NAME, atributos:ns.muscleXp || {} });
       cloud.registrarEntreno({ clientId:`${record.date}-${session.startedAt}`,
         day:record.date, xp:record.xp, prs:prList.length,
         rutina:`${record.routineName} · ${record.dayName}`, detalle:record.exercises });
@@ -2999,6 +3016,22 @@ export default function App(){
     return ()=>{ clearInterval(t); document.removeEventListener("visibilitychange", alVolver); };
     // eslint-disable-next-line
   },[cloudSession?.user?.id]);
+
+  /* Al abrir con sesión guardada también hay que subir el estado: si no, quien
+     ya estaba dentro nunca subiría sus atributos ni sus marcas y sus amigos le
+     verían la ficha vacía para siempre.
+
+     OJO con el momento: esto NO puede ir en cargarSocial(), que corre en el
+     montaje, cuando `state` es todavía el de por defecto. Subiría nivel 1 y XP
+     0 y machacaría el perfil bueno. Por eso espera a que el progreso local esté
+     leído (`loading` en false) y se hace una sola vez por sesión. */
+  const perfilSubidoRef = useRef(false);
+  useEffect(()=>{
+    if(loading || !cloud.cloudEnabled || !perfil || perfilSubidoRef.current) return;
+    perfilSubidoRef.current = true;
+    subirPerfil(perfil);
+    // eslint-disable-next-line
+  },[loading, perfil?.handle]);
 
   async function quitarAmigo(id){
     const r = await cloud.borrarAmigo(id);
@@ -3124,14 +3157,19 @@ export default function App(){
     setSinCuenta(false); setTab("home");    // al salir se vuelve a la pantalla de entrar
     showToast({ title:"Sesión cerrada", sub:"Tu progreso sigue en este móvil.", icon:Lock });
   }
-  /* Sube SOLO lo que se ve en la clasificación. Nada de peso, medidas ni ciclo. */
+  /* Sube lo que se ve en la clasificación y en tu ficha para los amigos: nivel,
+     XP, entrenos, racha y el XP por atributo. Nada de peso, medidas ni ciclo.
+     Se suben también las MARCAS, porque hasta ahora solo salían al terminar un
+     entreno: quien ya llevaba meses jugando aparecía vacío ante sus amigos. */
   function subirPerfil(p){
     if(!cloud.cloudEnabled || !(p || perfil)) return;
     cloud.sincronizarPerfil({
       level: levelFromXp(state.xp), xp: state.xp,
       totalWorkouts: state.totalWorkouts, bestStreak: state.bestStreak || 0,
       displayName: state.profile?.name, appVersion: APP_VERSION_NAME,
+      atributos: state.muscleXp || {},
     });
+    if(Object.keys(state.bests || {}).length) cloud.subirRecords(state.bests, sesionesPorEjercicio(log));
   }
 
   /* Mete una rutina que te han compartido (ya viene validada por decodeRoutine). */
@@ -3252,7 +3290,7 @@ export default function App(){
           onCargarTabla:(p,a)=>cloud.leaderboard(p, a),
           copiaNube, onRestaurarNube:restaurarDeNube, onDescartarCopia:()=>setCopiaNube(null),
           pendientes:solicitudes.length + enviosRutina.length, amigos }}/>}
-        {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina }}/>}
+        {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina, setTab }}/>}
         {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines, setTab }}/>}
         {tab==="avisos" && <AvisosView {...{ solicitudes, envios:enviosRutina,
           onResponderSolicitud:responderSolicitud, onResponderRutina:responderRutina,
@@ -4316,15 +4354,24 @@ function AmigoView({ amigo, misBests, customRoutines, onVolver, onToast }){
   const xpInto = (perfilAmigo.xp||0) - cumXpForLevel(nivel);
   const xpNeed = Math.max(1, cumXpForLevel(nivel+1) - cumXpForLevel(nivel));
 
-  /* Atributos a partir de sus marcas. Un ejercicio con marca cuenta como
-     "trabajado": en el servidor no hay volumen, así que se mide amplitud
-     (cuántos ejercicios del grupo domina) y no kilos acumulados. */
+  /* Sus atributos. El NIVEL sale del XP por grupo que sube con su perfil; los
+     ejercicios, de sus marcas. Lo que llega del servidor es XP en crudo, así
+     que el nivel se calcula aquí con la escala de ESTA versión de la app. */
+  const suXp = perfilAmigo.atributos || {};
   const porGrupo = {};
-  BODY_STATS.forEach(g=>{ porGrupo[g.id] = { hechos:[], total:(EXERCISES_BY_GROUP[g.id]||[]).length }; });
+  BODY_STATS.forEach(g=>{
+    const xp = Number(suXp[g.id]) || 0;
+    const lv = catLevel(xp);
+    porGrupo[g.id] = { hechos:[], total:(EXERCISES_BY_GROUP[g.id]||[]).length,
+      xp, lv, into: xp - catCumXp(lv), need: Math.max(1, catCumXp(lv+1) - catCumXp(lv)) };
+  });
   (ficha?.records || []).forEach(r=>{
     const grupo = BODY_MAP[EX_MUSCLE[r.ejercicio]];
     if(grupo && porGrupo[grupo]) porGrupo[grupo].hechos.push(r);
   });
+  const suPoder = BODY_STATS.reduce((a,g)=>a + porGrupo[g.id].lv, 0);
+  const suTier = powerTier(suPoder);
+  const tieneAtributos = BODY_STATS.some(g=>porGrupo[g.id].xp > 0);
 
   /* Mis marcas: manda el historial de este móvil, y las del servidor rellenan
      los huecos (móvil recién instalado, o marcas de antes de restaurar). */
@@ -4464,9 +4511,18 @@ function AmigoView({ amigo, misBests, customRoutines, onVolver, onToast }){
             Nada de listar lo que le falta: aquí se viene a ver qué hace, para
             proponerle el mismo ejercicio. El favorito (el que más repite) va
             marcado, que es el que seguro que acepta. */}
-        <div style={sectionTitle}>QUÉ ENTRENA</div>
+        <div style={sectionTitle}>SUS ATRIBUTOS</div>
+        {tieneAtributos && (
+          <div className="fh-card" style={{ padding:"13px 16px", marginBottom:8, display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+            <div>
+              <div style={{ fontSize:11.5, color:"var(--faint)", fontWeight:700, letterSpacing:".06em" }}>PODER TOTAL</div>
+              <div className="cinzel" style={{ fontSize:15, fontWeight:700, color:"var(--gold)", marginTop:2 }}>{suTier.name}</div>
+            </div>
+            <div className="cinzel" style={{ fontSize:26, fontWeight:700 }}>{suPoder}</div>
+          </div>
+        )}
         <div className="fh-card" style={{ padding:16 }}>
-          {BODY_STATS.filter(g=>porGrupo[g.id].hechos.length).map((g,i)=>{
+          {BODY_STATS.map((g,i)=>{
             const d = porGrupo[g.id];
             const Icon = g.icon;
             const abierto = grupoAbierto === g.id;
@@ -4475,19 +4531,26 @@ function AmigoView({ amigo, misBests, customRoutines, onVolver, onToast }){
             const favorito = orden[0];
             return (
               <div key={g.id} style={{ borderTop:i?"1px solid var(--line)":"none" }}>
-                <button onClick={()=>setGrupoAbierto(abierto?null:g.id)}
-                  style={{ width:"100%", background:"none", border:"none", padding:"11px 0", cursor:"pointer", color:"inherit", textAlign:"left", display:"flex", alignItems:"center", gap:10 }}>
-                  <Icon size={15} color={g.color} style={{ flexShrink:0 }}/>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, fontWeight:600 }}>{g.id}</div>
-                    {favorito && (
-                      <div style={{ fontSize:11, color:"var(--faint)", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                        Su fuerte: {favorito.ejercicio}
-                      </div>
-                    )}
+                <button onClick={()=>d.hechos.length && setGrupoAbierto(abierto?null:g.id)}
+                  style={{ width:"100%", background:"none", border:"none", padding:"11px 0", cursor:d.hechos.length?"pointer":"default", color:"inherit", textAlign:"left", display:"flex", alignItems:"center", gap:11 }}>
+                  <div style={{ width:34, height:34, borderRadius:10, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:"var(--bg2)", border:`1px solid ${g.color}` }}>
+                    <Icon size={16} color={g.color}/>
                   </div>
-                  <span className="mono" style={{ fontSize:11.5, color:"var(--faint)", flexShrink:0 }}>{d.hechos.length}</span>
-                  <ChevronRight size={14} color="var(--faint)" style={{ flexShrink:0, transform:abierto?"rotate(90deg)":"none", transition:"transform .2s" }}/>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", gap:8 }}>
+                      <span style={{ fontSize:13, fontWeight:600 }}>{g.id}</span>
+                      <span className="fh-chip cinzel" style={{ background:"var(--bg2)", color:g.color, flexShrink:0 }}>Nv {d.lv}</span>
+                    </div>
+                    <div className="fh-bar" style={{ marginTop:5 }}><i style={{ width:`${Math.min(100,(d.into/d.need)*100)}%`, background:g.color }}/></div>
+                    <div style={{ fontSize:10.5, color:"var(--faint)", marginTop:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {favorito ? `Su fuerte: ${favorito.ejercicio}`
+                        : d.xp ? "Aún no ha marcado ninguno de este grupo"
+                        : "Sin entrenar todavía"}
+                    </div>
+                  </div>
+                  {d.hechos.length > 0 && (
+                    <ChevronRight size={14} color="var(--faint)" style={{ flexShrink:0, transform:abierto?"rotate(90deg)":"none", transition:"transform .2s" }}/>
+                  )}
                 </button>
 
                 {abierto && (
@@ -4516,11 +4579,12 @@ function AmigoView({ amigo, misBests, customRoutines, onVolver, onToast }){
               </div>
             );
           })}
-          {!BODY_STATS.some(g=>porGrupo[g.id].hechos.length) && (
-            <Empty text="Todavía no ha marcado ningún ejercicio."/>
-          )}
           <div style={{ fontSize:11, color:"var(--faint)", marginTop:11, lineHeight:1.45 }}>
-            Toca un grupo para ver qué ejercicios hace. El marcado con estrella es el que más repite: buen candidato para quedar a hacerlo juntos.
+            {BODY_STATS.some(g=>porGrupo[g.id].hechos.length)
+              ? "Toca un grupo para ver qué ejercicios hace. El marcado con estrella es el que más repite: buen candidato para quedar a hacerlo juntos."
+              : tieneAtributos
+                ? "Sus niveles ya están aquí. Los ejercicios aparecerán en cuanto entrene con la versión nueva de la app."
+                : "Todavía no ha entrenado con la versión que comparte esto. Aparecerá en cuanto lo haga."}
           </div>
         </div>
 
@@ -5491,21 +5555,11 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
 
 /* Panel para pasarle una rutina a otra persona: genera el código y lo copia o
    lo manda por la app que elija (WhatsApp, Telegram…) si el móvil lo permite. */
-function ShareRoutinePanel({ routine, onClose, publicada, onPublicar }){
-  const [msg, setMsg] = useState(null);
-  const code = useMemo(()=>encodeRoutine(routine), [routine]);
-  const puedeCompartir = typeof navigator !== "undefined" && !!navigator.share;
-
-  async function copiar(){
-    try { await navigator.clipboard.writeText(code); setMsg({ ok:true, t:"Código copiado. Pégalo donde quieras." }); }
-    catch { setMsg({ ok:false, t:"No se ha podido copiar. Selecciona el texto y cópialo a mano." }); }
-  }
-  async function enviar(){
-    try { await navigator.share({ title:`Rutina RPGym: ${routine.name}`,
-      text:`Te paso mi rutina "${routine.name}" de RPGym. Ábrela en Rutinas → Importar rutina y pega este código:\n\n${code}` }); }
-    catch { /* si cancela el usuario no hay nada que avisar */ }
-  }
-
+/* Compartir una rutina. Ya no hay códigos que copiar: o la dejas visible para
+   todo tu círculo, o se la mandas a alguien concreto desde su ficha y él la
+   acepta. Los códigos de texto obligaban a salir de la app y a pegar 550
+   caracteres sin cortarlos, que es justo donde fallaba. */
+function ShareRoutinePanel({ routine, onClose, publicada, onPublicar, setTab }){
   return (
     <div className="fh-card fh-in" style={{ background:"var(--bg2)", padding:14, marginBottom:12 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:9 }}>
@@ -5514,14 +5568,13 @@ function ShareRoutinePanel({ routine, onClose, publicada, onPublicar }){
         </span>
         <button onClick={onClose} aria-label="Cerrar" style={{ background:"none", border:"none", padding:2, cursor:"pointer", color:"var(--faint)" }}><X size={15}/></button>
       </div>
-      <p style={{ fontSize:11.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.5 }}>
-        Este código lleva la rutina entera. Quien lo reciba entra en <b style={{ color:"var(--txt)" }}>Rutinas → Importar rutina</b> y lo pega. No viaja ningún dato tuyo: ni tu nombre, ni tus marcas, ni tu progreso.
-      </p>
-      <textarea readOnly value={code} rows={3} onFocus={e=>e.target.select()}
-        aria-label="Código de la rutina"
-        style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, wordBreak:"break-all" }}/>
-      {cloud.cloudEnabled && (
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, marginTop:11, paddingTop:11, borderTop:"1px solid var(--line)" }}>
+
+      {!cloud.cloudEnabled ? (
+        <p style={{ fontSize:12, color:"var(--muted)", margin:0, lineHeight:1.5 }}>
+          Para compartir rutinas hace falta cuenta. Entra desde <b style={{ color:"var(--txt)" }}>Inicio → tu cuenta</b>.
+        </p>
+      ) : (<>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:12.5, color:"var(--txt)", display:"flex", alignItems:"center", gap:7 }}>
               <Users size={14} color="var(--jade)"/> Visible para mis amigos
@@ -5532,110 +5585,19 @@ function ShareRoutinePanel({ routine, onClose, publicada, onPublicar }){
           </div>
           <ToggleSwitch on={publicada} onClick={onPublicar}/>
         </div>
-      )}
 
-      <div style={{ display:"flex", gap:8, marginTop:10 }}>
-        <button className="fh-btn" onClick={copiar} style={{ flex:1, background:"var(--gold)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-          <Copy size={14}/> Copiar código
+        <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:11, paddingTop:11, borderTop:"1px solid var(--line)", lineHeight:1.5 }}>
+          ¿Se la quieres mandar a alguien en concreto? Entra en <b style={{ color:"var(--txt)" }}>RPGym → Amigos</b>, toca a quien sea y usa <b style={{ color:"var(--txt)" }}>Pasarle una rutina</b>. Le llega a sus avisos y decide.
+        </div>
+        <button className="fh-btn" onClick={()=>setTab("progreso")}
+          style={{ width:"100%", marginTop:10, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:10, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+          <Users size={14} color="var(--gold)"/> Ir a mis amigos
         </button>
-        {puedeCompartir && (
-          <button className="fh-btn" onClick={enviar} style={{ flex:1, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-            <Share2 size={14} color="var(--gold)"/> Enviar…
-          </button>
-        )}
-      </div>
-      {msg && <div style={{ fontSize:11.5, marginTop:9, color:msg.ok?"var(--jade)":"var(--ember)", lineHeight:1.45 }}>{msg.t}</div>}
-      <div style={{ fontSize:11, color:"var(--faint)", marginTop:9, lineHeight:1.45 }}>
-        {code.length} caracteres · cópialo <b style={{ color:"var(--muted)" }}>entero</b> o no se podrá abrir.
-      </div>
+      </>)}
     </div>
   );
 }
 
-/* Panel para meter la rutina que te han pasado. Enseña QUÉ trae antes de guardar. */
-function ImportRoutinePanel({ existingNames, onImport, onClose }){
-  const [text, setText] = useState("");
-  const [res, setRes] = useState(null);
-
-  function revisar(value){
-    setText(value);
-    setRes(value.trim() ? decodeRoutine(value, existingNames) : null);
-  }
-  async function pegar(){
-    try { const t = await navigator.clipboard.readText(); revisar(t); }
-    catch { setRes({ ok:false, msg:"Tu móvil no deja leer el portapapeles desde aquí. Pega el código a mano en el recuadro." }); }
-  }
-
-  const r = res?.ok ? res.routine : null;
-  const totalEx = r ? r.days.reduce((a,d)=>a+d.exercises.length, 0) : 0;
-
-  return (
-    <div className="fh-card fh-in" style={{ padding:14, marginTop:10 }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:9 }}>
-        <span className="disp" style={{ fontWeight:600, fontSize:13.5, display:"flex", alignItems:"center", gap:7 }}>
-          <Download size={14} color="var(--jade)"/> Importar rutina compartida
-        </span>
-        <button onClick={onClose} aria-label="Cerrar" style={{ background:"none", border:"none", padding:2, cursor:"pointer", color:"var(--faint)" }}><X size={15}/></button>
-      </div>
-      <p style={{ fontSize:11.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.5 }}>
-        Pega el código que te hayan pasado (empieza por <span className="mono" style={{ color:"var(--txt)" }}>RPGYM-R1.</span>). Se añadirá a tus rutinas sin tocar las que ya tienes.
-      </p>
-      <textarea value={text} onChange={e=>revisar(e.target.value)} rows={3} placeholder="RPGYM-R1.…"
-        aria-label="Código de la rutina a importar"
-        style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, wordBreak:"break-all" }}/>
-      <button className="fh-btn" onClick={pegar}
-        style={{ width:"100%", marginTop:9, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:10, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
-        <Upload size={14} color="var(--jade)"/> Pegar del portapapeles
-      </button>
-
-      {res && !res.ok && (
-        <div style={{ display:"flex", gap:9, alignItems:"flex-start", marginTop:11, padding:"10px 12px", background:"var(--bg2)", border:"1px solid var(--crimson)", borderRadius:11 }}>
-          <ShieldAlert size={15} color="var(--crimson)" style={{ flexShrink:0, marginTop:1 }}/>
-          <div style={{ fontSize:12, color:"var(--txt)", lineHeight:1.45 }}>{res.msg}</div>
-        </div>
-      )}
-
-      {r && (
-        <div className="fh-in" style={{ marginTop:12 }}>
-          <div className="fh-card" style={{ background:"var(--bg2)", padding:13, borderColor:"var(--jade)" }}>
-            <div className="disp" style={{ fontWeight:700, fontSize:15 }}>{r.name}</div>
-            <div style={{ fontSize:12, color:"var(--muted)", marginTop:2 }}>
-              {r.days.length} día{r.days.length===1?"":"s"} · {totalEx} ejercicio{totalEx===1?"":"s"} · RPE {r.rpe}
-            </div>
-            {r.blurb && <p style={{ fontSize:12, color:"var(--muted)", margin:"8px 0 0", lineHeight:1.5 }}>{r.blurb}</p>}
-            <div style={{ marginTop:10 }}>
-              {r.days.map((d,i)=>(
-                <div key={i} style={{ padding:"7px 0", borderTop:"1px solid var(--line)" }}>
-                  <div className="disp" style={{ fontSize:12.5, fontWeight:600 }}>{d.name}</div>
-                  <div style={{ fontSize:11, color:"var(--faint)", marginTop:3, lineHeight:1.5 }}>
-                    {d.exercises.map(e=>`${e.name} ${e.sets}×${e.reps}`).join(" · ")}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {res.desconocidos.length > 0 && (
-            <div style={{ display:"flex", gap:9, alignItems:"flex-start", marginTop:10, padding:"10px 12px", background:"var(--bg2)", border:"1px solid var(--ember)", borderRadius:11 }}>
-              <Info size={15} color="var(--ember)" style={{ flexShrink:0, marginTop:1 }}/>
-              <div style={{ fontSize:11.5, color:"var(--muted)", lineHeight:1.5 }}>
-                Tu versión de la app no conoce {res.desconocidos.length === 1 ? "este ejercicio" : "estos ejercicios"} y {res.desconocidos.length === 1 ? "se queda" : "se quedan"} fuera: <b style={{ color:"var(--txt)" }}>{res.desconocidos.join(", ")}</b>. Actualiza la app o añádelo tú a mano después.
-              </div>
-            </div>
-          )}
-
-          <button className="fh-btn" onClick={()=>{ onImport(r); onClose(); }}
-            style={{ width:"100%", marginTop:11, background:"var(--jade)", padding:13, fontSize:13.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
-            <Check size={16}/> Añadir a mis rutinas
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* Rutinas que comparten tus amigos. Copiarlas guarda de quién son y da XP extra
-   la primera vez que las entrenas. */
 function RutinasDeAmigos({ onImportar, yaTengo }){
   const [rutinas, setRutinas] = useState(null);
   const [cargando, setCargando] = useState(false);
@@ -5710,7 +5672,7 @@ function RutinasDeAmigos({ onImportar, yaTengo }){
 }
 
 /* Tarjeta de rutina: la usan tanto el catálogo de la app como "Mis rutinas". */
-function RoutineCard({ r, state, level, isOpen, onToggle, setActiveRoutine, startWorkout, onEdit, onDelete, publicadas, onPublicar }){
+function RoutineCard({ r, state, level, isOpen, onToggle, setActiveRoutine, startWorkout, onEdit, onDelete, publicadas, onPublicar, setTab }){
   const [confirmDel, setConfirmDel] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const isActive = state.activeRoutine===r.id;
@@ -5744,7 +5706,7 @@ function RoutineCard({ r, state, level, isOpen, onToggle, setActiveRoutine, star
               <button className="fh-btn" onClick={()=>{ setConfirmDel(v=>!v); setShareOpen(false); }} style={{ flex:1, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:"10px 6px", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}><Trash2 size={13} color="var(--crimson)"/> Borrar</button>
             </div>
           )}
-          {mine && shareOpen && <ShareRoutinePanel routine={r} onClose={()=>setShareOpen(false)} publicada={!!publicadas?.includes(r.id)} onPublicar={()=>onPublicar(r)}/>}
+          {mine && shareOpen && <ShareRoutinePanel routine={r} onClose={()=>setShareOpen(false)} publicada={!!publicadas?.includes(r.id)} onPublicar={()=>onPublicar(r)} setTab={setTab}/>}
           {mine && confirmDel && (
             <div className="fh-card" style={{ background:"var(--bg2)", padding:13, marginBottom:12 }}>
               <div style={{ fontSize:12.5, color:"var(--muted)", lineHeight:1.45, marginBottom:10 }}>¿Seguro que quieres borrar «{r.name}»? Los entrenos que ya has hecho con ella se conservan en tu historial.</div>
@@ -5777,16 +5739,15 @@ function RoutineCard({ r, state, level, isOpen, onToggle, setActiveRoutine, star
   );
 }
 
-function RoutinesView({ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar }){
+function RoutinesView({ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar, setTab }){
   const [open, setOpen] = useState(state.activeRoutine);
-  const [noticeClosed, setNoticeClosed] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
+  const [noticeClosed, cerrarNotice] = useAvisoCerrado("rutinas-nivel");
   const sexTag = state.profile?.sex === "mujer" ? "f" : "m";
   const experience = state.profile?.experience || "principiante";
   const expLabel = (EXPERIENCE_LEVELS.find(e=>e.id===experience)||EXPERIENCE_LEVELS[0]).label;
   const canUnlock = experience!=="experto";
   const mine = customRoutines || [];
-  const cardProps = { state, level, setActiveRoutine, startWorkout, onEdit:editRoutine, onDelete:deleteCustomRoutine, publicadas, onPublicar };
+  const cardProps = { state, level, setActiveRoutine, startWorkout, onEdit:editRoutine, onDelete:deleteCustomRoutine, publicadas, onPublicar, setTab };
   return (
     <div className="fh-in">
       <header style={{ padding:"22px 2px 8px" }}>
@@ -5797,7 +5758,7 @@ function RoutinesView({ state, level, setActiveRoutine, startWorkout, customRout
         <div className="fh-card" style={{ padding:13, margin:"10px 0 2px", display:"flex", alignItems:"flex-start", gap:10 }}>
           <Compass size={16} color="var(--gold)" style={{ flexShrink:0, marginTop:1 }}/>
           <div style={{ flex:1, fontSize:12, color:"var(--muted)", lineHeight:1.45 }}>Mostramos las rutinas para tu nivel <b style={{ color:"var(--txt)" }}>{expLabel}</b>.{canUnlock && <> Sube tu experiencia en <b style={{ color:"var(--txt)" }}>Ajustes</b> para desbloquear más.</>} En cada bloque sube series poco a poco y descarga cada 4-6 semanas.</div>
-          <button onClick={()=>setNoticeClosed(true)} aria-label="Cerrar" style={{ background:"none", border:"none", padding:2, cursor:"pointer", color:"var(--faint)", flexShrink:0 }}><X size={15}/></button>
+          <button onClick={cerrarNotice} aria-label="Cerrar" style={{ background:"none", border:"none", padding:2, cursor:"pointer", color:"var(--faint)", flexShrink:0 }}><X size={15}/></button>
         </div>
       )}
 
@@ -5807,22 +5768,10 @@ function RoutinesView({ state, level, setActiveRoutine, startWorkout, customRout
         {mine.map(r=>(
           <RoutineCard key={r.id} r={r} isOpen={open===r.id} onToggle={()=>setOpen(open===r.id?null:r.id)} {...cardProps}/>
         ))}
-        <div style={{ display:"flex", gap:8 }}>
-          <button className="fh-btn" onClick={()=>editRoutine(null)}
-            style={{ flex:1, background:"var(--card)", color:"var(--txt)", border:"1px dashed var(--line2)", padding:"14px 8px", fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
-            <Plus size={15} color="var(--gold)"/> {mine.length ? "Crear otra" : "Crear rutina"}
-          </button>
-          <button className="fh-btn" onClick={()=>setImportOpen(v=>!v)}
-            style={{ flex:1, background:importOpen?"var(--jade)":"var(--card)", color:importOpen?"#0F131A":"var(--txt)", border:importOpen?"none":"1px dashed var(--line2)", padding:"14px 8px", fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
-            <Download size={15} color={importOpen?"#0F131A":"var(--jade)"}/> Importar rutina
-          </button>
-        </div>
-        {importOpen && (
-          <ImportRoutinePanel
-            existingNames={mine.map(r=>r.name)}
-            onImport={importRoutine}
-            onClose={()=>setImportOpen(false)}/>
-        )}
+        <button className="fh-btn" onClick={()=>editRoutine(null)}
+          style={{ width:"100%", background:"var(--card)", color:"var(--txt)", border:"1px dashed var(--line2)", padding:"14px 8px", fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+          <Plus size={15} color="var(--gold)"/> {mine.length ? "Crear otra" : "Crear rutina"}
+        </button>
         {cloud.cloudEnabled && perfil && (
           <div style={{ marginTop:14 }}>
             <div className="disp" style={{ fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"0 4px 8px" }}>DE MIS AMIGOS</div>
@@ -5830,9 +5779,9 @@ function RoutinesView({ state, level, setActiveRoutine, startWorkout, customRout
           </div>
         )}
 
-        {!mine.length && !importOpen && (
+        {!mine.length && (
           <p style={{ fontSize:11.5, color:"var(--faint)", margin:"9px 4px 0", lineHeight:1.5 }}>
-            ¿Te han pautado una rutina? Móntala aquí con los ejercicios de la app. Y si alguien te pasa la suya, <b style={{ color:"var(--muted)" }}>Importar rutina</b> la mete tal cual con solo pegar su código.
+            ¿Te han pautado una rutina? Móntala aquí con los ejercicios de la app. Y si un amigo te manda la suya, te llega a la campana de Inicio y la añades de un toque.
           </p>
         )}
       </div>
@@ -7439,7 +7388,7 @@ function DietView({ state, useCheat, mealPlan, saveMealPlan, excludes, setExclud
   const [view, setView] = useState("semana"); // semana | compra
   const [showEx, setShowEx] = useState(false);
   const [dietTip, setDietTip] = useState(()=>Math.floor(Math.random()*FEMALE_DIET_TIPS.length));
-  const [dietTipClosed, setDietTipClosed] = useState(false);
+  const [dietTipClosed, cerrarDietTip] = useAvisoCerrado("dieta-femenina");
   const [dayIdx, setDayIdx] = useState(new Date().getDay()===0?6:new Date().getDay()-1);
   const [editingDiet, setEditingDiet] = useState(false);
   const mine = customDiet || blankCustomDiet();
@@ -7477,7 +7426,7 @@ function DietView({ state, useCheat, mealPlan, saveMealPlan, excludes, setExclud
             <div style={{ fontSize:12.5, color:"var(--muted)", lineHeight:1.5 }}>{dietPool[dietTip % dietPool.length]}</div>
             <button onClick={()=>setDietTip(i=>(i+1)%dietPool.length)} style={{ background:"none", border:"none", padding:0, marginTop:8, color:cycPh?cycPh.color:"#E56B9F", cursor:"pointer", fontSize:11, fontWeight:600, display:"flex", alignItems:"center", gap:5 }}><Shuffle size={12}/> Otro consejo</button>
           </div>
-          <button onClick={()=>setDietTipClosed(true)} aria-label="Cerrar" style={{ background:"none", border:"none", padding:2, cursor:"pointer", color:"var(--faint)", flexShrink:0 }}><X size={16}/></button>
+          <button onClick={cerrarDietTip} aria-label="Cerrar" style={{ background:"none", border:"none", padding:2, cursor:"pointer", color:"var(--faint)", flexShrink:0 }}><X size={16}/></button>
         </div>
       )}
 

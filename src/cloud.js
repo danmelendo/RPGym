@@ -248,14 +248,21 @@ export async function cambiarHandle(nuevo){
 }
 
 /* Sube el estado de juego (lo que se ve en el leaderboard). Nada personal. */
-export async function sincronizarPerfil({ level, xp, totalWorkouts, bestStreak, displayName, appVersion }){
+/* `atributos` es el XP EN CRUDO por grupo ({Pecho: 1200, ...}), no el nivel: la
+   escala puede cambiar y así cada uno la calcula con su versión de la app. */
+export async function sincronizarPerfil({ level, xp, totalWorkouts, bestStreak, displayName, appVersion, atributos }){
   if (!supabase) return sinNube;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok:false, msg:"No hay sesión." };
+    const limpio = {};
+    Object.entries(atributos || {}).slice(0, 12).forEach(([g, v]) => {
+      const n = Math.round(Number(v) || 0);
+      if (n > 0) limpio[String(g).slice(0, 16)] = Math.min(9999999, n);
+    });
     const { error } = await supabase.from("profiles").update({
       level, xp, total_workouts:totalWorkouts, best_streak:bestStreak,
-      display_name:String(displayName || "").slice(0, 40),
+      display_name:String(displayName || "").slice(0, 40), atributos:limpio,
       app_version:String(appVersion || ""), last_seen:new Date().toISOString(),
     }).eq("id", user.id);
     if (error) return { ok:false, msg:traducir(error) };
