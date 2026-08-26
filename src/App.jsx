@@ -2225,17 +2225,47 @@ function daysUntil(iso){ return Math.round((parseISO(iso) - parseISO(todayISO())
    Hay que programar una notificación REAL (solo funciona en el APK instalado).
    El id va fuera del rango de los recordatorios (1-40) y de la cuota (30). */
 const REST_NOTIF_ID = 55;
+const CANAL_DESCANSO = "descanso";
 let permisoPedido = false;
+let canalCreado = false;
+
+/* Canal propio con importancia ALTA. Sin él Android usa el canal por defecto,
+   que no siempre suena ni salta encima de lo que estés mirando. Un aviso de
+   descanso que no interrumpe no sirve de nada: para eso ya está la pantalla. */
+async function asegurarCanalDescanso(){
+  const ln = LN(); if (!ln || canalCreado) return;
+  canalCreado = true;
+  try {
+    await ln.createChannel({
+      id: CANAL_DESCANSO,
+      name: "Fin del descanso",
+      description: "Avisa cuando se acaba el descanso entre series.",
+      importance: 5,          // MAX: suena y aparece encima
+      visibility: 1,          // se ve en la pantalla de bloqueo
+      vibration: true,
+      sound: null,            // el sonido de notificación del móvil
+    });
+  } catch {}
+}
+
 async function programarAvisoDescanso(segundos){
   const ln = LN(); if (!ln || !(segundos > 0)) return;
   if (!permisoPedido) { permisoPedido = true; try { await ensureNotifPerm(); } catch {} }
+  await asegurarCanalDescanso();
   try {
     await ln.cancel({ notifications: [{ id: REST_NOTIF_ID }] });
     await ln.schedule({ notifications: [{
       id: REST_NOTIF_ID,
       title: "Descanso terminado 💪",
       body: "A por la siguiente serie.",
-      schedule: { at: new Date(Date.now() + segundos * 1000) },
+      channelId: CANAL_DESCANSO,
+      autoCancel: true,
+      /* allowWhileIdle es LO IMPORTANTE. Sin él el plugin usa setExact, que
+         Android aplaza mientras el móvil está en reposo (Doze) — y el móvil
+         entra en reposo justo al guardarlo en el bolsillo durante el descanso.
+         El aviso llegaba minutos tarde, cuando ya habías vuelto a la app.
+         Con esto se usa setExactAndAllowWhileIdle, que sí dispara a su hora. */
+      schedule: { at: new Date(Date.now() + segundos * 1000), allowWhileIdle: true },
     }] });
   } catch {}
 }
@@ -2244,22 +2274,45 @@ async function cancelarAvisoDescanso(){
   try { await ln.cancel({ notifications: [{ id: REST_NOTIF_ID }] }); } catch {}
 }
 
+const CANAL_RECORDATORIOS = "recordatorios";
+let canalRecordatoriosCreado = false;
+async function asegurarCanalRecordatorios(){
+  const ln = LN(); if (!ln || canalRecordatoriosCreado) return;
+  canalRecordatoriosCreado = true;
+  try {
+    await ln.createChannel({
+      id: CANAL_RECORDATORIOS,
+      name: "Recordatorios de entreno",
+      description: "Tus días de entreno y el aviso de la cuota del gimnasio.",
+      importance: 4,          // alta, pero un punto por debajo del descanso
+      visibility: 1,
+      vibration: true,
+    });
+  } catch {}
+}
+
 async function scheduleAllReminders(reminders, sub){
   const ln = LN(); if (!ln) return;   // el aviso real solo funciona en la app instalada
+  await asegurarCanalRecordatorios();
   try { await ln.cancel({ notifications: Array.from({ length: 40 }, (_, i) => ({ id: i + 1 })) }); } catch {}
   const notifs = [];
+  /* allowWhileIdle en TODOS: sin él el plugin programa la alarma como RTC (que
+     ni despierta el móvil) y Android la aplaza mientras está en reposo. Un
+     recordatorio de las 19:00 que llega a las 19:40 ya no recuerda nada. */
   if (reminders?.enabled) {
     (reminders.days || []).forEach((d, i) => {
       notifs.push({ id: i + 1, title: "Hora de entrenar 💪",
         body: "Tu sesión de hoy te espera. ¡Vamos a por ella!",
-        schedule: { on: { weekday: (d % 7) + 1, hour: reminders.hour, minute: reminders.minute }, repeats: true } });
+        channelId: CANAL_RECORDATORIOS, autoCancel: true,
+        schedule: { on: { weekday: (d % 7) + 1, hour: reminders.hour, minute: reminders.minute }, repeats: true, allowWhileIdle: true } });
     });
   }
   if (sub?.enabled && sub.renewalDay) {
     const next = nextRenewalDate(sub.renewalDay); const warn = addDaysISO(next, -3);
     notifs.push({ id: 30, title: "Cuota del gym en 3 días",
       body: `El ${next.slice(8,10)}/${next.slice(5,7)} se renueva tu suscripción. Si no vas a seguir, cancélala a tiempo.`,
-      schedule: { at: new Date(warn + "T10:00:00") } });
+      channelId: CANAL_RECORDATORIOS, autoCancel: true,
+      schedule: { at: new Date(warn + "T10:00:00"), allowWhileIdle: true } });
   }
   if (notifs.length) { try { await ln.schedule({ notifications: notifs }); } catch (e) { console.error(e); } }
 }
@@ -2374,8 +2427,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 12;
-const APP_VERSION_NAME = "1.0.11";
+const APP_VERSION_CODE = 13;
+const APP_VERSION_NAME = "1.0.12";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2548,7 +2601,14 @@ function RestTimer({ seconds, onDone, isRecomp }){
     const t=setInterval(()=>{
       const q=Math.max(0, Math.round((endsAt - Date.now())/1000));
       setLeft(q);
-      if(q<=0){ clearInterval(t); onDone && onDone(); }
+      if(q<=0){
+        clearInterval(t);
+        /* Con la app delante el aviso del sistema se cancela al cerrarse este
+           pop-up, así que sin esto el descanso terminaba en silencio absoluto:
+           si no estabas mirando la pantalla, no te enterabas. */
+        try { navigator.vibrate?.([180, 90, 180]); } catch {}
+        onDone && onDone();
+      }
     }, 250);
     return ()=>clearInterval(t);
   },[endsAt]);

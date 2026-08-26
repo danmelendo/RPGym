@@ -28,6 +28,26 @@ export const pushDisponible = () => PUSH_CONFIGURADO && !!PN();
 const PUSH_CONFIGURADO = typeof __PUSH_CONFIGURADO__ !== "undefined" ? __PUSH_CONFIGURADO__ : false;
 
 let yaRegistrado = false;
+let canalCreado = false;
+
+/* La Edge Function manda los avisos al canal "rpgym" (ver supabase/functions/
+   avisar). Si el canal no existe en el móvil, Android lo crea por su cuenta con
+   importancia normal: sin vibración y sin aparecer encima. Hay que declararlo
+   aquí, y ANTES de registrar el dispositivo. */
+async function asegurarCanal(){
+  const pn = PN(); if (!pn || canalCreado) return;
+  canalCreado = true;
+  try {
+    await pn.createChannel({
+      id: "rpgym",
+      name: "Avisos de tus amigos",
+      description: "Quién entrena, quién bate un récord y quién propone quedar.",
+      importance: 5,        // MAX: suena, vibra y salta encima
+      visibility: 1,
+      vibration: true,
+    });
+  } catch {}
+}
 
 /* Pide permiso, registra el dispositivo en FCM y guarda el token en Supabase
    para que la Edge Function sepa a quién avisar. */
@@ -41,6 +61,7 @@ export async function activarPush(){
     let permiso = await pn.checkPermissions();
     if (permiso.receive !== "granted") permiso = await pn.requestPermissions();
     if (permiso.receive !== "granted") return { ok:false, msg:"No has dado permiso para las notificaciones." };
+    await asegurarCanal();
 
     // El token llega por evento, no como valor de retorno.
     const token = await new Promise((resolve) => {

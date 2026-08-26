@@ -39,9 +39,12 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Notificaciones locales (recordatorios de entreno y renovación de cuota) -->
+    <!-- Notificaciones locales (fin del descanso, recordatorios, renovación de cuota) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Sin esto no vibra NADA: ni el canal de la notificación ni navigator.vibrate.
+         Un aviso de fin de descanso que no se nota en el bolsillo no sirve. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 </manifest>
