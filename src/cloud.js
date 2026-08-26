@@ -47,8 +47,16 @@ function traducir(error){
   if (m.includes("unable to validate email") || m.includes("invalid email"))
     return "Ese correo no parece válido.";
   if (m.includes("duplicate key") && m.includes("handle")) return "Ese nombre de usuario ya está cogido.";
-  if (m.includes("rate limit") || m.includes("too many"))
-    return "Demasiados intentos seguidos. Espera un minuto y vuelve a probar.";
+  /* Los límites de envío NO dicen "rate limit" en el texto: llegan como 429 con
+     el motivo en `code` y un mensaje tipo "you can only request this after 49
+     seconds". Mirando solo el texto caían en el genérico "no se ha podido
+     conectar", que hacía pensar en un problema de red que no existía. */
+  const code = String(error?.code || error?.error_code || "");
+  if (error?.status === 429 || code.includes("rate_limit") || m.includes("rate limit") || m.includes("too many")) {
+    const seg = m.match(/after (\d+) second/);
+    return seg ? `Acabas de pedir un código. Espera ${seg[1]} segundos y vuelve a intentarlo.`
+               : "Demasiados intentos seguidos. Espera un minuto y vuelve a probar.";
+  }
   if (m.includes("failed to fetch") || m.includes("network"))
     return "Sin conexión con el servidor. Puedes seguir entrenando: se guardará en el móvil.";
   return "No se ha podido conectar. Inténtalo otra vez en un momento.";
