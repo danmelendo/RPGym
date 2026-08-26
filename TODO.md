@@ -1,10 +1,27 @@
 # TODO — siguiente paso inmediato
 
+## 🔴 0. Volver a crear la cuenta de la nube
+
+Limpiando datos de prueba se borró por error `danmelendo@gmail.com` (`@atletap5vn6`),
+que estaba vacía: 0 entrenos, 0 récords, 0 amigos. **El progreso del móvil no se
+tocó** (vive en local). Solo hay que registrarse otra vez desde la app — y ya de paso
+elegir un nombre de usuario decente en vez del generado. El script culpable
+(`scratchpad/dbtool/limpiar.js`) borraba `auth.users` entera; ya está acotado a las
+direcciones de prueba con `+`.
+
 ## 🟡 1. Firebase, para el push real
 
-Todo el cableado está hecho. Falta crear el proyecto y dar dos cosas:
-ver **[supabase/FIREBASE.md](supabase/FIREBASE.md)**. Sin ello la app funciona
-igual, con los avisos locales al abrir.
+El cableado del servidor está hecho (Edge Function `avisar`, tabla de tokens), pero
+**el plugin de push está desinstalado** desde la 1.0.2: sin `google-services.json`
+tumbaba la app al arrancar. Para reactivarlo, por orden:
+
+1. Crear el proyecto de Firebase y bajar `google-services.json` a `android/app/`
+   (pasos en **[supabase/FIREBASE.md](supabase/FIREBASE.md)**).
+2. `npm i @capacitor/push-notifications@^7 && npx cap sync android`.
+3. Comprobar que el build dice que el push queda **activado** (si sigue diciendo
+   `[push] sin google-services.json`, el fichero no está donde toca).
+
+Sin ello la app funciona igual, con los avisos locales al abrir.
 
 ## 🟡 2. Traducir los correos de Supabase
 
@@ -28,7 +45,10 @@ En `.env` (ignorado por git) conviven ahora públicas y secretas. **Regla: el pr
 | `VITE_SUPABASE_URL` | `VITE_` | Dentro del APK — correcto, es pública |
 | `VITE_SUPABASE_ANON_KEY` | `VITE_` | Dentro del APK — correcto, es pública |
 | `SUPABASE_DB_PASSWORD` | sin prefijo | Solo en este PC |
-| `SUPABASE_SECRET_KEY` | sin prefijo | Solo en este PC |
+
+La `SUPABASE_SECRET_KEY` ya **no** está en `.env`. Para administrar se usa la conexión
+directa a Postgres con la contraseña de la base, que es menos llave maestra que la
+secret key.
 
 Si añades un secreto, **nunca** le pongas `VITE_` delante.
 
