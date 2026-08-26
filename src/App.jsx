@@ -12,7 +12,7 @@ import {
   Lock, Lightbulb, ShoppingCart, CalendarDays, Compass, Moon, Sunrise, Gauge, ClipboardList,
   ScrollText, Swords, Footprints, Mountain, Heart, ShieldAlert, Info, Ban,
   Settings, Bell, CreditCard, User, Users, ChevronRight, Plus, X,
-  Sun, Palette, Scale, Download, Upload,
+  Sun, Palette, Scale, Download, Upload, Cloud,
   Trash2, Search, ArrowUp, ArrowDown, Pencil, Copy, FileText, Eye, Minus, Share2,
 } from "lucide-react";
 
@@ -2228,8 +2228,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 5;
-const APP_VERSION_NAME = "1.0.4";
+const APP_VERSION_CODE = 6;
+const APP_VERSION_NAME = "1.0.5";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2500,6 +2500,7 @@ export default function App(){
   const [adelantados, setAdelantados] = useState([]);      // a quién he superado con el último récord
   const [sinCuenta, setSinCuenta] = useState(false);       // ha elegido usar la app sin registrarse
   const [amigos, setAmigos] = useState([]);
+  const [copiaNube, setCopiaNube] = useState(null);   // copia cifrada que ofrecer tras entrar
   const [superadoPor, setSuperadoPor] = useState([]);      // quién me ha adelantado a mí
   const [cargandoQuedadas, setCargandoQuedadas] = useState(false);
   const [draftIsNew, setDraftIsNew] = useState(false);
@@ -2546,6 +2547,13 @@ export default function App(){
     if(sup.ok) setSuperadoPor(sup.filas);
     const am = await cloud.listarAmigos();
     if(am.ok) setAmigos(am.amigos);
+    // Móvil recién instalado con cuenta ya usada: si no hay nada que perder y en
+    // la nube hay copia, se ofrece. No se pregunta cuando ya hay progreso aquí:
+    // sería una invitación a pisárselo sin querer (para eso están los Ajustes).
+    if(!state.totalWorkouts && !(log||[]).length){
+      const c = await cloud.bajarCopia();
+      if(c.ok && c.copia) setCopiaNube(c.copia);
+    }
     // Registra el dispositivo en FCM. Sin google-services.json el plugin no
     // existe y esto no hace nada: la app funciona igual.
     if(push.pushDisponible()) push.activarPush();
@@ -3028,6 +3036,23 @@ export default function App(){
     return { ok:true };
   }
 
+  /* Restaura la copia cifrada de la nube. La clave sale de la contraseña al
+     entrar y vive solo en este móvil: si no está, hay que volver a entrar. */
+  async function restaurarDeNube(){
+    if(!copiaNube) return;
+    const clave = await cripto.recuperarClave();
+    if(!clave){ showToast({ title:"Vuelve a entrar", sub:"Hace falta tu contraseña para descifrar la copia.", icon:Lock }); return; }
+    try {
+      const texto = await cripto.descifrar(copiaNube.cifrado, copiaNube.iv, clave);
+      const r = await importBackup(texto);
+      setCopiaNube(null);
+      showToast(r.ok ? { title:"Progreso restaurado", sub:"Todo vuelve a estar donde lo dejaste.", icon:Check }
+                     : { title:"No se ha podido", sub:r.msg, icon:ShieldAlert });
+    } catch {
+      showToast({ title:"No se ha podido descifrar", sub:"¿Cambiaste la contraseña desde que subiste la copia?", icon:ShieldAlert });
+    }
+  }
+
   async function cambiarMiHandle(nuevo){
     const r = await cloud.cambiarHandle(nuevo);
     if(r.ok){ setPerfil(r.perfil); showToast({ title:"Nombre cambiado", sub:`Ahora eres @${r.perfil.handle}`, icon:User }); }
@@ -3109,7 +3134,7 @@ export default function App(){
       <div className="fh-shell">
         <AccountView {...{ state, level, setTab, session:cloudSession, perfil,
           onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onVerificar:verificarCuenta,
-          onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle,
+          onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle, onRestaurarTexto:importBackup,
           arranque:true, onSinCuenta:()=>setSinCuenta(true) }}/>
       </div>
     </div>
@@ -3130,18 +3155,20 @@ export default function App(){
         {tab==="home" && <HomeView {...{ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines,
           cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), quedadas, novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno, superadoPor,
           onRefrescarQuedadas:refrescarQuedadas, cargandoQuedadas,
-          onCargarTabla:(p,a)=>cloud.leaderboard(p, a) }}/>}
+          onCargarTabla:(p,a)=>cloud.leaderboard(p, a),
+          copiaNube, onRestaurarNube:restaurarDeNube, onDescartarCopia:()=>setCopiaNube(null) }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina }}/>}
-        {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines }}/>}
+        {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines, setTab }}/>}
         {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests, sesionConjunta }}/>}
         {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank }}/>}
         {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines,
           cloudEnabled:cloud.cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos:refrescarAmigos, onQuitarAmigo:quitarAmigo,
-          exportBackup, importBackup, quedadas }}/>}
+          quedadas, onRefrescarQuedadas:refrescarQuedadas }}/>}
         {tab==="logros" && <AchievementsView {...{ state, level }}/>}
         {tab==="dieta" && <DietView {...{ state, useCheat, mealPlan, saveMealPlan, excludes, setExcludes, setTab, customDiet, saveCustomDiet }}/>}
         {tab==="editor" && <RoutineBuilderView {...{ draft:routineDraft, setDraft:setRoutineDraft, onSave:saveRoutineFromEditor, onCancel:closeEditor, isNew:draftIsNew }}/>}
-        {tab==="ajustes" && <SettingsView {...{ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup }}/>}
+        {tab==="ajustes" && <SettingsView {...{ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup,
+          cloudEnabled:cloud.cloudEnabled, perfil }}/>}
         {tab==="cuenta" && <AccountView {...{ state, level, setTab, session:cloudSession, perfil,
           onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onVerificar:verificarCuenta,
           onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle }}/>}
@@ -3149,7 +3176,7 @@ export default function App(){
 
       {tab!=="workout" && tab!=="results" && tab!=="editor" && (
         <nav className="fh-nav"><div className="fh-nav-inner">
-          {[{id:"home",icon:Home,label:"Inicio"},{id:"rutinas",icon:Dumbbell,label:"Rutinas"},{id:"ficha",icon:ScrollText,label:"Ficha"},{id:"progreso",icon:Swords,label:"RPGym"},{id:"logros",icon:Trophy,label:"Logros"},{id:"dieta",icon:Utensils,label:"Dieta"}].map(t=>{
+          {[{id:"home",icon:Home,label:"Inicio"},{id:"rutinas",icon:Dumbbell,label:"Rutinas"},{id:"progreso",icon:Swords,label:"RPGym"},{id:"logros",icon:Trophy,label:"Logros"},{id:"dieta",icon:Utensils,label:"Dieta"}].map(t=>{
             const I=t.icon; return <button key={t.id} className={tab===t.id?"on":""} onClick={()=>setTab(t.id)}><I size={20}/><span>{t.label}</span></button>;
           })}
         </div></nav>
@@ -3675,7 +3702,10 @@ function cuandoTexto(iso){
 }
 
 /* Quedadas: proponer una y contestar a las de tus amigos. */
-function QuedadasPanel({ quedadas, onRefrescar, cargando }){
+/* Dos caras del mismo panel: en Inicio se ven las quedadas y se contesta
+   ("modo lista"); en RPGym es donde se proponen ("modo crear"). Separarlo
+   descarga Inicio, que es lo que se mira de pasada. */
+function QuedadasPanel({ quedadas, onRefrescar, cargando, modo="lista" }){
   const [creando, setCreando] = useState(false);
   const [f, setF] = useState(()=>{
     const d = new Date(); d.setDate(d.getDate()+1); d.setHours(19,0,0,0);
@@ -3720,18 +3750,25 @@ function QuedadasPanel({ quedadas, onRefrescar, cargando }){
     if (r.ok) setGente(r.gente);
   }
 
+  const soloCrear = modo === "crear";
+
   return (<>
-    <div style={sectionTitle}>QUEDADAS {quedadas.length > 0 && `· ${quedadas.length}`}</div>
+    <div style={sectionTitle}>{soloCrear ? "PROPONER UNA QUEDADA" : `QUEDADAS ${quedadas.length > 0 ? `· ${quedadas.length}` : ""}`}</div>
     <div className="fh-card" style={{ padding:16 }}>
-      {!quedadas.length && !creando && (
+      {soloCrear && !creando && (
         <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
-          No hay ninguna a la vista. Propón una: saber que va alguien más es lo que evita que os rajéis.
+          Di día, hora y sitio. Tus amigos lo ven en su Inicio y contestan: saber que va alguien más es lo que evita que os rajéis.
+        </p>
+      )}
+      {!soloCrear && !quedadas.length && (
+        <p style={{ fontSize:12.5, color:"var(--muted)", margin:0, lineHeight:1.5 }}>
+          No hay ninguna a la vista. Propón una desde la pestaña <b style={{ color:"var(--txt)" }}>RPGym</b>.
         </p>
       )}
 
-      {cargando && !quedadas.length && <Empty text="Buscando quedadas…"/>}
+      {!soloCrear && cargando && !quedadas.length && <Empty text="Buscando quedadas…"/>}
 
-      {quedadas.map((q,i)=>{
+      {!soloCrear && quedadas.map((q,i)=>{
         const voy = q.mi_respuesta === "voy";
         const no  = q.mi_respuesta === "no";
         return (
@@ -3780,13 +3817,13 @@ function QuedadasPanel({ quedadas, onRefrescar, cargando }){
         );
       })}
 
-      {!creando ? (
+      {soloCrear && (!creando ? (
         <button className="fh-btn" onClick={()=>{ setCreando(true); setMsg(null); }}
-          style={{ width:"100%", marginTop:quedadas.length?13:0, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+          style={{ width:"100%", background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
           <CalendarDays size={15} color="var(--gold)"/> Proponer una quedada
         </button>
       ) : (
-        <div className="fh-in" style={{ marginTop:quedadas.length?13:0 }}>
+        <div className="fh-in">
           <div style={{ display:"flex", gap:10 }}>
             <div style={{ flex:1.4 }}>
               <div style={label}>Día</div>
@@ -3808,7 +3845,7 @@ function QuedadasPanel({ quedadas, onRefrescar, cargando }){
             </button>
           </div>
         </div>
-      )}
+      ))}
 
       {msg && (
         <div style={{ display:"flex", gap:9, alignItems:"flex-start", marginTop:12, padding:"10px 12px", background:"var(--bg2)", border:`1px solid ${msg.ok?"var(--jade)":"var(--crimson)"}`, borderRadius:11 }}>
@@ -3953,7 +3990,7 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar }){
   </>);
 }
 
-function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle, arranque, onSinCuenta }){
+function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle, arranque, onSinCuenta, onRestaurarTexto }){
   const [modo, setModo] = useState("entrar");          // entrar | registro
   const [f, setF] = useState({ email:"", password:"", handle:"", displayName:"" });
   const [msg, setMsg] = useState(null);
@@ -3962,6 +3999,8 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
   const [codigo, setCodigo] = useState("");
   const [editandoHandle, setEditandoHandle] = useState(false);
   const [handleNuevo, setHandleNuevo] = useState("");
+  const [pegandoCopia, setPegandoCopia] = useState(false);
+  const [textoCopia, setTextoCopia] = useState("");
 
   const label = { padding:"0 2px 6px", fontSize:12, color:"var(--muted)", fontWeight:600 };
   const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
@@ -4111,6 +4150,45 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
         </button>
       )}
 
+      {/* Reinstalación o móvil nuevo: aquí se pega la copia de texto, que no
+          necesita ni cuenta ni conexión. La copia CIFRADA de la nube no puede
+          ir aquí: su clave se deriva de la contraseña al entrar, así que se
+          ofrece justo después del login. */}
+      {arranque && (
+        <>
+          <button className="fh-btn" onClick={()=>{ setPegandoCopia(v=>!v); setMsg(null); }}
+            style={{ width:"100%", marginTop:9, background:"none", color:"var(--faint)", border:"1px solid var(--line)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+            <Upload size={14}/> Tengo una copia de seguridad
+          </button>
+          {pegandoCopia && (
+            <div className="fh-card fh-in" style={{ padding:16, marginTop:10 }}>
+              <div style={label}>Pega aquí tu copia</div>
+              <textarea value={textoCopia} onChange={e=>{ setTextoCopia(e.target.value); setMsg(null); }} rows={4} placeholder='{"app":"rpgym",…}'
+                style={{ width:"100%", resize:"vertical", background:"var(--bg2)", border:"1px solid var(--line)", color:"var(--txt)", borderRadius:10, padding:"10px 12px", fontSize:11, fontFamily:"ui-monospace,monospace", lineHeight:1.4 }}/>
+              <p style={{ fontSize:11.5, color:"var(--muted)", margin:"9px 0 10px", lineHeight:1.45 }}>
+                Es la que sacaste con <b style={{ color:"var(--txt)" }}>Ajustes → Copia de seguridad</b>. Si la tuya está en la nube, entra primero con tu cuenta: se descifra con tu contraseña.
+              </p>
+              <button className="fh-btn" onClick={async()=>{
+                setCargando(true);
+                const r = await onRestaurarTexto(textoCopia);
+                setCargando(false);
+                setMsg({ ok:r.ok, t:r.ok ? "Progreso restaurado en este móvil." : r.msg });
+                if(r.ok){ setTextoCopia(""); setPegandoCopia(false); }
+              }} disabled={cargando || !textoCopia.trim()}
+                style={{ width:"100%", background:textoCopia.trim()?"var(--gold)":"var(--card2)", color:textoCopia.trim()?"#0F131A":"var(--faint)", padding:12, fontSize:13 }}>
+                {cargando ? "Restaurando…" : "Restaurar este progreso"}
+              </button>
+            </div>
+          )}
+          {msg && msg.ok && (
+            <div className="fh-card" style={{ padding:13, marginTop:10, borderColor:"var(--jade)", display:"flex", gap:10, alignItems:"flex-start" }}>
+              <Check size={15} color="var(--jade)" style={{ flexShrink:0, marginTop:1 }}/>
+              <div style={{ fontSize:12, color:"var(--muted)", lineHeight:1.45 }}>{msg.t}</div>
+            </div>
+          )}
+        </>
+      )}
+
       <p style={{ fontSize:11.5, color:"var(--faint)", textAlign:"center", marginTop:14, lineHeight:1.55 }}>
         {arranque ? "Sin cuenta la app funciona entera: solo te pierdes la parte de amigos."
                   : "Tu progreso actual no se pierde al crear la cuenta: sigue en el móvil."}
@@ -4217,7 +4295,7 @@ function UpdateBanner({ info, onClose }){
   );
 }
 
-function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup }){
+function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup, cloudEnabled, perfil }){
   const p = state.profile || {};
   const rem = state.reminders || { enabled:false, hour:19, minute:0, days:[1,3,5] };
   const sub = state.sub || { enabled:false, renewalDay:1, price:"" };
@@ -4493,6 +4571,8 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
         {backupMsg && <div style={{ marginTop:11, fontSize:12.5, color:backupMsg.ok?"var(--jade)":"var(--crimson)", lineHeight:1.45 }}>{backupMsg.msg}</div>}
       </div>
 
+      {cloudEnabled && perfil && <CopiaNubePanel exportBackup={exportBackup} importBackup={importBackup}/>}
+
       {/* --- Zona de datos / borrar progreso --- */}
       <div style={sectionTitle}>DATOS</div>
       <div className="fh-card" style={{ padding:16, borderColor:"var(--crimson)" }}>
@@ -4656,7 +4736,7 @@ function CyclePhaseCard({ state, setTab }){
   );
 }
 
-function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, onRefrescarQuedadas, cargandoQuedadas, onCargarTabla }){
+function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, onRefrescarQuedadas, cargandoQuedadas, onCargarTabla, copiaNube, onRestaurarNube, onDescartarCopia }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const RankIcon=rank.icon;
@@ -4716,10 +4796,26 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
         </div>
       </div>
 
+      {copiaNube && (
+        <div className="fh-card fh-in" style={{ padding:16, marginTop:12, borderColor:"var(--jade)" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:9, fontSize:14, marginBottom:6 }}><Cloud size={16} color="var(--jade)"/> Tienes una copia en la nube</div>
+          <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
+            De {copiaNube.dispositivo || "otro dispositivo"}, del {new Date(copiaNube.updated_at).toLocaleDateString("es-ES",{ day:"2-digit", month:"long" })}.
+            Este móvil está vacío, así que puedes recuperarla ahora mismo.
+          </p>
+          <div style={{ display:"flex", gap:8 }}>
+            <button className="fh-btn" onClick={onDescartarCopia}
+              style={{ flex:1, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:11, fontSize:12.5 }}>Ahora no</button>
+            <button className="fh-btn" onClick={onRestaurarNube}
+              style={{ flex:1.4, background:"var(--jade)", padding:11, fontSize:12.5 }}>Restaurar</button>
+          </div>
+        </div>
+      )}
+
       {cloudEnabled && perfil && <EntrenandoAhora sesiones={entrenando} onUnirme={onUnirme} setTab={setTab}/>}
       {cloudEnabled && perfil && <MeHanSuperado filas={superadoPor} setTab={setTab}/>}
       {cloudEnabled && perfil && <NovedadesCard novedades={novedades} onCerrar={onCerrarNovedades} setTab={setTab}/>}
-      {cloudEnabled && perfil && <QuedadasPanel quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={cargandoQuedadas}/>}
+      {cloudEnabled && perfil && <QuedadasPanel modo="lista" quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={cargandoQuedadas}/>}
       {cloudEnabled && perfil && <ClasificacionCard perfil={perfil} cargar={onCargarTabla}/>}
 
       {/* Racha (respeta descansos) */}
@@ -6114,7 +6210,7 @@ function CycleCalendar({ cycle }){
   );
 }
 
-function ProgressView({ state, log, measures, addMeasurement, customRoutines, cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos, onQuitarAmigo, exportBackup, importBackup, quedadas }){
+function ProgressView({ state, log, measures, addMeasurement, customRoutines, cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos, onQuitarAmigo, quedadas, onRefrescarQuedadas }){
   const [form, setForm] = useState({ weightKg:"", chest:"", waist:"", arm:"" });
   const volData=log.slice(-12).map((s,i)=>({ name:`S${i+1}`, v:s.volume }));
   const weightData=measures.map(m=>({ name:m.date.slice(5), v:m.weightKg }));
@@ -6151,7 +6247,7 @@ function ProgressView({ state, log, measures, addMeasurement, customRoutines, cl
       {cloudEnabled && perfil && (
         <>
           <AmigosPanel amigos={amigos} onRefrescarAmigos={onRefrescarAmigos} onQuitar={onQuitarAmigo}/>
-          <CopiaNubePanel exportBackup={exportBackup} importBackup={importBackup}/>
+          <QuedadasPanel modo="crear" quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={false}/>
           <div style={{ fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" }}>TU PROGRESO</div>
         </>
       )}
@@ -6251,7 +6347,7 @@ function ProgressView({ state, log, measures, addMeasurement, customRoutines, cl
    FICHA DE PERSONAJE
    ========================================================================= */
 
-function CharacterView({ state, level, rank, log, customRoutines }){
+function CharacterView({ state, level, rank, log, customRoutines, setTab }){
   const RankIcon=rank.icon;
   const [openStat, setOpenStat] = useState(null);
   const weekSets=weeklySetsByGroup(log, state.weekStart);
@@ -6284,9 +6380,13 @@ function CharacterView({ state, level, rank, log, customRoutines }){
 
   return (
     <div className="fh-in">
-      <header style={{ padding:"22px 2px 12px" }}>
-        <h1 style={{ margin:0, fontSize:22 }}>Ficha de personaje</h1>
-        <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Cada parte del cuerpo sube de nivel con su propio entrenamiento.</p>
+      <header style={{ padding:"22px 2px 12px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={()=>setTab("home")} aria-label="Volver a Inicio"
+          style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
+        <div>
+          <h1 style={{ margin:0, fontSize:22 }}>Ficha de personaje</h1>
+          <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Cada parte del cuerpo sube de nivel con su propio entrenamiento.</p>
+        </div>
       </header>
 
       <div className="fh-card fh-framed" style={{ padding:20, display:"flex", alignItems:"center", gap:18 }}>
