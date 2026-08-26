@@ -2241,8 +2241,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 7;
-const APP_VERSION_NAME = "1.0.6";
+const APP_VERSION_CODE = 8;
+const APP_VERSION_NAME = "1.0.7";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2515,6 +2515,8 @@ export default function App(){
   const [amigos, setAmigos] = useState([]);
   const [copiaNube, setCopiaNube] = useState(null);   // copia cifrada que ofrecer tras entrar
   const [amigoAbierto, setAmigoAbierto] = useState(null);   // ficha de amigo que se está viendo
+  const [solicitudes, setSolicitudes] = useState([]);       // amistades que me piden
+  const [enviosRutina, setEnviosRutina] = useState([]);     // rutinas que me mandan
   const [superadoPor, setSuperadoPor] = useState([]);      // quién me ha adelantado a mí
   const [cargandoQuedadas, setCargandoQuedadas] = useState(false);
   const [draftIsNew, setDraftIsNew] = useState(false);
@@ -2561,6 +2563,10 @@ export default function App(){
     if(sup.ok) setSuperadoPor(sup.filas);
     const am = await cloud.listarAmigos();
     if(am.ok) setAmigos(am.amigos);
+    const sol = await cloud.solicitudesRecibidas();
+    if(sol.ok) setSolicitudes(sol.solicitudes);
+    const env = await cloud.rutinasRecibidas();
+    if(env.ok) setEnviosRutina(env.envios);
     // Móvil recién instalado con cuenta ya usada: si no hay nada que perder y en
     // la nube hay copia, se ofrece. No se pregunta cuando ya hay progreso aquí:
     // sería una invitación a pisárselo sin querer (para eso están los Ajustes).
@@ -2954,13 +2960,45 @@ export default function App(){
   function saveMealPlan(mp){ setMealPlan(mp); saveKey("gym:mealplan", mp); }
   function setExcludes(next){ setExcludesState(next); saveKey("gym:excludes", next); }
 
-  async function refrescarAmigos(){
-    if(!cloud.cloudEnabled) return;
-    const r = await cloud.listarAmigos();
-    if(r.ok) setAmigos(r.amigos);
-  }
+  /* Tras canjear un código no basta con recargar la lista de amigos: con el
+     amigo nuevo aparecen sus quedadas, su sitio en la clasificación y lo que
+     te haya mandado. Antes había que cerrar la app para verlo. */
+  async function refrescarAmigos(){ return refrescarSocial(); }
   function abrirAmigo(a){ setAmigoAbierto(a); setTab("amigo"); }
   function cerrarAmigo(){ setAmigoAbierto(null); setTab("progreso"); }
+
+  /* Lo que cambia porque lo mueve OTRO: quién te ha pedido amistad, quién te
+     ha mandado una rutina, qué quedadas hay, quién está entrenando. Sin esto la
+     app solo se enteraba al arrancar, y había que cerrarla y abrirla para ver
+     un amigo recién añadido o una quedada recién propuesta. */
+  const refrescandoRef = useRef(false);
+  async function refrescarSocial(){
+    if(!cloud.cloudEnabled || !cloudSession || refrescandoRef.current) return;
+    refrescandoRef.current = true;
+    try {
+      const [am, sol, env, q, ea, sup] = await Promise.all([
+        cloud.listarAmigos(), cloud.solicitudesRecibidas(), cloud.rutinasRecibidas(),
+        cloud.listarQuedadas(), cloud.quienEntrenaAhora(), cloud.meHanSuperado(),
+      ]);
+      if(am.ok)  setAmigos(am.amigos);
+      if(sol.ok) setSolicitudes(sol.solicitudes);
+      if(env.ok) setEnviosRutina(env.envios);
+      if(q.ok)   setQuedadas(q.quedadas);
+      if(ea.ok)  setEntrenando(ea.sesiones);
+      if(sup.ok) setSuperadoPor(sup.filas);
+    } finally { refrescandoRef.current = false; }
+  }
+
+  /* Cada minuto con la app delante, y al volver a ella. Con la app en segundo
+     plano no se consulta nada: no tiene sentido gastar batería ni cuota. */
+  useEffect(()=>{
+    if(!cloud.cloudEnabled || !cloudSession) return;
+    const t = setInterval(()=>{ if(document.visibilityState === "visible") refrescarSocial(); }, 60000);
+    const alVolver = ()=>{ if(document.visibilityState === "visible") refrescarSocial(); };
+    document.addEventListener("visibilitychange", alVolver);
+    return ()=>{ clearInterval(t); document.removeEventListener("visibilitychange", alVolver); };
+    // eslint-disable-next-line
+  },[cloudSession?.user?.id]);
 
   async function quitarAmigo(id){
     const r = await cloud.borrarAmigo(id);
@@ -3081,6 +3119,7 @@ export default function App(){
     await cloud.salir();
     setCloudSession(null); setPerfil(null);
     setAmigos([]); setQuedadas([]); setNovedades([]); setEntrenando([]); setSuperadoPor([]);
+    setSolicitudes([]); setEnviosRutina([]);
     socialCargadoPara.current = null; setAmigoAbierto(null);
     setSinCuenta(false); setTab("home");    // al salir se vuelve a la pantalla de entrar
     showToast({ title:"Sesión cerrada", sub:"Tu progreso sigue en este móvil.", icon:Lock });
@@ -3101,6 +3140,43 @@ export default function App(){
     setCustomRoutinesState(next); saveKey("gym:routines", next);
     showToast({ title:"Rutina importada", sub:`${routine.name} · ${routine.days.length} día${routine.days.length===1?"":"s"}`, icon:Download });
   }
+  /* --- Avisos: solicitudes de amistad y rutinas que te mandan ------------- */
+
+  async function responderSolicitud(id, acepto){
+    const r = await cloud.responderSolicitud(id, acepto);
+    if(!r.ok){ showToast({ title:"No se ha podido", sub:r.msg, icon:ShieldAlert }); return; }
+    setSolicitudes(prev => prev.filter(x => x.id !== id));
+    if(r.aceptada){
+      refrescarSocial();                       // el amigo nuevo debe aparecer YA
+      showToast({ title:"Ya sois amigos", sub:"Os veréis en la clasificación.", icon:Users });
+    }
+  }
+
+  /* Aceptar una rutina la reconstruye con TU catálogo, igual que pegar un
+     código: el payload viaja por nombre de ejercicio, sin músculos ni imágenes. */
+  async function responderRutina(envio, acepto){
+    if(!acepto){
+      const r = await cloud.responderRutina(envio.id, false);
+      if(r.ok) setEnviosRutina(prev => prev.filter(x => x.id !== envio.id));
+      return;
+    }
+    const yaTengo = customRoutines.map(r => r.name);
+    const decodificada = decodeRoutine(SHARE_PREFIX + b64urlEncode(JSON.stringify(envio.payload)), yaTengo);
+    if(!decodificada.ok){
+      showToast({ title:"No se ha podido añadir", sub:decodificada.msg, icon:ShieldAlert });
+      return;
+    }
+    importRoutine({ ...decodificada.routine,
+      sharedFrom: { handle:envio.handle, displayName:envio.display_name },
+      bonusHecho: false });
+    await cloud.responderRutina(envio.id, true);
+    setEnviosRutina(prev => prev.filter(x => x.id !== envio.id));
+    if(decodificada.desconocidos?.length){
+      showToast({ title:"Añadida, con recortes",
+        sub:`Tu versión no conoce: ${decodificada.desconocidos.slice(0,3).join(", ")}.`, icon:Info });
+    }
+  }
+
   function deleteCustomRoutine(id){
     const next = customRoutines.filter(x=>x.id!==id);
     setCustomRoutinesState(next); saveKey("gym:routines", next);
@@ -3174,9 +3250,13 @@ export default function App(){
           cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), quedadas, novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno, superadoPor,
           onRefrescarQuedadas:refrescarQuedadas, cargandoQuedadas,
           onCargarTabla:(p,a)=>cloud.leaderboard(p, a),
-          copiaNube, onRestaurarNube:restaurarDeNube, onDescartarCopia:()=>setCopiaNube(null) }}/>}
+          copiaNube, onRestaurarNube:restaurarDeNube, onDescartarCopia:()=>setCopiaNube(null),
+          pendientes:solicitudes.length + enviosRutina.length, amigos }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina }}/>}
         {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines, setTab }}/>}
+        {tab==="avisos" && <AvisosView {...{ solicitudes, envios:enviosRutina,
+          onResponderSolicitud:responderSolicitud, onResponderRutina:responderRutina,
+          onVolver:()=>setTab("home") }}/>}
         {tab==="amigo" && amigoAbierto && <AmigoView {...{ amigo:amigoAbierto, misBests:state.bests,
           customRoutines, onVolver:cerrarAmigo, onToast:showToast }}/>}
         {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests, sesionConjunta }}/>}
@@ -3525,7 +3605,7 @@ function CopiaNubePanel({ exportBackup, importBackup }){
 
 /* Clasificación: tres periodos y dos alcances (tu círculo o todos).
    Vive en Inicio, que es donde se mira de verdad. */
-function ClasificacionCard({ perfil, cargar }){
+function ClasificacionCard({ perfil, cargar, señal }){
   const [periodo, setPeriodo] = useState("semanal");
   const [soloAmigos, setSoloAmigos] = useState(true);
   const [tabla, setTabla] = useState(null);
@@ -3538,7 +3618,8 @@ function ClasificacionCard({ perfil, cargar }){
     setCargandoTabla(false);
     setTabla(r.ok ? r.filas : []);
   }
-  useEffect(()=>{ ver(periodo, soloAmigos); /* eslint-disable-next-line */ }, [periodo, soloAmigos, perfil?.handle]);
+  // `señal` cambia al ganar o perder un amigo: la tabla debe rehacerse.
+  useEffect(()=>{ ver(periodo, soloAmigos); /* eslint-disable-next-line */ }, [periodo, soloAmigos, perfil?.handle, señal]);
 
   const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
 
@@ -3898,6 +3979,34 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar, onAbrir }){
   const [msg, setMsg] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [confirmar, setConfirmar] = useState(null);
+  const [busqueda, setBusqueda] = useState("");
+  const [resultados, setResultados] = useState([]);
+  const [buscando, setBuscando] = useState(false);
+  const [pedidos, setPedidos] = useState([]);      // a quién ya has pedido en esta pantalla
+
+  /* Se busca sola al dejar de escribir. Medio segundo: lo justo para no lanzar
+     una consulta por tecla y que no parezca que no hace nada. */
+  useEffect(()=>{
+    const t = String(busqueda||"").trim();
+    if(modo !== "buscar" || t.length < 2){ setResultados([]); return; }
+    let vivo = true;
+    setBuscando(true);
+    const id = setTimeout(async()=>{
+      const r = await cloud.buscarGente(t);
+      if(!vivo) return;
+      setBuscando(false);
+      setResultados(r.ok ? r.gente : []);
+    }, 500);
+    return ()=>{ vivo=false; clearTimeout(id); };
+  }, [busqueda, modo]);
+
+  async function pedir(g){
+    const r = await cloud.pedirAmistad(g.id);
+    if(!r.ok){ setMsg({ ok:false, t:r.msg }); return; }
+    setPedidos(p => [...p, g.id]);
+    cloud.avisarAmigos("amistad");
+    setMsg({ ok:true, t:`Solicitud mandada a ${g.display_name || "@"+g.handle}. Te avisará cuando conteste.` });
+  }
 
   const puedeCompartir = typeof navigator !== "undefined" && !!navigator.share;
   const invitacion = c => `¡Éntrale a RPGym conmigo! Instala la app y mete este código en Cuenta → Amigos:\n\n${c}\n\nAsí nos vemos en la clasificación.`;
@@ -3967,7 +4076,12 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar, onAbrir }){
         </div>
       )}
 
-      <div style={{ display:"flex", gap:8, marginTop:amigos.length?13:0 }}>
+      <button className="fh-btn" onClick={()=>{ setModo(modo==="buscar"?null:"buscar"); setMsg(null); }}
+        style={{ width:"100%", marginTop:amigos.length?13:0, background:modo==="buscar"?"var(--gold)":"var(--card2)", color:modo==="buscar"?"#0F131A":"var(--txt)", border:modo==="buscar"?"none":"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+        <Search size={15} color={modo==="buscar"?"#0F131A":"var(--gold)"}/> Buscar a alguien
+      </button>
+
+      <div style={{ display:"flex", gap:8, marginTop:8 }}>
         <button className="fh-btn" onClick={invitar}
           style={{ flex:1, background:modo==="invitar"?"var(--gold)":"var(--card2)", color:modo==="invitar"?"#0F131A":"var(--txt)", border:modo==="invitar"?"none":"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
           <Share2 size={14} color={modo==="invitar"?"#0F131A":"var(--gold)"}/> Invitar
@@ -3977,6 +4091,42 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar, onAbrir }){
           <Plus size={15} color={modo==="canjear"?"#0F131A":"var(--jade)"}/> Tengo un código
         </button>
       </div>
+
+      {modo === "buscar" && (
+        <div className="fh-in" style={{ marginTop:12 }}>
+          <input value={busqueda} maxLength={30} autoCapitalize="none" autoCorrect="off"
+            onChange={e=>{ setBusqueda(e.target.value); setMsg(null); }}
+            placeholder="Nombre o @usuario" aria-label="Buscar a alguien"
+            style={{ textAlign:"left" }}/>
+          <div style={{ fontSize:11, color:"var(--faint)", margin:"7px 2px 0", lineHeight:1.45 }}>
+            {busqueda.trim().length < 2
+              ? "Escribe al menos dos letras."
+              : buscando ? "Buscando…"
+              : resultados.length ? "Le llegará una solicitud y decidirá si te acepta."
+              : "Nadie con ese nombre. Repasa cómo se escribe o pásale tu código."}
+          </div>
+
+          {resultados.map((g,i)=>(
+            <div key={g.id} style={{ display:"flex", alignItems:"center", gap:11, padding:"10px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+              <div style={{ width:32, height:32, borderRadius:10, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <User size={15} color="var(--gold)"/>
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.display_name || g.handle}</div>
+                <div className="mono" style={{ fontSize:10.5, color:"var(--faint)", marginTop:1 }}>@{g.handle} · nivel {g.level}</div>
+              </div>
+              {g.ya_amigo ? (
+                <span className="fh-chip" style={{ background:"var(--bg2)", color:"var(--jade)", border:"none", flexShrink:0 }}>ya es amigo</span>
+              ) : g.pendiente || pedidos.includes(g.id) ? (
+                <span className="fh-chip" style={{ background:"var(--bg2)", color:"var(--faint)", border:"none", flexShrink:0 }}>pendiente</span>
+              ) : (
+                <button className="fh-btn" onClick={()=>pedir(g)}
+                  style={{ background:"var(--jade)", padding:"8px 12px", fontSize:12, flexShrink:0 }}>Pedir</button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {modo === "invitar" && (
         <div className="fh-in" style={{ marginTop:12 }}>
@@ -4033,6 +4183,111 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar, onAbrir }){
    Los atributos NO los calcula el servidor: se sacan aquí cruzando sus marcas
    con EX_MUSCLE y BODY_MAP, el mismo catálogo que usa tu propia ficha. Así el
    servidor solo guarda "ejercicio + peso" y no necesita saber de músculos. */
+/* La campana: lo que otra persona ha puesto en tus manos y espera respuesta.
+   Solo cosas que EXIGEN decisión (amistades y rutinas). Lo que solo se mira
+   —quién ha entrenado, quién te ha superado— sigue en Inicio, sin insistir. */
+function AvisosView({ solicitudes, envios, onResponderSolicitud, onResponderRutina, onVolver }){
+  const [ocupado, setOcupado] = useState(null);
+  const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
+  const vacio = !solicitudes.length && !envios.length;
+
+  async function conBloqueo(clave, fn){
+    setOcupado(clave);
+    try { await fn(); } finally { setOcupado(null); }
+  }
+
+  return (
+    <div className="fh-in">
+      <header style={{ padding:"22px 2px 12px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={onVolver} aria-label="Volver a Inicio"
+          style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
+        <div>
+          <h1 style={{ margin:0, fontSize:22 }}>Avisos</h1>
+          <p style={{ margin:"3px 0 0", fontSize:13, color:"var(--muted)" }}>
+            {vacio ? "Nada pendiente." : "Cosas que esperan tu respuesta."}
+          </p>
+        </div>
+      </header>
+
+      {vacio && (
+        <div className="fh-card" style={{ padding:20, marginTop:8, textAlign:"center" }}>
+          <Bell size={26} color="var(--faint)"/>
+          <p style={{ fontSize:12.5, color:"var(--muted)", margin:"10px 0 0", lineHeight:1.5 }}>
+            Aquí te llegarán las solicitudes de amistad y las rutinas que te manden tus amigos.
+          </p>
+        </div>
+      )}
+
+      {solicitudes.length > 0 && (<>
+        <div style={sectionTitle}>QUIEREN SER TUS AMIGOS · {solicitudes.length}</div>
+        <div className="fh-card" style={{ padding:16 }}>
+          {solicitudes.map((s,i)=>(
+            <div key={s.id} style={{ padding:"11px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:11 }}>
+                <div style={{ width:36, height:36, borderRadius:11, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <User size={17} color="var(--gold)"/>
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.display_name || s.handle}</div>
+                  <div className="mono" style={{ fontSize:11, color:"var(--faint)", marginTop:2 }}>@{s.handle} · nivel {s.level} · {s.total_workouts || 0} entrenos</div>
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:8, marginTop:10 }}>
+                <button className="fh-btn" disabled={ocupado===s.id}
+                  onClick={()=>conBloqueo(s.id, ()=>onResponderSolicitud(s.id, false))}
+                  style={{ flex:1, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:10, fontSize:12.5 }}>
+                  Rechazar
+                </button>
+                <button className="fh-btn" disabled={ocupado===s.id}
+                  onClick={()=>conBloqueo(s.id, ()=>onResponderSolicitud(s.id, true))}
+                  style={{ flex:1.4, background:"var(--jade)", padding:10, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  <Check size={14}/> Aceptar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>)}
+
+      {envios.length > 0 && (<>
+        <div style={sectionTitle}>RUTINAS QUE TE MANDAN · {envios.length}</div>
+        <div className="fh-card" style={{ padding:16 }}>
+          {envios.map((e,i)=>(
+            <div key={e.id} style={{ padding:"11px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+              <div style={{ display:"flex", alignItems:"flex-start", gap:11 }}>
+                <div style={{ width:36, height:36, borderRadius:11, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <ClipboardList size={17} color="var(--gold)"/>
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{e.name}</div>
+                  <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:2 }}>
+                    de {e.display_name || "@"+e.handle} · {e.dias} día{e.dias===1?"":"s"}
+                  </div>
+                </div>
+              </div>
+              <div style={{ fontSize:11, color:"var(--faint)", marginTop:8, lineHeight:1.45 }}>
+                Si la aceptas se añade a tus rutinas. La primera vez que la entrenes te llevas {XP_RUTINA_AMIGO} XP extra.
+              </div>
+              <div style={{ display:"flex", gap:8, marginTop:10 }}>
+                <button className="fh-btn" disabled={ocupado===e.id}
+                  onClick={()=>conBloqueo(e.id, ()=>onResponderRutina(e, false))}
+                  style={{ flex:1, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:10, fontSize:12.5 }}>
+                  Rechazar
+                </button>
+                <button className="fh-btn" disabled={ocupado===e.id}
+                  onClick={()=>conBloqueo(e.id, ()=>onResponderRutina(e, true))}
+                  style={{ flex:1.4, background:"var(--gold)", padding:10, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  <Download size={14}/> Añadirla
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>)}
+    </div>
+  );
+}
+
 function AmigoView({ amigo, misBests, customRoutines, onVolver, onToast }){
   const [ficha, setFicha] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -4096,20 +4351,20 @@ function AmigoView({ amigo, misBests, customRoutines, onVolver, onToast }){
     onToast({ title:"Quedada propuesta", sub:`${nombre} la ve en su Inicio y te contesta.`, icon:CalendarDays });
   }
 
+  /* Va por dentro de la app: le llega a su campana y él decide. El payload es
+     el mismo que viaja en el código de texto (ejercicios por nombre), así que
+     lo reconstruye con su propio catálogo, sea cual sea su versión. */
   async function pasarRutina(){
     const rutina = mias.find(r => r.id === rutinaSel);
     if(!rutina) return;
-    const codigo = encodeRoutine(rutina);
-    const texto = `Te paso mi rutina de RPGym "${rutina.name}". Ábrela en Rutinas → Importar rutina y pega esto:\n\n${codigo}`;
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try { await navigator.share({ title:`Rutina RPGym: ${rutina.name}`, text:texto }); return; } catch {}
-    }
-    try {
-      await navigator.clipboard.writeText(texto);
-      onToast({ title:"Código copiado", sub:`Pégaselo a ${nombre} por donde queráis.`, icon:Copy });
-    } catch {
-      onToast({ title:"Cópialo a mano", sub:"Tu navegador no deja copiar solo.", icon:Info });
-    }
+    setOcupado(true);
+    const payload = JSON.parse(b64urlDecode(encodeRoutine(rutina).slice(SHARE_PREFIX.length)));
+    const r = await cloud.mandarRutina({ amigoId:amigo.id, name:rutina.name, dias:rutina.days.length, payload });
+    setOcupado(false);
+    if(!r.ok){ onToast({ title:"No se ha podido mandar", sub:r.msg, icon:ShieldAlert }); return; }
+    cloud.avisarAmigos("rutina", { nombre:rutina.name });
+    setAccion(null); setRutinaSel("");
+    onToast({ title:"Rutina mandada", sub:`${nombre} la verá en sus avisos y decidirá.`, icon:Share2 });
   }
 
   const label = { padding:"0 2px 6px", fontSize:12, color:"var(--muted)", fontWeight:600 };
@@ -4192,11 +4447,11 @@ function AmigoView({ amigo, misBests, customRoutines, onVolver, onToast }){
               {mias.map(r=><option key={r.id} value={r.id}>{r.name} · {r.days?.length || 0} días</option>)}
             </select>
             <p style={{ fontSize:11.5, color:"var(--faint)", margin:"10px 2px 12px", lineHeight:1.45 }}>
-              Va como un código de texto: ni servidores ni cuentas de por medio. {nombre} lo pega en <b style={{ color:"var(--muted)" }}>Rutinas → Importar rutina</b>.
+              Le llega a sus avisos y decide si la añade. No hace falta salir de la app ni pasarle nada por otro sitio.
             </p>
-            <button className="fh-btn" onClick={pasarRutina} disabled={!rutinaSel}
-              style={{ width:"100%", background:rutinaSel?"var(--gold)":"var(--card2)", color:rutinaSel?"#0F131A":"var(--faint)", padding:12, fontSize:13 }}>
-              Mandarle el código
+            <button className="fh-btn" onClick={pasarRutina} disabled={!rutinaSel || ocupado}
+              style={{ width:"100%", background:rutinaSel?"var(--gold)":"var(--card2)", color:rutinaSel?"#0F131A":"var(--faint)", padding:12, fontSize:13, opacity:ocupado?.6:1 }}>
+              {ocupado ? "Mandando…" : "Mandársela"}
             </button>
           </>)}
         </div>
@@ -5066,7 +5321,7 @@ function CyclePhaseCard({ state, setTab }){
   );
 }
 
-function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, onRefrescarQuedadas, cargandoQuedadas, onCargarTabla, copiaNube, onRestaurarNube, onDescartarCopia }){
+function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, onRefrescarQuedadas, cargandoQuedadas, onCargarTabla, copiaNube, onRestaurarNube, onDescartarCopia, pendientes, amigos }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const RankIcon=rank.icon;
@@ -5084,6 +5339,17 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
           <div className="fh-chip" style={{ background:"rgba(232,176,75,.14)", color:"var(--gold)", display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap", flexShrink:0 }} title="Racha de días entrenados (los descansos no la rompen)"><Flame size={13}/> {habitStreak(log, state.reminders?.days)} d</div>
+          {cloudEnabled && perfil && (
+            <button onClick={()=>setTab("avisos")} aria-label={pendientes ? `Avisos: ${pendientes} sin responder` : "Avisos"}
+              style={{ background:"var(--card)", border:`1px solid ${pendientes?"var(--gold)":"var(--line)"}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:pendientes?"var(--gold)":"var(--muted)", flexShrink:0, position:"relative" }}>
+              <Bell size={17}/>
+              {pendientes > 0 && (
+                <span className="mono" style={{ position:"absolute", top:-5, right:-5, minWidth:17, height:17, padding:"0 4px", borderRadius:999, background:"var(--crimson)", color:"#fff", fontSize:10, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid var(--bg)" }}>
+                  {pendientes > 9 ? "9+" : pendientes}
+                </span>
+              )}
+            </button>
+          )}
           {cloudEnabled && (
             <button onClick={()=>setTab("cuenta")} aria-label="Tu cuenta" style={{ background:"var(--card)", border:`1px solid ${perfil?"var(--gold)":"var(--line)"}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:perfil?"var(--gold)":"var(--muted)", flexShrink:0 }}><User size={17}/></button>
           )}
@@ -5146,7 +5412,7 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
       {cloudEnabled && perfil && <MeHanSuperado filas={superadoPor} setTab={setTab}/>}
       {cloudEnabled && perfil && <NovedadesCard novedades={novedades} onCerrar={onCerrarNovedades} setTab={setTab}/>}
       {cloudEnabled && perfil && <QuedadasPanel modo="lista" quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={cargandoQuedadas}/>}
-      {cloudEnabled && perfil && <ClasificacionCard perfil={perfil} cargar={onCargarTabla}/>}
+      {cloudEnabled && perfil && <ClasificacionCard perfil={perfil} cargar={onCargarTabla} señal={amigos.length}/>}
 
       {/* Racha (respeta descansos) */}
       <StreakCard log={log} plannedDays={state.reminders?.days} bestStreak={state.bestStreak} setTab={setTab}/>

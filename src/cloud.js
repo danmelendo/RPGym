@@ -683,6 +683,92 @@ export async function quedarCon({ amigoId, cuando, lugar, nota }){
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
+/* --- Buscar gente y solicitudes de amistad ------------------------------- */
+
+export async function buscarGente(texto){
+  if (!supabase) return sinNube;
+  const t = String(texto || "").trim();
+  if (t.length < 2) return { ok:true, gente:[] };
+  try {
+    const { data, error } = await supabase.rpc("buscar_gente", { p_texto: t });
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, gente:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function pedirAmistad(userId){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("friend_requests").insert({ de:user.id, para:userId });
+    if (error) {
+      // Índice único: ya hay una solicitud viva en ese sentido.
+      if (String(error.message||"").includes("friend_requests_viva")) return { ok:false, msg:"Ya le has mandado una solicitud. Espera a que conteste." };
+      return { ok:false, msg:traducir(error) };
+    }
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function solicitudesRecibidas(){
+  if (!supabase) return sinNube;
+  try {
+    const { data, error } = await supabase.from("solicitudes_recibidas").select("*").limit(30);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, solicitudes:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* Aceptar crea además la amistad, así que va por función: friendships no tiene
+   política de insert a propósito. */
+export async function responderSolicitud(id, acepto){
+  if (!supabase) return sinNube;
+  try {
+    const { data, error } = await supabase.rpc("responder_solicitud", { p_id:id, p_acepto:!!acepto });
+    if (error) return { ok:false, msg:traducir(error) };
+    if (!data?.ok) return { ok:false, msg:data?.msg || "No se ha podido." };
+    return { ok:true, aceptada:!!data.aceptada };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* --- Mandar una rutina a un amigo ---------------------------------------- */
+
+/* El payload es el MISMO que viaja en el código de texto: ejercicios por
+   nombre. Así el receptor lo reconstruye con su catálogo, igual que al pegar
+   un código, y una versión distinta de la app no rompe nada. */
+export async function mandarRutina({ amigoId, name, dias, payload }){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("routine_sends")
+      .insert({ de:user.id, para:amigoId, name:String(name||"").slice(0,60), dias:Number(dias)||0, payload });
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function rutinasRecibidas(){
+  if (!supabase) return sinNube;
+  try {
+    const { data, error } = await supabase.from("rutinas_recibidas").select("*").limit(20);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, envios:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function responderRutina(id, acepto){
+  if (!supabase) return sinNube;
+  try {
+    const { error } = await supabase.from("routine_sends")
+      .update({ estado: acepto ? "aceptada" : "rechazada", updated_at:new Date().toISOString() })
+      .eq("id", id);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
 export async function borrarAmigo(amigoId){
   if (!supabase) return sinNube;
   try {
