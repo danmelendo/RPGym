@@ -34,3 +34,4 @@ android/app/google-services.json
 android/app/*firebase-adminsdk*.json
 supabase/.env.firebase
 supabase/.temp/
+deno.lock
