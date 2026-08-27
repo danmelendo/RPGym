@@ -423,6 +423,10 @@ export async function borrarTokenPush(){
 /* Avisa a tus amigos de algo. La clave de Firebase NO está aquí: vive en la
    Edge Function, porque dentro del APK cualquiera podría sacarla y mandar
    notificaciones en nombre de otro. */
+/* `extra.para` convierte el aviso en dirigido: le llega SOLO a esa persona.
+   Es lo que distingue "X está entrenando" (a todos) de "X te ha superado en
+   press banca" (a quien de verdad ha superado). El servidor comprueba que
+   podéis avisaros; aquí solo se dice a quién. */
 export async function avisarAmigos(tipo, extra = {}){
   if (!supabase) return sinNube;
   try {

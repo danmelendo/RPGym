@@ -1,24 +1,47 @@
 /* =========================================================================
    RPGym · Edge Function "avisar"
-   Manda una notificación push a los amigos de quien la llama, vía FCM.
+   Manda una notificación push, vía FCM.
 
    Por qué existe: Supabase no envía push. Y la clave de servicio de Firebase
    NO puede viajar dentro del APK (cualquiera podría mandar notificaciones en
    nombre de otro), así que el envío se hace aquí, en el servidor.
 
-   Despliegue:
+   Hay dos formas de avisar:
+     · A TODO tu círculo   -> "X está entrenando ahora".
+     · A UNA persona       -> "X te ha superado en press banca". Si esto se
+       manda a todos, a los que no has adelantado el mensaje les miente.
+
+   En los dos casos la comprobación la hace el servidor: quien llama solo dice
+   a quién quiere avisar, y las funciones de la base deciden si puede.
+
+   Despliegue (ver supabase/FIREBASE.md):
+     supabase secrets set --env-file supabase/.env.firebase
      supabase functions deploy avisar
-     supabase secrets set FIREBASE_PROJECT_ID=...
-     supabase secrets set FIREBASE_CLIENT_EMAIL=...
-     supabase secrets set FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
    ========================================================================= */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const TIPOS = {
-  entreno:  (n: string) => ({ title: "RPGym", body: `${n} está entrenando ahora` }),
-  record:   (n: string) => ({ title: "RPGym", body: `${n} acaba de batir un récord` }),
-  quedada:  (n: string) => ({ title: "RPGym", body: `${n} ha propuesto quedar para entrenar` }),
-  superado: (n: string, e?: string) => ({ title: "RPGym", body: `${n} te ha superado en ${e || "un ejercicio"}` }),
+/* La versión web (danmelendo.github.io) llama a esto desde el navegador, así
+   que hace falta CORS. Sin esto el push funcionaría en Android y en la web no,
+   y encima el fallo aparece como un error de red genérico. */
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+const json = (cuerpo: unknown, status = 200) =>
+  new Response(JSON.stringify(cuerpo), { status, headers: { ...CORS, "Content-Type": "application/json" } });
+
+/* Cada tipo dice qué texto lleva y si va a una persona o a todo el círculo. */
+const TIPOS: Record<string, { dirigido: boolean; texto: (n: string, x?: string) => string }> = {
+  // A todo el círculo
+  entreno:  { dirigido: false, texto: (n) => `${n} está entrenando ahora` },
+  record:   { dirigido: false, texto: (n) => `${n} acaba de batir un récord` },
+  quedada:  { dirigido: false, texto: (n) => `${n} ha propuesto quedar para entrenar` },
+  // A una persona
+  superado:   { dirigido: true, texto: (n, e) => `${n} te ha superado en ${e || "un ejercicio"}` },
+  invitacion: { dirigido: true, texto: (n, e) => `${n} te ha invitado a entrenar${e ? " " + e : ""}` },
+  amistad:    { dirigido: true, texto: (n) => `${n} quiere ser tu amigo` },
+  rutina:     { dirigido: true, texto: (n, e) => `${n} te ha mandado una rutina${e ? `: ${e}` : ""}` },
 };
 
 /* Token de acceso de Google a partir de la cuenta de servicio (JWT firmado). */
@@ -52,29 +75,34 @@ async function tokenGoogle(): Promise<string> {
 
 Deno.serve(async (req) => {
   try {
-    if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+    if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+    if (req.method !== "POST") return json({ ok: false, msg: "Method not allowed" }, 405);
 
     // Quién llama: se valida su sesión. Nadie puede avisar en nombre de otro.
     const auth = req.headers.get("Authorization") ?? "";
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: auth } } });
     const { data: { user } } = await sb.auth.getUser();
-    if (!user) return new Response(JSON.stringify({ ok: false, msg: "Sin sesión" }), { status: 401 });
+    if (!user) return json({ ok: false, msg: "Sin sesión" }, 401);
 
-    const { tipo, ejercicio } = await req.json();
-    if (!(tipo in TIPOS)) return new Response(JSON.stringify({ ok: false, msg: "Tipo desconocido" }), { status: 400 });
+    const { tipo, ejercicio, nombre: extra, para } = await req.json();
+    const def = TIPOS[tipo];
+    if (!def) return json({ ok: false, msg: "Tipo desconocido" }, 400);
+    if (def.dirigido && !para) return json({ ok: false, msg: "Ese aviso necesita destinatario" }, 400);
 
     // Nombre para el texto del aviso
     const { data: perfil } = await sb.from("profiles").select("display_name, handle").eq("id", user.id).maybeSingle();
     const nombre = perfil?.display_name || "@" + perfil?.handle;
 
-    // Los tokens se piden con la clave de servicio: la función comprueba la
-    // amistad por dentro, no se fía de quien llama.
+    /* Los tokens se piden con la clave de servicio: las funciones comprueban
+       la amistad por dentro, no se fían de quien llama. */
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: tokens } = await admin.rpc("tokens_de_mis_amigos", { p_user: user.id });
-    if (!tokens?.length) return new Response(JSON.stringify({ ok: true, enviados: 0 }));
+    const { data: tokens } = def.dirigido
+      ? await admin.rpc("tokens_de_una_persona", { p_de: user.id, p_para: para })
+      : await admin.rpc("tokens_de_mis_amigos", { p_user: user.id });
+    if (!tokens?.length) return json({ ok: true, enviados: 0 });
 
-    const { title, body } = (TIPOS as any)[tipo](nombre, ejercicio);
+    const body = def.texto(nombre, ejercicio || extra);
     const acceso = await tokenGoogle();
     const proyecto = Deno.env.get("FIREBASE_PROJECT_ID")!;
 
@@ -83,16 +111,23 @@ Deno.serve(async (req) => {
       const r = await fetch(`https://fcm.googleapis.com/v1/projects/${proyecto}/messages:send`, {
         method: "POST",
         headers: { Authorization: `Bearer ${acceso}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ message: { token, notification: { title, body },
-          data: { tipo, de: perfil?.handle ?? "" },
-          android: { priority: "high", notification: { channel_id: "rpgym" } } } }),
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: { title: "RPGym", body },
+            data: { tipo, de: perfil?.handle ?? "" },
+            android: { priority: "high", notification: { channel_id: "rpgym", notification_priority: "PRIORITY_HIGH", default_vibrate_timings: true } },
+            // Sin esto iOS no despierta la app ni enseña nada con la pantalla bloqueada.
+            apns: { headers: { "apns-priority": "10" }, payload: { aps: { sound: "default" } } },
+          },
+        }),
       });
       if (r.ok) enviados++;
       // Token caducado o revocado: se limpia para no reintentarlo siempre.
       else if (r.status === 404 || r.status === 400) await admin.from("push_tokens").delete().eq("token", token);
     }
-    return new Response(JSON.stringify({ ok: true, enviados }), { headers: { "Content-Type": "application/json" } });
+    return json({ ok: true, enviados });
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, msg: String(e) }), { status: 500 });
+    return json({ ok: false, msg: String(e) }, 500);
   }
 });

@@ -2465,8 +2465,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 16;
-const APP_VERSION_NAME = "1.0.15";
+const APP_VERSION_CODE = 17;
+const APP_VERSION_NAME = "1.0.16";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -3209,7 +3209,7 @@ export default function App(){
           if(r.ok && r.filas.length){
             setAdelantados(r.filas);
             // A quien hayas adelantado, se le avisa: es el pique que engancha.
-            r.filas.forEach(f => cloud.avisarAmigos("superado", { ejercicio:f.ejercicio }));
+            r.filas.forEach(f => cloud.avisarAmigos("superado", { ejercicio:f.ejercicio, para:f.user_id }));
           }
         });
       }
@@ -4355,7 +4355,7 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar, onAbrir }){
     const r = await cloud.pedirAmistad(g.id);
     if(!r.ok){ setMsg({ ok:false, t:r.msg }); return; }
     setPedidos(p => [...p, g.id]);
-    cloud.avisarAmigos("amistad");
+    cloud.avisarAmigos("amistad", { para:g.id });
     setMsg({ ok:true, t:`Solicitud mandada a ${g.display_name || "@"+g.handle}. Te avisará cuando conteste.` });
   }
 
@@ -4706,7 +4706,7 @@ function AmigoView({ amigo, misBests, customRoutines, onVolver, onToast }){
     const r = await cloud.quedarCon({ amigoId:amigo.id, cuando, lugar:f.lugar, nota:f.nota });
     setOcupado(false);
     if(!r.ok){ onToast({ title:"No se ha podido", sub:r.msg, icon:ShieldAlert }); return; }
-    cloud.avisarAmigos("quedada");
+    cloud.avisarAmigos("invitacion", { para:amigo.id, ejercicio:cuandoTexto(cuando) });
     setAccion(null);
     onToast({ title:"Quedada propuesta", sub:`${nombre} la ve en su Inicio y te contesta.`, icon:CalendarDays });
   }
@@ -4722,7 +4722,7 @@ function AmigoView({ amigo, misBests, customRoutines, onVolver, onToast }){
     const r = await cloud.mandarRutina({ amigoId:amigo.id, clientId:rutina.id, name:rutina.name, dias:rutina.days.length, payload });
     setOcupado(false);
     if(!r.ok){ onToast({ title:"No se ha podido mandar", sub:r.msg, icon:ShieldAlert }); return; }
-    cloud.avisarAmigos("rutina", { nombre:rutina.name });
+    cloud.avisarAmigos("rutina", { nombre:rutina.name, para:amigo.id });
     setAccion(null); setRutinaSel("");
     onToast({ title:"Rutina mandada", sub:`${nombre} la verá en sus avisos y decidirá.`, icon:Share2 });
   }

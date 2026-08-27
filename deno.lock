@@ -1,0 +1,30 @@
+{
+  "version": "5",
+  "redirects": {
+    "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.112.4"
+  },
+  "remote": {
+    "https://esm.sh/@supabase/supabase-js@2.112.4": "cfaa762b66cf8717f1b32db2699c4277aa673b39417cb9be9c0b19d9c7786bd7"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@capacitor/android@^7.6.8",
+        "npm:@capacitor/cli@^7.6.8",
+        "npm:@capacitor/core@^7.6.8",
+        "npm:@capacitor/local-notifications@^7.0.7",
+        "npm:@capacitor/push-notifications@^7.0.7",
+        "npm:@supabase/supabase-js@^2.112.4",
+        "npm:@vitejs/plugin-react@5",
+        "npm:lucide-react@0.383",
+        "npm:react-dom@^18.3.1",
+        "npm:react@^18.3.1",
+        "npm:recharts@^2.12.7",
+        "npm:vite@^6.4.3"
+      ],
+      "overrides": {
+        "esbuild": "^0.25.0"
+      }
+    }
+  }
+}

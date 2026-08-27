@@ -92,13 +92,22 @@ unos 3,5 MB: es Google Play Services entrando en la app.
 
 ## Cuándo avisa
 
-| Situación | Aviso a tus amigos |
-|---|---|
-| Empiezas un entreno | *"X está entrenando ahora"* |
-| Bates un récord | *"X acaba de batir un récord"* |
-| Superas la marca de un amigo | *"X te ha superado en press banca"* |
-| Propones una quedada | *"X ha propuesto quedar para entrenar"* |
-| Te mandan una rutina o una solicitud de amistad | va a la campana de Inicio |
+| Situación | Texto | A quién |
+|---|---|---|
+| Empiezas un entreno | *"X está entrenando ahora"* | a todo tu círculo |
+| Bates un récord | *"X acaba de batir un récord"* | a todo tu círculo |
+| Propones una quedada abierta | *"X ha propuesto quedar para entrenar"* | a todo tu círculo |
+| **Superas la marca de alguien** | *"X te ha superado en press banca"* | **solo a quien has adelantado** |
+| **Le invitas a quedar** | *"X te ha invitado a entrenar el viernes"* | **solo al invitado** |
+| **Le pides amistad** | *"X quiere ser tu amigo"* | **solo a esa persona** |
+| **Le mandas una rutina** | *"X te ha mandado una rutina: Torso-Pierna"* | **solo al destinatario** |
+
+Los cuatro dirigidos pasan por `tokens_de_una_persona`, que solo entrega el
+token si sois amigos o hay una solicitud viva entre los dos. La comprobación la
+hace la base de datos, no la app: quien llama solo dice a quién quiere avisar.
+Está probado atacándolo (`scratchpad/dbtool/probar_avisos.js`): un desconocido
+no obtiene el token de nadie, y ni `anon` ni `authenticated` pueden llamar a la
+función — solo la clave de servicio, o sea la Edge Function.
 
 Con la app abierta Android no las muestra: se enseñan como aviso dentro de la app.
 
