@@ -2083,27 +2083,55 @@ function weeklyGoalFor(state, routine){
 /* Racha de hábito que RESPETA los días de descanso: cuenta los días planificados
    (reminders.days) cumplidos de forma consecutiva; los días de descanso no rompen la
    racha ni suman. El día de hoy, si aún no has entrenado, no rompe (el día no ha acabado). */
-function habitStreak(log, plannedDays){
+/* --- REDENCIÓN ---------------------------------------------------------------
+   Lo que cuenta es CUÁNTAS veces vas a la semana, no qué días. Si te saltas el
+   lunes y lo recuperas el sábado, la semana está cumplida y la racha sigue: a
+   veces no se puede ir y se recupera otro día, y castigar eso solo hace que la
+   gente abandone.
+
+   Antes bastaba con fallar un día planificado para romper la racha, aunque esa
+   semana acabaras yendo las veces previstas. */
+
+/* Cómo va una semana concreta. `lunesISO` es el lunes de esa semana. */
+function resumenSemana(log, plannedDays, lunesISO){
   const planned = (plannedDays && plannedDays.length) ? plannedDays : DEFAULT_TRAIN_DAYS;
   const trained = new Set((log||[]).map(r=>r.date));
-  let streak=0, d=todayISO(), first=true;
-  for(let i=0;i<400;i++){
-    if(planned.includes(weekdayOfISO(d))){
-      if(trained.has(d)) streak++;
-      else if(!first) break;   // día planificado incumplido (que no sea hoy) rompe la racha
-    }
-    first=false; d=addDaysISO(d,-1);
+  const hoy = todayISO();
+  const dias = Array.from({ length:7 }, (_,i)=>addDaysISO(lunesISO, i));
+  const previstos = dias.filter(d=>planned.includes(weekdayOfISO(d))).length;
+  const hechos = dias.filter(d=>trained.has(d)).length;
+  // Días que aún se pueden usar para recuperar (hoy incluido).
+  const porVenir = dias.filter(d=>d >= hoy && !trained.has(d)).length;
+  const enCurso = lunesISO <= hoy && addDaysISO(lunesISO,6) >= hoy;
+  return {
+    previstos, hechos, enCurso,
+    faltan: Math.max(0, previstos - hechos),
+    cumplida: hechos >= previstos,
+    // Aún salvable: quedan días suficientes para llegar a lo previsto.
+    recuperable: enCurso && porVenir >= Math.max(0, previstos - hechos),
+  };
+}
+
+/* Racha de hábito. Cuenta días entrenados hacia atrás y se corta en la primera
+   semana YA CERRADA que acabó por debajo de lo previsto. La semana en curso no
+   rompe nada: todavía estás a tiempo de recuperar. */
+function habitStreak(log, plannedDays){
+  const trained = new Set((log||[]).map(r=>r.date));
+  let streak = 0, lunes = mondayOf(todayISO());
+  for(let semana=0; semana<120; semana++){
+    const r = resumenSemana(log, plannedDays, lunes);
+    if(!r.enCurso && !r.cumplida) break;          // semana cerrada y fallida: aquí se corta
+    if(!r.hechos && !r.enCurso) break;            // semana vacía y cerrada (sin días previstos)
+    for(let i=0;i<7;i++) if(trained.has(addDaysISO(lunes,i))) streak++;
+    lunes = addDaysISO(lunes, -7);
   }
   return streak;
 }
-/* Días planificados de ESTA semana ya transcurridos (hasta hoy) y cuántos se cumplieron. */
+
+/* Para las misiones y el objetivo: cuenta VECES, no días concretos. */
 function weekPlannedStatus(log, plannedDays){
-  const planned=(plannedDays&&plannedDays.length)?plannedDays:DEFAULT_TRAIN_DAYS;
-  const trained=new Set((log||[]).map(r=>r.date));
-  const today=todayISO(), mon=mondayOf(today);
-  let plannedCount=0, trainedCount=0;
-  for(let i=0;i<7;i++){ const iso=addDaysISO(mon,i); if(iso>today) break; if(planned.includes(weekdayOfISO(iso))){ plannedCount++; if(trained.has(iso)) trainedCount++; } }
-  return { plannedThisWeek:plannedCount, trainedPlanned:trainedCount };
+  const r = resumenSemana(log, plannedDays, mondayOf(todayISO()));
+  return { plannedThisWeek:r.previstos, trainedPlanned:Math.min(r.hechos, r.previstos) };
 }
 /* Contexto para evaluar las misiones semanales. */
 function missionContext(state, log){
@@ -2439,7 +2467,7 @@ const WEEKLY_MISSIONS = [
     check:c=>c.weekPRs>=1 },
   { id:"variado", title:"Cuerpo variado", desc:"Entrena 4 grupos musculares distintos esta semana", xp:100, icon:Swords,
     check:c=>c.weekGroups>=4 },
-  { id:"sinfaltar", title:"Sin faltar", desc:"Cumple todos tus días de entreno planificados de la semana", xp:120, icon:Flame,
+  { id:"sinfaltar", title:"Sin faltar", desc:"Entrena tantas veces como te has propuesto esta semana. El día da igual: si fallas uno, recupéralo otro", xp:120, icon:Flame,
     check:c=>c.plannedThisWeek>0 && c.trainedPlanned>=c.plannedThisWeek },
 ];
 
@@ -5605,11 +5633,19 @@ function StreakCard({ log, plannedDays, bestStreak, setTab }){
   const today = todayISO();
   const mon = mondayOf(today);
   const labels = ["L","M","X","J","V","S","D"];
+  const semana = resumenSemana(log, planned, mon);
   const days = Array.from({ length:7 }, (_,i)=>{
     const iso = addDaysISO(mon, i);
-    return { iso, label:labels[i], isPlanned:planned.includes(weekdayOfISO(iso)),
-      isTrained:trained.has(iso), isToday:iso===today, isFuture:iso>today };
+    const isPlanned = planned.includes(weekdayOfISO(iso));
+    const isTrained = trained.has(iso);
+    return { iso, label:labels[i], isPlanned, isTrained,
+      isToday:iso===today, isFuture:iso>today,
+      // Fuiste un día que no tocaba: eso recupera un día perdido.
+      esExtra: isTrained && !isPlanned };
   });
+  /* Un día previsto que fallaste deja de ser un borrón si la semana acaba
+     cumpliendo las veces previstas — o si todavía puede cumplirlas. */
+  const perdonaFallos = semana.cumplida || semana.recuperable;
   return (
     <div className="fh-card" style={{ padding:16, marginTop:12 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
@@ -5624,24 +5660,48 @@ function StreakCard({ log, plannedDays, bestStreak, setTab }){
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:6 }}>
         {days.map(d=>{
-          let bg="transparent", brd="1px solid var(--line)", col="var(--faint)", content=d.label;
-          if(d.isTrained){ bg="var(--gold)"; brd="none"; col="#0F131A"; }
+          let bg="transparent", brd="1px solid var(--line)", col="var(--faint)";
+          if(d.isTrained){ bg=d.esExtra?"var(--jade)":"var(--gold)"; brd="none"; col="#0F131A"; }
           else if(!d.isPlanned){ bg="var(--bg2)"; brd="1px solid var(--line)"; col="var(--faint)"; } // descanso
           else if(d.isFuture){ brd="1px dashed var(--line2)"; col="var(--muted)"; } // planificado futuro
           else if(d.isToday){ brd="1px solid var(--gold)"; col="var(--gold)"; } // hoy pendiente
-          else { brd="1px solid var(--crimson)"; col="var(--crimson)"; } // planificado incumplido
+          else if(perdonaFallos){ brd="1px dashed var(--jade)"; col="var(--jade)"; } // fallado pero recuperado (o a tiempo)
+          else { brd="1px solid var(--crimson)"; col="var(--crimson)"; } // fallado y sin recuperar
           return (
             <div key={d.iso} style={{ textAlign:"center" }}>
               <div style={{ fontSize:9.5, color:"var(--faint)", marginBottom:3, fontWeight:600 }}>{d.label}</div>
               <div style={{ aspectRatio:"1", borderRadius:9, background:bg, border:brd, display:"flex", alignItems:"center", justifyContent:"center", color:col }}>
-                {d.isTrained ? <Check size={15}/> : !d.isPlanned ? <Moon size={12}/> : d.isToday ? <Flame size={13}/> : null}
+                {d.isTrained ? (d.esExtra ? <Sparkles size={14}/> : <Check size={15}/>)
+                  : !d.isPlanned ? <Moon size={12}/>
+                  : d.isToday ? <Flame size={13}/>
+                  : perdonaFallos ? <ArrowDown size={12} style={{ transform:"rotate(-90deg)" }}/>
+                  : null}
               </div>
             </div>
           );
         })}
       </div>
-      <div style={{ fontSize:11, color:"var(--faint)", marginTop:10, lineHeight:1.45 }}>
-        Los días de <b style={{ color:"var(--muted)" }}>descanso</b> (luna) no rompen tu racha. Ajusta tus días de entreno en <button onClick={()=>setTab("ajustes")} style={{ background:"none", border:"none", padding:0, color:"var(--gold)", cursor:"pointer", font:"inherit" }}>Ajustes</button>.
+      <div style={{ display:"flex", gap:13, marginTop:10, flexWrap:"wrap", fontSize:10, color:"var(--faint)" }}>
+        <span style={{ display:"flex", alignItems:"center", gap:4 }}><span style={{ width:7, height:7, borderRadius:2, background:"var(--gold)" }}/> Día previsto</span>
+        <span style={{ display:"flex", alignItems:"center", gap:4 }}><span style={{ width:7, height:7, borderRadius:2, background:"var(--jade)" }}/> Recuperado</span>
+        <span style={{ display:"flex", alignItems:"center", gap:4 }}><Moon size={9}/> Descanso</span>
+      </div>
+
+      {/* Lo que de verdad cuenta esta semana: las veces, no los días. */}
+      <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:10, lineHeight:1.5, paddingTop:10, borderTop:"1px solid var(--line)" }}>
+        {semana.cumplida ? (
+          <><b style={{ color:"var(--jade)" }}>Semana cumplida</b>: {semana.hechos} de {semana.previstos} sesiones.
+          {semana.hechos > semana.previstos && " Y con una de propina."}</>
+        ) : semana.faltan > 0 && semana.recuperable ? (
+          <>Te {semana.faltan===1?"falta":"faltan"} <b style={{ color:"var(--gold)" }}>{semana.faltan} {semana.faltan===1?"sesión":"sesiones"}</b> esta semana.
+          {" "}<b style={{ color:"var(--txt)" }}>Cualquier día vale</b>: si te saltaste uno, recupéralo otro y la racha sigue intacta.</>
+        ) : (
+          <>Ya no da tiempo a las {semana.previstos} de esta semana. No pasa nada: la semana que viene empieza de cero.</>
+        )}
+      </div>
+
+      <div style={{ fontSize:11, color:"var(--faint)", marginTop:8, lineHeight:1.45 }}>
+        Ajusta cuántos días quieres entrenar en <button onClick={()=>setTab("ajustes")} style={{ background:"none", border:"none", padding:0, color:"var(--gold)", cursor:"pointer", font:"inherit" }}>Ajustes</button>.
       </div>
     </div>
   );
@@ -5715,7 +5775,7 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
           <h1 style={{ margin:"3px 0 0", fontSize:21, lineHeight:1.2 }}>{greeting}</h1>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-          <div className="fh-chip" style={{ background:"rgba(232,176,75,.14)", color:"var(--gold)", display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap", flexShrink:0 }} title="Racha de días entrenados (los descansos no la rompen)"><Flame size={13}/> {habitStreak(log, state.reminders?.days)} d</div>
+          <div className="fh-chip" style={{ background:"rgba(232,176,75,.14)", color:"var(--gold)", display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap", flexShrink:0 }} title="Días entrenados seguidos. Solo se corta si cierras una semana con menos sesiones de las previstas: el día concreto da igual."><Flame size={13}/> {habitStreak(log, state.reminders?.days)} d</div>
           {cloudEnabled && perfil && (
             <button onClick={()=>setTab("avisos")} aria-label={pendientes ? `Avisos: ${pendientes} sin responder` : "Avisos"}
               style={{ background:"var(--card)", border:`1px solid ${pendientes?"var(--gold)":"var(--line)"}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:pendientes?"var(--gold)":"var(--muted)", flexShrink:0, position:"relative" }}>
@@ -5830,7 +5890,11 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
           ))}
         </div>
         <div style={{ fontSize:12, color:"var(--muted)", marginTop:10 }}>
-          {state.weekGoalMet ? "¡Semana completada! Sigue sumando o descansa sin culpa." : `Te faltan ${Math.max(0,goal-state.weeklyCount)} sesión(es) para +200 XP y un cheat day.`}
+          {(() => {
+            const faltan = Math.max(0, goal - state.weeklyCount);
+            if(state.weekGoalMet) return "¡Semana completada! Sigue sumando o descansa sin culpa.";
+            return `Te ${faltan===1?"falta":"faltan"} ${faltan} ${faltan===1?"sesión":"sesiones"} para +200 XP y un cheat day. El día lo eliges tú.`;
+          })()}
         </div>
         {/* Qué días has marcado tú: el objetivo sale de aquí, no de la rutina. */}
         <div style={{ fontSize:11.5, color:"var(--faint)", marginTop:7, lineHeight:1.5 }}>
