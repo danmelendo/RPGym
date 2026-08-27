@@ -31,4 +31,13 @@ if (!window.storage) {
   };
 }
 
+/* Service worker: solo en la versión WEB. Dentro de Capacitor los ficheros ya
+   son locales (file://) y registrarlo no aporta nada — solo puede estorbar. */
+if ("serviceWorker" in navigator && !window.Capacitor?.isNativePlatform?.() && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(new URL("sw.js", document.baseURI))
+      .catch(e => console.warn("[sw] no se ha podido registrar:", e?.message));
+  });
+}
+
 createRoot(document.getElementById("root")).render(<App />);

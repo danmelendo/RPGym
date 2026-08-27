@@ -1,0 +1,19 @@
+{
+  "name": "RPGym",
+  "short_name": "RPGym",
+  "description": "Tu gimnasio, convertido en juego.",
+  "lang": "es-ES",
+  "dir": "ltr",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0C0E14",
+  "theme_color": "#0C0E14",
+  "categories": ["health", "fitness", "lifestyle"],
+  "icons": [
+    { "src": "pwa/icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "pwa/icono-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "pwa/icono-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

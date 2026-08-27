@@ -1386,240 +1386,240 @@ const EX_HOW = {
 
 /* Imágenes de ejercicios (free-exercise-db, dominio público / Unlicense) */
 const EX_IMG = {
-  "Aperturas con mancuernas": "/exercises/Dumbbell_Flyes/0.jpg",
-  "Aperturas en polea": "/exercises/Cable_Crossover/0.jpg",
-  "Curl con barra": "/exercises/Barbell_Curl/0.jpg",
-  "Curl de bíceps": "/exercises/Dumbbell_Bicep_Curl/0.jpg",
-  "Curl de bíceps mancuernas": "/exercises/Dumbbell_Bicep_Curl/0.jpg",
-  "Curl femoral en máquina": "/exercises/Lying_Leg_Curls/0.jpg",
-  "Curl femoral sentado": "/exercises/Seated_Leg_Curl/0.jpg",
-  "Curl femoral tumbado": "/exercises/Lying_Leg_Curls/0.jpg",
-  "Curl martillo": "/exercises/Hammer_Curls/0.jpg",
-  "Curl predicador": "/exercises/Preacher_Curl/0.jpg",
-  "Dominadas o jalón": "/exercises/Pullups/0.jpg",
-  "Dominadas lastradas": "/exercises/Weighted_Pull_Ups/0.jpg",
-  "Elevaciones laterales": "/exercises/Side_Lateral_Raise/0.jpg",
-  "Elevaciones laterales en polea": "/exercises/Cable_Seated_Lateral_Raise/0.jpg",
-  "Elevación de talones de pie": "/exercises/Standing_Calf_Raises/0.jpg",
-  "Elevación de piernas": "/exercises/Flat_Bench_Lying_Leg_Raise/0.jpg",
-  "Elevación de piernas en barra": "/exercises/Hanging_Leg_Raise/0.jpg",
-  "Extensión de cuádriceps en máquina": "/exercises/Leg_Extensions/0.jpg",
-  "Extensión de tríceps": "/exercises/Triceps_Pushdown/0.jpg",
-  "Extensión de tríceps en polea": "/exercises/Triceps_Pushdown/0.jpg",
-  "Face pull": "/exercises/Face_Pull/0.jpg",
-  "Flexiones": "/exercises/Pushups/0.jpg",
-  "Flexiones diamante": "/exercises/Push-Ups_-_Close_Triceps_Position/0.jpg",
-  "Flexiones inclinadas": "/exercises/Incline_Push-Up/0.jpg",
-  "Fondos en paralelas": "/exercises/Dips_-_Chest_Version/0.jpg",
-  "Fondos asistidos": "/exercises/Dips_-_Chest_Version/0.jpg",
-  "Fondos en paralelas lastrados": "/exercises/Ring_Dips/0.jpg",
-  "Jalón agarre cerrado": "/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg",
-  "Jalón agarre neutro": "/exercises/V-Bar_Pulldown/0.jpg",
-  "Jalón al pecho": "/exercises/Wide-Grip_Lat_Pulldown/0.jpg",
-  "Mountain climbers": "/exercises/Mountain_Climbers/0.jpg",
-  "Peso muerto": "/exercises/Barbell_Deadlift/0.jpg",
-  "Peso muerto rumano": "/exercises/Romanian_Deadlift/0.jpg",
-  "Peso muerto rumano ligero": "/exercises/Romanian_Deadlift/0.jpg",
-  "Peso muerto rumano mancuernas": "/exercises/Stiff-Legged_Dumbbell_Deadlift/0.jpg",
-  "Plancha": "/exercises/Plank/0.jpg",
-  "Plancha con lastre": "/exercises/Plank/0.jpg",
-  "Prensa de piernas": "/exercises/Leg_Press/0.jpg",
-  "Press banca": "/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg",
-  "Press banca o flexiones": "/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg",
-  "Press francés": "/exercises/Lying_Triceps_Press/0.jpg",
-  "Press inclinado con barra": "/exercises/Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg",
-  "Press inclinado mancuernas": "/exercises/Incline_Dumbbell_Press/0.jpg",
-  "Press mancuernas sentado": "/exercises/Seated_Dumbbell_Press/0.jpg",
-  "Press militar": "/exercises/Standing_Military_Press/0.jpg",
-  "Press militar mancuernas": "/exercises/Standing_Dumbbell_Press/0.jpg",
-  "Pullover en polea": "/exercises/Straight-Arm_Pulldown/0.jpg",
-  "Pájaros en polea": "/exercises/Reverse_Flyes/0.jpg",
-  "Remo con barra": "/exercises/Bent_Over_Barbell_Row/0.jpg",
-  "Remo con mancuerna": "/exercises/One-Arm_Dumbbell_Row/0.jpg",
-  "Remo en máquina": "/exercises/Seated_Cable_Rows/0.jpg",
-  "Remo invertido o con mancuerna": "/exercises/Inverted_Row/0.jpg",
-  "Plancha lateral": "/exercises/Side_Bridge/0.jpg",
-  "Rueda abdominal": "/exercises/Ab_Roller/0.jpg",
-  "Sentadilla": "/exercises/Barbell_Squat/0.jpg",
-  "Sentadilla búlgara": "/exercises/Split_Squats/0.jpg",
-  "Sentadilla frontal": "/exercises/Front_Barbell_Squat/0.jpg",
-  "Sentadilla goblet": "/exercises/Goblet_Squat/0.jpg",
-  "Zancadas con barra": "/exercises/Dumbbell_Lunges/0.jpg",
-  "Zancadas con mancuernas": "/exercises/Dumbbell_Lunges/0.jpg",
-  "Hip thrust": "/exercises/Barbell_Hip_Thrust/0.jpg",
-  "Puente de glúteo": "/exercises/Butt_Lift_Bridge/0.jpg",
-  "Patada de glúteo en polea": "/exercises/One-Legged_Cable_Kickback/0.jpg",
-  "Abductores en máquina": "/exercises/Thigh_Abductor/0.jpg",
-  "Aductores en máquina": "/exercises/Thigh_Adductor/0.jpg",
-  "Peso muerto sumo": "/exercises/Sumo_Deadlift/0.jpg",
-  "Sentadilla sumo con mancuerna": "/exercises/Plie_Dumbbell_Squat/0.jpg",
-  "Zancada caminando": "/exercises/Bodyweight_Walking_Lunge/0.jpg",
-  "Good morning": "/exercises/Good_Morning/0.jpg",
-  "Press banca mancuernas": "/exercises/Dumbbell_Bench_Press/0.jpg",
-  "Press Arnold": "/exercises/Arnold_Dumbbell_Press/0.jpg",
-  "Encogimientos": "/exercises/Dumbbell_Shrug/0.jpg",
-  "Curl concentrado": "/exercises/Concentration_Curls/0.jpg",
-  "Curl inclinado": "/exercises/Incline_Dumbbell_Curl/0.jpg",
-  "Extensión de tríceps sobre cabeza": "/exercises/Standing_Dumbbell_Triceps_Extension/0.jpg",
-  "Patada de tríceps": "/exercises/Tricep_Dumbbell_Kickback/0.jpg",
-  "Remo en T": "/exercises/Lying_T-Bar_Row/0.jpg",
-  "Remo al mentón": "/exercises/Upright_Barbell_Row/0.jpg",
-  "Peso muerto piernas rígidas": "/exercises/Stiff-Legged_Barbell_Deadlift/0.jpg",
-  "Elevación de talones sentado": "/exercises/Seated_Calf_Raise/0.jpg",
-  "Crunch abdominal": "/exercises/Crunches/0.jpg",
-  "Russian twist": "/exercises/Russian_Twist/0.jpg",
-  "Sentadilla hack": "/exercises/Barbell_Hack_Squat/0.jpg",
-  "Dominada supina": "/exercises/Chin-Up/0.jpg",
-  "Bicicleta abdominal": "/exercises/Air_Bike/0.jpg",
+  "Aperturas con mancuernas": "exercises/Dumbbell_Flyes/0.jpg",
+  "Aperturas en polea": "exercises/Cable_Crossover/0.jpg",
+  "Curl con barra": "exercises/Barbell_Curl/0.jpg",
+  "Curl de bíceps": "exercises/Dumbbell_Bicep_Curl/0.jpg",
+  "Curl de bíceps mancuernas": "exercises/Dumbbell_Bicep_Curl/0.jpg",
+  "Curl femoral en máquina": "exercises/Lying_Leg_Curls/0.jpg",
+  "Curl femoral sentado": "exercises/Seated_Leg_Curl/0.jpg",
+  "Curl femoral tumbado": "exercises/Lying_Leg_Curls/0.jpg",
+  "Curl martillo": "exercises/Hammer_Curls/0.jpg",
+  "Curl predicador": "exercises/Preacher_Curl/0.jpg",
+  "Dominadas o jalón": "exercises/Pullups/0.jpg",
+  "Dominadas lastradas": "exercises/Weighted_Pull_Ups/0.jpg",
+  "Elevaciones laterales": "exercises/Side_Lateral_Raise/0.jpg",
+  "Elevaciones laterales en polea": "exercises/Cable_Seated_Lateral_Raise/0.jpg",
+  "Elevación de talones de pie": "exercises/Standing_Calf_Raises/0.jpg",
+  "Elevación de piernas": "exercises/Flat_Bench_Lying_Leg_Raise/0.jpg",
+  "Elevación de piernas en barra": "exercises/Hanging_Leg_Raise/0.jpg",
+  "Extensión de cuádriceps en máquina": "exercises/Leg_Extensions/0.jpg",
+  "Extensión de tríceps": "exercises/Triceps_Pushdown/0.jpg",
+  "Extensión de tríceps en polea": "exercises/Triceps_Pushdown/0.jpg",
+  "Face pull": "exercises/Face_Pull/0.jpg",
+  "Flexiones": "exercises/Pushups/0.jpg",
+  "Flexiones diamante": "exercises/Push-Ups_-_Close_Triceps_Position/0.jpg",
+  "Flexiones inclinadas": "exercises/Incline_Push-Up/0.jpg",
+  "Fondos en paralelas": "exercises/Dips_-_Chest_Version/0.jpg",
+  "Fondos asistidos": "exercises/Dips_-_Chest_Version/0.jpg",
+  "Fondos en paralelas lastrados": "exercises/Ring_Dips/0.jpg",
+  "Jalón agarre cerrado": "exercises/Close-Grip_Front_Lat_Pulldown/0.jpg",
+  "Jalón agarre neutro": "exercises/V-Bar_Pulldown/0.jpg",
+  "Jalón al pecho": "exercises/Wide-Grip_Lat_Pulldown/0.jpg",
+  "Mountain climbers": "exercises/Mountain_Climbers/0.jpg",
+  "Peso muerto": "exercises/Barbell_Deadlift/0.jpg",
+  "Peso muerto rumano": "exercises/Romanian_Deadlift/0.jpg",
+  "Peso muerto rumano ligero": "exercises/Romanian_Deadlift/0.jpg",
+  "Peso muerto rumano mancuernas": "exercises/Stiff-Legged_Dumbbell_Deadlift/0.jpg",
+  "Plancha": "exercises/Plank/0.jpg",
+  "Plancha con lastre": "exercises/Plank/0.jpg",
+  "Prensa de piernas": "exercises/Leg_Press/0.jpg",
+  "Press banca": "exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg",
+  "Press banca o flexiones": "exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg",
+  "Press francés": "exercises/Lying_Triceps_Press/0.jpg",
+  "Press inclinado con barra": "exercises/Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg",
+  "Press inclinado mancuernas": "exercises/Incline_Dumbbell_Press/0.jpg",
+  "Press mancuernas sentado": "exercises/Seated_Dumbbell_Press/0.jpg",
+  "Press militar": "exercises/Standing_Military_Press/0.jpg",
+  "Press militar mancuernas": "exercises/Standing_Dumbbell_Press/0.jpg",
+  "Pullover en polea": "exercises/Straight-Arm_Pulldown/0.jpg",
+  "Pájaros en polea": "exercises/Reverse_Flyes/0.jpg",
+  "Remo con barra": "exercises/Bent_Over_Barbell_Row/0.jpg",
+  "Remo con mancuerna": "exercises/One-Arm_Dumbbell_Row/0.jpg",
+  "Remo en máquina": "exercises/Seated_Cable_Rows/0.jpg",
+  "Remo invertido o con mancuerna": "exercises/Inverted_Row/0.jpg",
+  "Plancha lateral": "exercises/Side_Bridge/0.jpg",
+  "Rueda abdominal": "exercises/Ab_Roller/0.jpg",
+  "Sentadilla": "exercises/Barbell_Squat/0.jpg",
+  "Sentadilla búlgara": "exercises/Split_Squats/0.jpg",
+  "Sentadilla frontal": "exercises/Front_Barbell_Squat/0.jpg",
+  "Sentadilla goblet": "exercises/Goblet_Squat/0.jpg",
+  "Zancadas con barra": "exercises/Dumbbell_Lunges/0.jpg",
+  "Zancadas con mancuernas": "exercises/Dumbbell_Lunges/0.jpg",
+  "Hip thrust": "exercises/Barbell_Hip_Thrust/0.jpg",
+  "Puente de glúteo": "exercises/Butt_Lift_Bridge/0.jpg",
+  "Patada de glúteo en polea": "exercises/One-Legged_Cable_Kickback/0.jpg",
+  "Abductores en máquina": "exercises/Thigh_Abductor/0.jpg",
+  "Aductores en máquina": "exercises/Thigh_Adductor/0.jpg",
+  "Peso muerto sumo": "exercises/Sumo_Deadlift/0.jpg",
+  "Sentadilla sumo con mancuerna": "exercises/Plie_Dumbbell_Squat/0.jpg",
+  "Zancada caminando": "exercises/Bodyweight_Walking_Lunge/0.jpg",
+  "Good morning": "exercises/Good_Morning/0.jpg",
+  "Press banca mancuernas": "exercises/Dumbbell_Bench_Press/0.jpg",
+  "Press Arnold": "exercises/Arnold_Dumbbell_Press/0.jpg",
+  "Encogimientos": "exercises/Dumbbell_Shrug/0.jpg",
+  "Curl concentrado": "exercises/Concentration_Curls/0.jpg",
+  "Curl inclinado": "exercises/Incline_Dumbbell_Curl/0.jpg",
+  "Extensión de tríceps sobre cabeza": "exercises/Standing_Dumbbell_Triceps_Extension/0.jpg",
+  "Patada de tríceps": "exercises/Tricep_Dumbbell_Kickback/0.jpg",
+  "Remo en T": "exercises/Lying_T-Bar_Row/0.jpg",
+  "Remo al mentón": "exercises/Upright_Barbell_Row/0.jpg",
+  "Peso muerto piernas rígidas": "exercises/Stiff-Legged_Barbell_Deadlift/0.jpg",
+  "Elevación de talones sentado": "exercises/Seated_Calf_Raise/0.jpg",
+  "Crunch abdominal": "exercises/Crunches/0.jpg",
+  "Russian twist": "exercises/Russian_Twist/0.jpg",
+  "Sentadilla hack": "exercises/Barbell_Hack_Squat/0.jpg",
+  "Dominada supina": "exercises/Chin-Up/0.jpg",
+  "Bicicleta abdominal": "exercises/Air_Bike/0.jpg",
   /* Cardio de las rutinas de la app: ya tenían nombre pero no demostración. */
-  "HIIT en bici o cinta": "/exercises/Running_Treadmill/0.jpg",
-  "Calentamiento en cinta o bici": "/exercises/Walking_Treadmill/0.jpg",
-  "Superserie de bíceps y tríceps": "/exercises/Dumbbell_Bicep_Curl/0.jpg",
+  "HIIT en bici o cinta": "exercises/Running_Treadmill/0.jpg",
+  "Calentamiento en cinta o bici": "exercises/Walking_Treadmill/0.jpg",
+  "Superserie de bíceps y tríceps": "exercises/Dumbbell_Bicep_Curl/0.jpg",
   /* --- Catálogo ampliado (free-exercise-db) --- */
-  "Press declinado con barra": "/exercises/Decline_Barbell_Bench_Press/0.jpg",
-  "Contractora de pecho": "/exercises/Butterfly/0.jpg",
-  "Press de pecho en máquina": "/exercises/Machine_Bench_Press/0.jpg",
-  "Flexiones declinadas": "/exercises/Decline_Push-Up/0.jpg",
-  "Pullover con mancuerna": "/exercises/Bent-Arm_Dumbbell_Pullover/0.jpg",
-  "Hiperextensiones": "/exercises/Hyperextensions_Back_Extensions/0.jpg",
-  "Jalón agarre supino": "/exercises/Underhand_Cable_Pulldowns/0.jpg",
-  "Remo con dos mancuernas": "/exercises/Bent_Over_Two-Dumbbell_Row/0.jpg",
-  "Peso muerto parcial": "/exercises/Rack_Pulls/0.jpg",
-  "Encogimientos con barra": "/exercises/Barbell_Shrug/0.jpg",
-  "Elevación frontal": "/exercises/Front_Dumbbell_Raise/0.jpg",
-  "Press de hombro en máquina": "/exercises/Machine_Shoulder_Military_Press/0.jpg",
-  "Press de hombro en polea": "/exercises/Seated_Cable_Shoulder_Press/0.jpg",
-  "Pájaros con mancuernas": "/exercises/Bent_Over_Dumbbell_Rear_Delt_Raise_With_Head_On_Bench/0.jpg",
-  "Zancada inversa": "/exercises/Dumbbell_Rear_Lunge/0.jpg",
-  "Subida al cajón": "/exercises/Dumbbell_Step_Ups/0.jpg",
-  "Sentadilla en multipower": "/exercises/Smith_Machine_Squat/0.jpg",
-  "Sentadilla con mancuernas": "/exercises/Dumbbell_Squat/0.jpg",
-  "Sentadilla con salto": "/exercises/Freehand_Jump_Squat/0.jpg",
-  "Sentadilla sin peso": "/exercises/Bodyweight_Squat/0.jpg",
-  "Puente de glúteo a una pierna": "/exercises/Single_Leg_Glute_Bridge/0.jpg",
-  "Curl nórdico": "/exercises/Natural_Glute_Ham_Raise/0.jpg",
-  "Gemelo en prensa": "/exercises/Calf_Press_On_The_Leg_Press_Machine/0.jpg",
-  "Elevación de talones con mancuerna": "/exercises/Standing_Dumbbell_Calf_Raise/0.jpg",
-  "Curl en polea": "/exercises/Standing_Biceps_Cable_Curl/0.jpg",
-  "Curl inverso": "/exercises/Reverse_Barbell_Curl/0.jpg",
-  "Curl araña": "/exercises/Spider_Curl/0.jpg",
-  "Fondos en banco": "/exercises/Bench_Dips/0.jpg",
-  "Extensión de tríceps con cuerda": "/exercises/Cable_Rope_Overhead_Triceps_Extension/0.jpg",
-  "Press banca agarre cerrado": "/exercises/Close-Grip_Barbell_Bench_Press/0.jpg",
-  "Crunch en polea": "/exercises/Cable_Crunch/0.jpg",
-  "Crunch en máquina": "/exercises/Ab_Crunch_Machine/0.jpg",
-  "Elevación de rodillas": "/exercises/Bent-Knee_Hip_Raise/0.jpg",
-  "Tijeras": "/exercises/Flutter_Kicks/0.jpg",
-  "Cinta de correr": "/exercises/Running_Treadmill/0.jpg",
-  "Caminar en cinta": "/exercises/Walking_Treadmill/0.jpg",
-  "Bici estática": "/exercises/Bicycling_Stationary/0.jpg",
-  "Elíptica": "/exercises/Elliptical_Trainer/0.jpg",
-  "Máquina de remo": "/exercises/Rowing_Stationary/0.jpg",
-  "Comba": "/exercises/Rope_Jumping/0.jpg",
-  "Escaladora": "/exercises/Stairmaster/0.jpg",
+  "Press declinado con barra": "exercises/Decline_Barbell_Bench_Press/0.jpg",
+  "Contractora de pecho": "exercises/Butterfly/0.jpg",
+  "Press de pecho en máquina": "exercises/Machine_Bench_Press/0.jpg",
+  "Flexiones declinadas": "exercises/Decline_Push-Up/0.jpg",
+  "Pullover con mancuerna": "exercises/Bent-Arm_Dumbbell_Pullover/0.jpg",
+  "Hiperextensiones": "exercises/Hyperextensions_Back_Extensions/0.jpg",
+  "Jalón agarre supino": "exercises/Underhand_Cable_Pulldowns/0.jpg",
+  "Remo con dos mancuernas": "exercises/Bent_Over_Two-Dumbbell_Row/0.jpg",
+  "Peso muerto parcial": "exercises/Rack_Pulls/0.jpg",
+  "Encogimientos con barra": "exercises/Barbell_Shrug/0.jpg",
+  "Elevación frontal": "exercises/Front_Dumbbell_Raise/0.jpg",
+  "Press de hombro en máquina": "exercises/Machine_Shoulder_Military_Press/0.jpg",
+  "Press de hombro en polea": "exercises/Seated_Cable_Shoulder_Press/0.jpg",
+  "Pájaros con mancuernas": "exercises/Bent_Over_Dumbbell_Rear_Delt_Raise_With_Head_On_Bench/0.jpg",
+  "Zancada inversa": "exercises/Dumbbell_Rear_Lunge/0.jpg",
+  "Subida al cajón": "exercises/Dumbbell_Step_Ups/0.jpg",
+  "Sentadilla en multipower": "exercises/Smith_Machine_Squat/0.jpg",
+  "Sentadilla con mancuernas": "exercises/Dumbbell_Squat/0.jpg",
+  "Sentadilla con salto": "exercises/Freehand_Jump_Squat/0.jpg",
+  "Sentadilla sin peso": "exercises/Bodyweight_Squat/0.jpg",
+  "Puente de glúteo a una pierna": "exercises/Single_Leg_Glute_Bridge/0.jpg",
+  "Curl nórdico": "exercises/Natural_Glute_Ham_Raise/0.jpg",
+  "Gemelo en prensa": "exercises/Calf_Press_On_The_Leg_Press_Machine/0.jpg",
+  "Elevación de talones con mancuerna": "exercises/Standing_Dumbbell_Calf_Raise/0.jpg",
+  "Curl en polea": "exercises/Standing_Biceps_Cable_Curl/0.jpg",
+  "Curl inverso": "exercises/Reverse_Barbell_Curl/0.jpg",
+  "Curl araña": "exercises/Spider_Curl/0.jpg",
+  "Fondos en banco": "exercises/Bench_Dips/0.jpg",
+  "Extensión de tríceps con cuerda": "exercises/Cable_Rope_Overhead_Triceps_Extension/0.jpg",
+  "Press banca agarre cerrado": "exercises/Close-Grip_Barbell_Bench_Press/0.jpg",
+  "Crunch en polea": "exercises/Cable_Crunch/0.jpg",
+  "Crunch en máquina": "exercises/Ab_Crunch_Machine/0.jpg",
+  "Elevación de rodillas": "exercises/Bent-Knee_Hip_Raise/0.jpg",
+  "Tijeras": "exercises/Flutter_Kicks/0.jpg",
+  "Cinta de correr": "exercises/Running_Treadmill/0.jpg",
+  "Caminar en cinta": "exercises/Walking_Treadmill/0.jpg",
+  "Bici estática": "exercises/Bicycling_Stationary/0.jpg",
+  "Elíptica": "exercises/Elliptical_Trainer/0.jpg",
+  "Máquina de remo": "exercises/Rowing_Stationary/0.jpg",
+  "Comba": "exercises/Rope_Jumping/0.jpg",
+  "Escaladora": "exercises/Stairmaster/0.jpg",
   /* --- Máquinas y poleas (free-exercise-db) --- */
-  "Press inclinado en máquina": "/exercises/Leverage_Incline_Chest_Press/0.jpg",
-  "Press declinado en máquina": "/exercises/Leverage_Decline_Chest_Press/0.jpg",
-  "Press banca en multipower": "/exercises/Smith_Machine_Bench_Press/0.jpg",
-  "Press inclinado en multipower": "/exercises/Smith_Machine_Incline_Bench_Press/0.jpg",
-  "Cruce de poleas bajo": "/exercises/Low_Cable_Crossover/0.jpg",
-  "Aperturas inclinadas en polea": "/exercises/Incline_Cable_Flye/0.jpg",
-  "Press de pecho en polea": "/exercises/Standing_Cable_Chest_Press/0.jpg",
-  "Press de pecho en polea sentado": "/exercises/Cable_Chest_Press/0.jpg",
-  "Cruce de poleas alto": "/exercises/Cable_Iron_Cross/0.jpg",
-  "Press declinado en multipower": "/exercises/Decline_Smith_Press/0.jpg",
-  "Aperturas en banco con poleas": "/exercises/Flat_Bench_Cable_Flyes/0.jpg",
-  "Press inclinado en polea": "/exercises/Incline_Cable_Chest_Press/0.jpg",
-  "Press de pecho en máquina de discos": "/exercises/Leverage_Chest_Press/0.jpg",
-  "Cruce de poleas a una mano": "/exercises/Single-Arm_Cable_Crossover/0.jpg",
-  "Press declinado guiado": "/exercises/Smith_Machine_Decline_Press/0.jpg",
-  "Remo alto en máquina": "/exercises/Leverage_High_Row/0.jpg",
-  "Remo en máquina a un brazo": "/exercises/Leverage_Iso_Row/0.jpg",
-  "Remo en polea a una mano": "/exercises/Seated_One-arm_Cable_Pulley_Rows/0.jpg",
-  "Jalón a una mano": "/exercises/One_Arm_Lat_Pulldown/0.jpg",
-  "Remo en multipower": "/exercises/Smith_Machine_Bent_Over_Row/0.jpg",
-  "Hiperextensión inversa": "/exercises/Reverse_Hyperextension/0.jpg",
-  "Pullover en polea inclinado": "/exercises/Cable_Incline_Pushdown/0.jpg",
-  "Remo en polea alto": "/exercises/Elevated_Cable_Rows/0.jpg",
-  "Jalón con recorrido completo": "/exercises/Full_Range-Of-Motion_Lat_Pulldown/0.jpg",
-  "Remo en polea alta de rodillas": "/exercises/Kneeling_High_Pulley_Row/0.jpg",
-  "Remo en polea alta a una mano": "/exercises/Kneeling_Single-Arm_High_Pulley_Row/0.jpg",
-  "Pájaros en contractora": "/exercises/Reverse_Machine_Flyes/0.jpg",
-  "Elevación frontal en polea": "/exercises/Front_Cable_Raise/0.jpg",
-  "Encogimientos en máquina": "/exercises/Leverage_Shrug/0.jpg",
-  "Encogimientos en polea": "/exercises/Cable_Shrugs/0.jpg",
-  "Press militar en multipower": "/exercises/Smith_Machine_Overhead_Shoulder_Press/0.jpg",
-  "Rotación externa en polea": "/exercises/External_Rotation_with_Cable/0.jpg",
-  "Press de hombro en polea alterno": "/exercises/Alternating_Cable_Shoulder_Press/0.jpg",
-  "Pájaros en polea a una mano": "/exercises/Bent_Over_Low-Pulley_Side_Lateral/0.jpg",
-  "Rotación interna en polea": "/exercises/Cable_Internal_Rotation/0.jpg",
-  "Pájaros en polea cruzada": "/exercises/Cable_Rear_Delt_Fly/0.jpg",
-  "Remo a la cara con cuerda": "/exercises/Cable_Rope_Rear-Delt_Rows/0.jpg",
-  "Press de hombro en polea de pie": "/exercises/Cable_Shoulder_Press/0.jpg",
-  "Encogimientos en máquina de gemelos": "/exercises/Calf-Machine_Shoulder_Shrug/0.jpg",
-  "Press de hombro en máquina de discos": "/exercises/Leverage_Shoulder_Press/0.jpg",
-  "Remo al cuello en polea baja": "/exercises/Low_Pulley_Row_To_Neck/0.jpg",
-  "Encogimientos tras espalda en multipower": "/exercises/Smith_Machine_Behind_the_Back_Shrug/0.jpg",
-  "Remo al mentón a una mano en multipower": "/exercises/Smith_Machine_One-Arm_Upright_Row/0.jpg",
-  "Remo al mentón en multipower": "/exercises/Smith_Machine_Upright_Row/0.jpg",
-  "Elevación lateral en polea baja": "/exercises/Standing_Low-Pulley_Deltoid_Raise/0.jpg",
-  "Remo al mentón en polea": "/exercises/Upright_Cable_Row/0.jpg",
-  "Sentadilla hack en máquina": "/exercises/Hack_Squat/0.jpg",
-  "Prensa con pies juntos": "/exercises/Narrow_Stance_Leg_Press/0.jpg",
-  "Extensión de cuádriceps a una pierna en máquina": "/exercises/Single-Leg_Leg_Extension/0.jpg",
-  "Zancada en multipower": "/exercises/Smith_Single-Leg_Split_Squat/0.jpg",
-  "Pull through en polea": "/exercises/Pull_Through/0.jpg",
-  "Peso muerto en polea": "/exercises/Cable_Deadlifts/0.jpg",
-  "Aductores en polea": "/exercises/Cable_Hip_Adduction/0.jpg",
-  "Sentadilla en máquina": "/exercises/Chair_Squat/0.jpg",
-  "Peso muerto en máquina": "/exercises/Leverage_Deadlift/0.jpg",
-  "Sentadilla tumbada en máquina": "/exercises/Lying_Machine_Squat/0.jpg",
-  "Sentadilla hack con pies juntos": "/exercises/Narrow_Stance_Hack_Squats/0.jpg",
-  "Prensa en multipower": "/exercises/Smith_Machine_Leg_Press/0.jpg",
-  "Sentadilla a una pierna en multipower": "/exercises/Smith_Machine_Pistol_Squat/0.jpg",
-  "Curl femoral de pie": "/exercises/Standing_Leg_Curl/0.jpg",
-  "Peso muerto rumano en multipower": "/exercises/Smith_Machine_Stiff-Legged_Deadlift/0.jpg",
-  "Curl nórdico en máquina": "/exercises/Glute_Ham_Raise/0.jpg",
-  "Elevación de talones en multipower": "/exercises/Smith_Machine_Calf_Raise/0.jpg",
-  "Gemelos en máquina": "/exercises/Calf_Press/0.jpg",
-  "Elevación de puntas (tibial)": "/exercises/Smith_Machine_Reverse_Calf_Raises/0.jpg",
-  "Curl de bíceps en máquina": "/exercises/Machine_Bicep_Curl/0.jpg",
-  "Curl predicador en máquina": "/exercises/Machine_Preacher_Curls/0.jpg",
-  "Curl martillo en polea": "/exercises/Cable_Hammer_Curls_-_Rope_Attachment/0.jpg",
-  "Curl predicador en polea": "/exercises/Cable_Preacher_Curl/0.jpg",
-  "Curl en polea alta": "/exercises/High_Cable_Curls/0.jpg",
-  "Curl tumbado en polea": "/exercises/Lying_Cable_Curl/0.jpg",
-  "Curl tumbado en polea alta": "/exercises/Lying_Close-Grip_Bar_Curl_On_High_Pulley/0.jpg",
-  "Curl sobre la cabeza en polea": "/exercises/Overhead_Cable_Curl/0.jpg",
-  "Curl inverso en polea": "/exercises/Reverse_Cable_Curl/0.jpg",
-  "Curl en polea a una mano": "/exercises/Standing_One-Arm_Cable_Curl/0.jpg",
-  "Extensión de tríceps en máquina": "/exercises/Machine_Triceps_Extension/0.jpg",
-  "Fondos en máquina": "/exercises/Dip_Machine/0.jpg",
-  "Tríceps en polea con cuerda": "/exercises/Triceps_Pushdown_-_Rope_Attachment/0.jpg",
-  "Extensión de tríceps inclinado en polea": "/exercises/Cable_Incline_Triceps_Extension/0.jpg",
-  "Press francés en polea": "/exercises/Cable_Lying_Triceps_Extension/0.jpg",
-  "Tríceps en polea a una mano": "/exercises/Cable_One_Arm_Tricep_Extension/0.jpg",
-  "Extensión de tríceps de rodillas en polea": "/exercises/Kneeling_Cable_Triceps_Extension/0.jpg",
-  "Extensión de tríceps en polea baja": "/exercises/Low_Cable_Triceps_Extension/0.jpg",
-  "Tríceps en polea agarre invertido": "/exercises/Reverse_Grip_Triceps_Pushdown/0.jpg",
-  "Press cerrado en multipower": "/exercises/Smith_Machine_Close-Grip_Bench_Press/0.jpg",
-  "Extensión de tríceps sobre cabeza en polea baja": "/exercises/Standing_Low-Pulley_One-Arm_Triceps_Extension/0.jpg",
-  "Extensión de tríceps sobre cabeza con cuerda": "/exercises/Triceps_Overhead_Extension_with_Rope/0.jpg",
-  "Curl de muñeca en polea": "/exercises/Cable_Wrist_Curl/0.jpg",
-  "Curl de muñeca sentado en polea": "/exercises/Seated_Two-Arm_Palms-Up_Low-Pulley_Wrist_Curl/0.jpg",
-  "Press Pallof": "/exercises/Pallof_Press/0.jpg",
-  "Leñador en polea": "/exercises/Standing_Cable_Wood_Chop/0.jpg",
-  "Crunch inverso en polea": "/exercises/Cable_Reverse_Crunch/0.jpg",
-  "Giro ruso en polea": "/exercises/Cable_Russian_Twists/0.jpg",
-  "Crunch en polea sentado": "/exercises/Cable_Seated_Crunch/0.jpg",
-  "Crunch en polea con giro": "/exercises/Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists/0.jpg",
-  "Flexión lateral en polea alta": "/exercises/One-Arm_High-Pulley_Cable_Side_Bends/0.jpg",
-  "Press Pallof con giro": "/exercises/Pallof_Press_With_Rotation/0.jpg",
-  "Crunch en polea con cuerda": "/exercises/Rope_Crunch/0.jpg",
-  "Elevación de cadera en multipower": "/exercises/Smith_Machine_Hip_Raise/0.jpg",
-  "Leñador invertido en polea": "/exercises/Standing_Cable_Lift/0.jpg",
-  "Crunch en polea de pie": "/exercises/Standing_Rope_Crunch/0.jpg",
-  "Bici reclinada": "/exercises/Recumbent_Bike/0.jpg",
+  "Press inclinado en máquina": "exercises/Leverage_Incline_Chest_Press/0.jpg",
+  "Press declinado en máquina": "exercises/Leverage_Decline_Chest_Press/0.jpg",
+  "Press banca en multipower": "exercises/Smith_Machine_Bench_Press/0.jpg",
+  "Press inclinado en multipower": "exercises/Smith_Machine_Incline_Bench_Press/0.jpg",
+  "Cruce de poleas bajo": "exercises/Low_Cable_Crossover/0.jpg",
+  "Aperturas inclinadas en polea": "exercises/Incline_Cable_Flye/0.jpg",
+  "Press de pecho en polea": "exercises/Standing_Cable_Chest_Press/0.jpg",
+  "Press de pecho en polea sentado": "exercises/Cable_Chest_Press/0.jpg",
+  "Cruce de poleas alto": "exercises/Cable_Iron_Cross/0.jpg",
+  "Press declinado en multipower": "exercises/Decline_Smith_Press/0.jpg",
+  "Aperturas en banco con poleas": "exercises/Flat_Bench_Cable_Flyes/0.jpg",
+  "Press inclinado en polea": "exercises/Incline_Cable_Chest_Press/0.jpg",
+  "Press de pecho en máquina de discos": "exercises/Leverage_Chest_Press/0.jpg",
+  "Cruce de poleas a una mano": "exercises/Single-Arm_Cable_Crossover/0.jpg",
+  "Press declinado guiado": "exercises/Smith_Machine_Decline_Press/0.jpg",
+  "Remo alto en máquina": "exercises/Leverage_High_Row/0.jpg",
+  "Remo en máquina a un brazo": "exercises/Leverage_Iso_Row/0.jpg",
+  "Remo en polea a una mano": "exercises/Seated_One-arm_Cable_Pulley_Rows/0.jpg",
+  "Jalón a una mano": "exercises/One_Arm_Lat_Pulldown/0.jpg",
+  "Remo en multipower": "exercises/Smith_Machine_Bent_Over_Row/0.jpg",
+  "Hiperextensión inversa": "exercises/Reverse_Hyperextension/0.jpg",
+  "Pullover en polea inclinado": "exercises/Cable_Incline_Pushdown/0.jpg",
+  "Remo en polea alto": "exercises/Elevated_Cable_Rows/0.jpg",
+  "Jalón con recorrido completo": "exercises/Full_Range-Of-Motion_Lat_Pulldown/0.jpg",
+  "Remo en polea alta de rodillas": "exercises/Kneeling_High_Pulley_Row/0.jpg",
+  "Remo en polea alta a una mano": "exercises/Kneeling_Single-Arm_High_Pulley_Row/0.jpg",
+  "Pájaros en contractora": "exercises/Reverse_Machine_Flyes/0.jpg",
+  "Elevación frontal en polea": "exercises/Front_Cable_Raise/0.jpg",
+  "Encogimientos en máquina": "exercises/Leverage_Shrug/0.jpg",
+  "Encogimientos en polea": "exercises/Cable_Shrugs/0.jpg",
+  "Press militar en multipower": "exercises/Smith_Machine_Overhead_Shoulder_Press/0.jpg",
+  "Rotación externa en polea": "exercises/External_Rotation_with_Cable/0.jpg",
+  "Press de hombro en polea alterno": "exercises/Alternating_Cable_Shoulder_Press/0.jpg",
+  "Pájaros en polea a una mano": "exercises/Bent_Over_Low-Pulley_Side_Lateral/0.jpg",
+  "Rotación interna en polea": "exercises/Cable_Internal_Rotation/0.jpg",
+  "Pájaros en polea cruzada": "exercises/Cable_Rear_Delt_Fly/0.jpg",
+  "Remo a la cara con cuerda": "exercises/Cable_Rope_Rear-Delt_Rows/0.jpg",
+  "Press de hombro en polea de pie": "exercises/Cable_Shoulder_Press/0.jpg",
+  "Encogimientos en máquina de gemelos": "exercises/Calf-Machine_Shoulder_Shrug/0.jpg",
+  "Press de hombro en máquina de discos": "exercises/Leverage_Shoulder_Press/0.jpg",
+  "Remo al cuello en polea baja": "exercises/Low_Pulley_Row_To_Neck/0.jpg",
+  "Encogimientos tras espalda en multipower": "exercises/Smith_Machine_Behind_the_Back_Shrug/0.jpg",
+  "Remo al mentón a una mano en multipower": "exercises/Smith_Machine_One-Arm_Upright_Row/0.jpg",
+  "Remo al mentón en multipower": "exercises/Smith_Machine_Upright_Row/0.jpg",
+  "Elevación lateral en polea baja": "exercises/Standing_Low-Pulley_Deltoid_Raise/0.jpg",
+  "Remo al mentón en polea": "exercises/Upright_Cable_Row/0.jpg",
+  "Sentadilla hack en máquina": "exercises/Hack_Squat/0.jpg",
+  "Prensa con pies juntos": "exercises/Narrow_Stance_Leg_Press/0.jpg",
+  "Extensión de cuádriceps a una pierna en máquina": "exercises/Single-Leg_Leg_Extension/0.jpg",
+  "Zancada en multipower": "exercises/Smith_Single-Leg_Split_Squat/0.jpg",
+  "Pull through en polea": "exercises/Pull_Through/0.jpg",
+  "Peso muerto en polea": "exercises/Cable_Deadlifts/0.jpg",
+  "Aductores en polea": "exercises/Cable_Hip_Adduction/0.jpg",
+  "Sentadilla en máquina": "exercises/Chair_Squat/0.jpg",
+  "Peso muerto en máquina": "exercises/Leverage_Deadlift/0.jpg",
+  "Sentadilla tumbada en máquina": "exercises/Lying_Machine_Squat/0.jpg",
+  "Sentadilla hack con pies juntos": "exercises/Narrow_Stance_Hack_Squats/0.jpg",
+  "Prensa en multipower": "exercises/Smith_Machine_Leg_Press/0.jpg",
+  "Sentadilla a una pierna en multipower": "exercises/Smith_Machine_Pistol_Squat/0.jpg",
+  "Curl femoral de pie": "exercises/Standing_Leg_Curl/0.jpg",
+  "Peso muerto rumano en multipower": "exercises/Smith_Machine_Stiff-Legged_Deadlift/0.jpg",
+  "Curl nórdico en máquina": "exercises/Glute_Ham_Raise/0.jpg",
+  "Elevación de talones en multipower": "exercises/Smith_Machine_Calf_Raise/0.jpg",
+  "Gemelos en máquina": "exercises/Calf_Press/0.jpg",
+  "Elevación de puntas (tibial)": "exercises/Smith_Machine_Reverse_Calf_Raises/0.jpg",
+  "Curl de bíceps en máquina": "exercises/Machine_Bicep_Curl/0.jpg",
+  "Curl predicador en máquina": "exercises/Machine_Preacher_Curls/0.jpg",
+  "Curl martillo en polea": "exercises/Cable_Hammer_Curls_-_Rope_Attachment/0.jpg",
+  "Curl predicador en polea": "exercises/Cable_Preacher_Curl/0.jpg",
+  "Curl en polea alta": "exercises/High_Cable_Curls/0.jpg",
+  "Curl tumbado en polea": "exercises/Lying_Cable_Curl/0.jpg",
+  "Curl tumbado en polea alta": "exercises/Lying_Close-Grip_Bar_Curl_On_High_Pulley/0.jpg",
+  "Curl sobre la cabeza en polea": "exercises/Overhead_Cable_Curl/0.jpg",
+  "Curl inverso en polea": "exercises/Reverse_Cable_Curl/0.jpg",
+  "Curl en polea a una mano": "exercises/Standing_One-Arm_Cable_Curl/0.jpg",
+  "Extensión de tríceps en máquina": "exercises/Machine_Triceps_Extension/0.jpg",
+  "Fondos en máquina": "exercises/Dip_Machine/0.jpg",
+  "Tríceps en polea con cuerda": "exercises/Triceps_Pushdown_-_Rope_Attachment/0.jpg",
+  "Extensión de tríceps inclinado en polea": "exercises/Cable_Incline_Triceps_Extension/0.jpg",
+  "Press francés en polea": "exercises/Cable_Lying_Triceps_Extension/0.jpg",
+  "Tríceps en polea a una mano": "exercises/Cable_One_Arm_Tricep_Extension/0.jpg",
+  "Extensión de tríceps de rodillas en polea": "exercises/Kneeling_Cable_Triceps_Extension/0.jpg",
+  "Extensión de tríceps en polea baja": "exercises/Low_Cable_Triceps_Extension/0.jpg",
+  "Tríceps en polea agarre invertido": "exercises/Reverse_Grip_Triceps_Pushdown/0.jpg",
+  "Press cerrado en multipower": "exercises/Smith_Machine_Close-Grip_Bench_Press/0.jpg",
+  "Extensión de tríceps sobre cabeza en polea baja": "exercises/Standing_Low-Pulley_One-Arm_Triceps_Extension/0.jpg",
+  "Extensión de tríceps sobre cabeza con cuerda": "exercises/Triceps_Overhead_Extension_with_Rope/0.jpg",
+  "Curl de muñeca en polea": "exercises/Cable_Wrist_Curl/0.jpg",
+  "Curl de muñeca sentado en polea": "exercises/Seated_Two-Arm_Palms-Up_Low-Pulley_Wrist_Curl/0.jpg",
+  "Press Pallof": "exercises/Pallof_Press/0.jpg",
+  "Leñador en polea": "exercises/Standing_Cable_Wood_Chop/0.jpg",
+  "Crunch inverso en polea": "exercises/Cable_Reverse_Crunch/0.jpg",
+  "Giro ruso en polea": "exercises/Cable_Russian_Twists/0.jpg",
+  "Crunch en polea sentado": "exercises/Cable_Seated_Crunch/0.jpg",
+  "Crunch en polea con giro": "exercises/Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists/0.jpg",
+  "Flexión lateral en polea alta": "exercises/One-Arm_High-Pulley_Cable_Side_Bends/0.jpg",
+  "Press Pallof con giro": "exercises/Pallof_Press_With_Rotation/0.jpg",
+  "Crunch en polea con cuerda": "exercises/Rope_Crunch/0.jpg",
+  "Elevación de cadera en multipower": "exercises/Smith_Machine_Hip_Raise/0.jpg",
+  "Leñador invertido en polea": "exercises/Standing_Cable_Lift/0.jpg",
+  "Crunch en polea de pie": "exercises/Standing_Rope_Crunch/0.jpg",
+  "Bici reclinada": "exercises/Recumbent_Bike/0.jpg",
 };
 
 /* =========================================================================
@@ -2251,11 +2251,45 @@ async function asegurarCanalDescanso(){
   } catch {}
 }
 
+/* --- Versión web (sin Capacitor) ---------------------------------------------
+   Tu amiga con iPhone usa la app desde el navegador, así que el aviso tiene que
+   salir por otro camino: el service worker. Solo funciona con la web AÑADIDA A
+   LA PANTALLA DE INICIO — en una pestaña normal iOS no deja notificar. Y aun
+   así iOS puede suspender el service worker si sales de la app, por eso el
+   pop-up de descanso vibra y suena también por su cuenta. */
+async function swListo(){
+  if (typeof navigator === "undefined" || !navigator.serviceWorker) return null;
+  try { return await navigator.serviceWorker.ready; } catch { return null; }
+}
+async function programarAvisoDescansoWeb(segundos){
+  if (typeof Notification === "undefined") return;
+  const reg = await swListo(); if (!reg) return;
+  if (Notification.permission === "default") {
+    if (!permisoPedido) { permisoPedido = true; try { await Notification.requestPermission(); } catch {} }
+  }
+  if (Notification.permission !== "granted") return;
+  reg.active?.postMessage({ tipo:"avisar-en", ms: segundos * 1000, tag:"descanso",
+    titulo:"Descanso terminado 💪", cuerpo:"A por la siguiente serie." });
+}
+async function cancelarAvisoDescansoWeb(){
+  const reg = await swListo(); if (!reg) return;
+  try { (await reg.getNotifications({ tag:"descanso" })).forEach(n => n.close()); } catch {}
+}
+
+/* Programar y cancelar son asíncronos, y entre serie y serie se disparan casi a
+   la vez: React desmonta el descanso anterior (cancela) y monta el siguiente
+   (programa). Sin ponerlos en fila, el cancelar del viejo llegaba DESPUÉS del
+   programar del nuevo y se lo llevaba por delante — y ese descanso ya no
+   avisaba. Una cola de uno los ordena. */
+let colaAviso = Promise.resolve();
+function enFila(fn){ colaAviso = colaAviso.then(fn, fn); return colaAviso; }
+
 async function programarAvisoDescanso(segundos){
-  const ln = LN(); if (!ln || !(segundos > 0)) return;
-  if (!permisoPedido) { permisoPedido = true; try { await ensureNotifPerm(); } catch {} }
+  const ln = LN();
+  if (!ln) return enFila(()=>programarAvisoDescansoWeb(segundos));   // navegador
+  if (!(segundos > 0)) return;
   await asegurarCanalDescanso();
-  try {
+  return enFila(async ()=>{ try {
     await ln.cancel({ notifications: [{ id: REST_NOTIF_ID }] });
     await ln.schedule({ notifications: [{
       id: REST_NOTIF_ID,
@@ -2270,11 +2304,12 @@ async function programarAvisoDescanso(segundos){
          Con esto se usa setExactAndAllowWhileIdle, que sí dispara a su hora. */
       schedule: { at: new Date(Date.now() + segundos * 1000), allowWhileIdle: true },
     }] });
-  } catch {}
+  } catch {} });
 }
 async function cancelarAvisoDescanso(){
-  const ln = LN(); if (!ln) return;
-  try { await ln.cancel({ notifications: [{ id: REST_NOTIF_ID }] }); } catch {}
+  const ln = LN();
+  if (!ln) return enFila(cancelarAvisoDescansoWeb);
+  return enFila(async ()=>{ try { await ln.cancel({ notifications: [{ id: REST_NOTIF_ID }] }); } catch {} });
 }
 
 const CANAL_RECORDATORIOS = "recordatorios";
@@ -2430,8 +2465,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 14;
-const APP_VERSION_NAME = "1.0.13";
+const APP_VERSION_CODE = 15;
+const APP_VERSION_NAME = "1.0.14";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2470,20 +2505,20 @@ const StyleTag = () => (
        @import desde fonts.googleapis.com, lo que suponía una llamada a Google en cada
        arranque: rompía el "100% offline" y obligaba a declararlo en la política de
        privacidad. NO vuelvas a poner el @import remoto. */
-    @font-face{font-family:'Cinzel';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/cinzel-500.woff2') format('woff2');}
-    @font-face{font-family:'Cinzel';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/cinzel-600.woff2') format('woff2');}
-    @font-face{font-family:'Cinzel';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/cinzel-700.woff2') format('woff2');}
-    @font-face{font-family:'Cinzel';font-style:normal;font-weight:800;font-display:swap;src:url('/fonts/cinzel-800.woff2') format('woff2');}
-    @font-face{font-family:'Cinzel';font-style:normal;font-weight:900;font-display:swap;src:url('/fonts/cinzel-900.woff2') format('woff2');}
-    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/space-grotesk-400.woff2') format('woff2');}
-    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/space-grotesk-500.woff2') format('woff2');}
-    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/space-grotesk-600.woff2') format('woff2');}
-    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/space-grotesk-700.woff2') format('woff2');}
-    @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/inter-400.woff2') format('woff2');}
-    @font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/inter-500.woff2') format('woff2');}
-    @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/inter-600.woff2') format('woff2');}
-    @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/jetbrains-mono-600.woff2') format('woff2');}
-    @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/jetbrains-mono-700.woff2') format('woff2');}
+    @font-face{font-family:'Cinzel';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/cinzel-500.woff2') format('woff2');}
+    @font-face{font-family:'Cinzel';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/cinzel-600.woff2') format('woff2');}
+    @font-face{font-family:'Cinzel';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/cinzel-700.woff2') format('woff2');}
+    @font-face{font-family:'Cinzel';font-style:normal;font-weight:800;font-display:swap;src:url('fonts/cinzel-800.woff2') format('woff2');}
+    @font-face{font-family:'Cinzel';font-style:normal;font-weight:900;font-display:swap;src:url('fonts/cinzel-900.woff2') format('woff2');}
+    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/space-grotesk-400.woff2') format('woff2');}
+    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/space-grotesk-500.woff2') format('woff2');}
+    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/space-grotesk-600.woff2') format('woff2');}
+    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/space-grotesk-700.woff2') format('woff2');}
+    @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/inter-400.woff2') format('woff2');}
+    @font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/inter-500.woff2') format('woff2');}
+    @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/inter-600.woff2') format('woff2');}
+    @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/jetbrains-mono-600.woff2') format('woff2');}
+    @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/jetbrains-mono-700.woff2') format('woff2');}
     * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     .fh { --bg:#0C0E14; --bg2:#12151E; --card:#181D29; --card2:#212838; --line:#2B3346; --line2:#3B455E;
       --txt:#ECE6D8; --muted:#9A94A8; --faint:#63607A;
@@ -2589,12 +2624,20 @@ function RestTimer({ seconds, onDone, isRecomp }){
   const [left, setLeft] = useState(seconds);
   const [tip, setTip] = useState(() => pick(pool));
 
-  // Al abrir el descanso: fija la hora de fin y programa el aviso del sistema.
-  // Al cerrarlo (terminado o saltado) se cancela, para no avisar de más.
+  /* Al abrir el descanso: fija la hora de fin y programa el aviso del sistema.
+
+     Al cerrarlo se cancela SOLO SI LO SALTAS. Cuando se acaba solo, NO: el
+     WebView sigue contando en segundo plano un buen rato, así que llegaba a
+     cero, cerraba este pop-up y el cleanup cancelaba la alarma en el mismo
+     instante en que iba a sonar. Resultado: en segundo plano no avisaba nunca.
+     Comprobado en un emulador con Android 14 — la alarma se programaba bien y
+     se cancelaba sola justo al vencer. */
+  const acabadoRef = useRef(false);
   useEffect(()=>{
+    acabadoRef.current = false;
     setEndsAt(Date.now() + seconds * 1000); setLeft(seconds); setTip(pick(pool));
     programarAvisoDescanso(seconds);
-    return ()=>{ cancelarAvisoDescanso(); };
+    return ()=>{ if(!acabadoRef.current) cancelarAvisoDescanso(); };
   },[seconds]);
 
   // El tiempo se calcula contra el RELOJ, no restando de uno en uno. Así, al volver
@@ -2606,6 +2649,7 @@ function RestTimer({ seconds, onDone, isRecomp }){
       setLeft(q);
       if(q<=0){
         clearInterval(t);
+        acabadoRef.current = true;      // se acabó solo: el aviso debe sonar
         /* Con la app delante el aviso del sistema se cancela al cerrarse este
            pop-up, así que sin esto el descanso terminaba en silencio absoluto:
            si no estabas mirando la pantalla, no te enterabas. */
@@ -2956,6 +3000,10 @@ export default function App(){
       }),
     });
     setResults(null); setTab("workout");
+    /* El permiso, ahora que tienes el móvil en la mano. Antes se pedía dentro
+       del primer descanso: si el diálogo se quedaba sin contestar porque ya te
+       lo habías guardado, el await no resolvía y ese aviso no se programaba. */
+    if(!permisoPedido){ permisoPedido = true; ensureNotifPerm().catch(()=>{}); }
 
     // Si ya te has unido al entreno de alguien, se respeta. Si no, se abre una
     // sesión para que tus amigos puedan unirse mientras entrenas.

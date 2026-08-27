@@ -8,6 +8,18 @@
     />
     <meta name="theme-color" content="#0C0E14" />
     <title>RPGym</title>
+
+    <!-- Instalable desde el navegador. En Android lo lee del manifest; iOS
+         todavía necesita sus propias etiquetas, y sin ellas la web se abre con
+         la barra de Safari encima en vez de a pantalla completa. -->
+    <link rel="icon" href="./pwa/icono-192.png" type="image/png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./pwa/icono-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="RPGym" />
+    <meta name="description" content="Tu gimnasio, convertido en juego." />
   </head>
   <body>
     <div id="root"></div>

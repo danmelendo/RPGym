@@ -124,6 +124,9 @@ APK resultante → `android/app/build/outputs/apk/debug/app-debug.apk`
 - **Multi-perfil** (en la versión avanzada): `STORE_PREFIX` + `setStorePrefix(id)`. El perfil `p1` usa claves **SIN prefijo** (compatibilidad con datos previos); el resto usa `"{id}:"`. **No cambies esta regla o se pierden datos.**
 - **Librerías** (en package.json): `recharts`, `lucide-react`. Los iconos se importan del bloque `import { … } from "lucide-react"` — añade ahí los que falten.
 - **Notificaciones**: usa **siempre el bridge global** `window.Capacitor?.Plugins?.LocalNotifications`. **NO uses `import` del plugin** (rompe el bundle web). El aviso real solo funciona en el APK instalado.
+- **El aviso de descanso NO se cancela cuando el descanso acaba solo**, solo si lo saltas (`acabadoRef` en `RestTimer`). El WebView **sigue contando en segundo plano** un buen rato: llegaba a cero, cerraba el pop-up y el `cleanup` del efecto cancelaba la alarma justo en el instante en que iba a sonar. En segundo plano no avisaba nunca. Verificado en un emulador Android 14: la alarma se programaba bien (`RTC_WAKEUP`, `window=0`) y se cancelaba sola al vencer.
+- **Cómo verificar esto de verdad** (sin adivinar): emulador con `avdmanager create avd -k "system-images;android-34;google_apis;x86_64"`, `adb install`, y luego `adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>` para manejar el WebView con el protocolo de Chrome (hay un `cdp.js` de ejemplo en el scratchpad). Se comprueba con `adb shell dumpsys alarm | grep forjahabito` (¿se programa?) y `adb shell dumpsys notification | grep forjahabito` (¿se publica?).
+- **Programar y cancelar van en una cola** (`enFila`): son asíncronos y entre serie y serie se solapaban, con el cancelar del descanso viejo llegando después del programar del nuevo.
 - **Toda notificación programada lleva `allowWhileIdle: true`.** Sin eso el plugin usa `alarmManager.setExact(AlarmManager.RTC, …)`, que **ni despierta el móvil** y además Android aplaza mientras está en reposo (Doze): el aviso de fin de descanso llegaba minutos tarde, cuando ya habías vuelto. Con la bandera usa `setExactAndAllowWhileIdle(RTC_WAKEUP, …)`. Se puede comprobar en `node_modules/@capacitor/local-notifications/android/src/main/java/…/LocalNotificationManager.java`.
 - **Cada aviso va por su canal, creado a mano** (`descanso` importancia 5, `recordatorios` 4, `rpgym` para el push). Sin canal propio Android usa el de por defecto: sin vibración y sin salir encima de lo que estés mirando. El canal del push tiene que llamarse **`rpgym`**, que es el `channel_id` que manda la Edge Function.
 - **`VIBRATE` en el manifiesto**: sin ese permiso no vibra ni el canal ni `navigator.vibrate`. Es fácil de olvidar porque no da ningún error, simplemente no pasa nada.
@@ -244,6 +247,26 @@ se hace por accidente.
 - **Nada de recursos remotos** (fuentes, CDN, analítica, iconos por URL). La app debe seguir siendo 100% offline y sin llamadas a terceros, o la política de privacidad deja de ser cierta. Descarga y sirve desde `public/`.
 
 ---
+
+## Versión web (PWA) para quien no tiene Android
+
+Quien usa iPhone no puede instalar el APK, así que abre la web y la añade a la
+pantalla de inicio. Se publica sola en GitHub Pages con
+[.github/workflows/web.yml](.github/workflows/web.yml) en cada push a `main`.
+
+- **Las rutas de imágenes y fuentes son RELATIVAS** (`exercises/…`, no `/exercises/…`).
+  Pages sirve el proyecto en `/RPGym/`, y una ruta absoluta se sale de la carpeta.
+  Dentro de Capacitor funcionan igual, así que no hay dos versiones que mantener.
+- **[public/sw.js](public/sw.js)**: no precachea nada. Las fotos de ejercicios son
+  ~28 MB y bajarlas todas en la primera visita sería una salvajada con datos
+  móviles; se guardan según las miras, con un tope de 400.
+- **Se registra solo en web** (`main.jsx` comprueba `Capacitor.isNativePlatform`):
+  dentro de la app los ficheros ya son locales y el service worker solo estorba.
+- **El aviso de fin de descanso en web** va por el service worker
+  (`postMessage` con `tipo:"avisar-en"`). En iOS solo funciona con la web añadida
+  a la pantalla de inicio, y aun así iOS puede suspenderlo: por eso el pop-up
+  vibra también por su cuenta. **Es la limitación real de la versión web** y está
+  avisada en el propio documento de la web.
 
 ## Rutas clave
 
