@@ -437,7 +437,7 @@ export async function avisarAmigos(tipo, extra = {}){
 
 /* `veces` es un mapa ejercicio -> nº de sesiones en las que aparece. Sirve para
    señalar el ejercicio favorito de cada grupo en la ficha de un amigo. */
-export async function subirRecords(bests, veces = {}){
+export async function subirRecords(bests, veces = {}, nombresViejos = []){
   if (!supabase) return sinNube;
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -452,6 +452,14 @@ export async function subirRecords(bests, veces = {}){
     if (!filas.length) return { ok:true };
     const { error } = await supabase.from("exercise_records").upsert(filas, { onConflict:"user_id,ejercicio" });
     if (error) return { ok:false, msg:traducir(error) };
+    /* Al renombrar un ejercicio, migrarNombres arrastra la marca al nombre nuevo
+       EN EL MÓVIL, pero el upsert nunca borra: la vieja se quedaba en el
+       servidor y el ejercicio salía DOS VECES en la ficha, con la misma marca.
+       Se limpian los nombres que ya no existen. */
+    if (nombresViejos.length) {
+      await supabase.from("exercise_records").delete()
+        .eq("user_id", user.id).in("ejercicio", nombresViejos.slice(0, 200));
+    }
     return { ok:true, subidos:filas.length };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }

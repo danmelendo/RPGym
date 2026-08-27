@@ -1645,16 +1645,19 @@ const RANKS = [
    en vez de enseñar un cero que no es verdad. */
 function seriesDe(rec){
   if(Number.isFinite(rec?.series)) return rec.series;
-  let n = 0;
-  (rec?.exercises || []).forEach(ex => (ex.logs || []).forEach(l => { if(l.done) n++; }));
-  return n;
+  // OJO: en el registro guardado los logs YA vienen filtrados a las series
+  // hechas (finishWorkout hace .filter(l=>l.done)) y en el filtrado se pierde
+  // el propio campo `done`. Buscarlo aquí daba siempre 0.
+  return (rec?.exercises || []).reduce((a, ex) => a + (ex.logs?.length || 0), 0);
 }
 
 function sesionesPorEjercicio(log){
   const n = {};
   (log||[]).forEach(rec=>(rec.exercises||[]).forEach(ex=>{
+    // Mismo motivo que en seriesDe: los logs guardados ya son solo los hechos,
+    // y no conservan `done`. Con la comprobación puesta, `veces` subía siempre
+    // a 0 y la estrella de "su ejercicio favorito" no se encendía nunca.
     if(!ex?.name || !ex.logs?.length) return;
-    if(!ex.logs.some(l=>l.done)) return;
     n[ex.name] = (n[ex.name] || 0) + 1;
   }));
   return n;
@@ -2427,8 +2430,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 13;
-const APP_VERSION_NAME = "1.0.12";
+const APP_VERSION_CODE = 14;
+const APP_VERSION_NAME = "1.0.13";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -3150,7 +3153,7 @@ export default function App(){
       cloud.registrarEntreno({ clientId:`${record.date}-${session.startedAt}`,
         day:record.date, xp:record.xp, prs:prList.length,
         rutina:`${record.routineName} · ${record.dayName}`, detalle:record.exercises });
-      cloud.subirRecords(bests, sesionesPorEjercicio(nlog));
+      cloud.subirRecords(bests, sesionesPorEjercicio(nlog), Object.keys(RENOMBRES));
       // ¿He adelantado a alguien con los récords de hoy?
       if(prList.length){
         cloud.avisarAmigos("record");          // "X acaba de batir un récord"
@@ -3423,7 +3426,7 @@ export default function App(){
       displayName: state.profile?.name, appVersion: APP_VERSION_NAME,
       atributos: state.muscleXp || {},
     });
-    if(Object.keys(state.bests || {}).length) cloud.subirRecords(state.bests, sesionesPorEjercicio(log));
+    if(Object.keys(state.bests || {}).length) cloud.subirRecords(state.bests, sesionesPorEjercicio(log), Object.keys(RENOMBRES));
   }
 
   /* Mete una rutina que te han compartido (ya viene validada por decodeRoutine). */
