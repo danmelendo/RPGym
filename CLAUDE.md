@@ -268,6 +268,28 @@ pantalla de inicio. Se publica sola en GitHub Pages con
   vibra también por su cuenta. **Es la limitación real de la versión web** y está
   avisada en el propio documento de la web.
 
+## Secretos: qué puede ir al repositorio y qué no
+
+El repositorio es **público**. Todo lo sensible está en `.gitignore` y se ha
+comprobado sobre **todo el historial** que nunca ha entrado: contraseña de la
+base, claves de Brevo, clave privada de Firebase, correo de la cuenta de
+servicio.
+
+| Fichero | Qué lleva | Estado |
+|---|---|---|
+| `.env` | anon key (pública) + contraseña de la base | ignorado |
+| `android/app/google-services.json` | identifica la app ante Firebase | ignorado |
+| `android/app/*firebase-adminsdk*.json` | **llave para enviar push a cualquiera** | ignorado |
+| `supabase/.env.firebase` | los tres valores del anterior | ignorado |
+| `android/keystore.properties` | firma de release | ignorado |
+
+**Ni siquiera la anon key va escrita en el código.** Es pública por diseño —viaja
+dentro del APK y del bundle web—, pero es un JWT y los escáneres de secretos la
+marcan como filtración, con razón: no pueden distinguirla de la service role.
+Vive en las **variables del repositorio** (*Settings → Secrets and variables →
+Actions → Variables*) y el workflow la lee con `${{ vars.… }}`. Si algún día
+salta una alerta de GitGuardian, será una de verdad.
+
 ## Rutas clave
 
 | Ruta | Qué es |
