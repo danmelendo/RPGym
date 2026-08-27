@@ -3,10 +3,15 @@
 # Para qué: quien tiene iPhone no puede instalar el APK, así que abre esta web
 # desde Safari y la añade a la pantalla de inicio. Se comporta como una app.
 #
-# Las dos variables de abajo SON PÚBLICAS por diseño: viajan dentro del APK que
-# ya se reparte y cualquiera puede leerlas. Lo que protege los datos es la RLS
-# de Supabase, no esconder la anon key. Un secreto de verdad (la service role o
-# la clave de Firebase) NUNCA iría aquí.
+# Las dos variables vienen de la configuración del repositorio
+# (Settings -> Secrets and variables -> Actions -> Variables), no del código.
+#
+# Son PÚBLICAS por diseño —viajan dentro del APK y del bundle web, cualquiera
+# puede leerlas— y lo que protege los datos es la RLS de Supabase, no esconder
+# la anon key. Aun así no se escriben aquí: una anon key es un JWT y los
+# escáneres de secretos (GitGuardian y compañía) la marcan como filtración,
+# con razón, porque no pueden saber que es la pública. Fuera del código, fuera
+# del ruido. Un secreto de verdad iría en Secrets, nunca en Variables.
 name: Publicar la web
 
 on:
@@ -35,8 +40,8 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_SUPABASE_URL: https://svmxsnvjjddxgolkjwjb.supabase.co
-          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2bXhzbnZqamRkeGdvbGtqd2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NjA4ODMsImV4cCI6MjEwMzIzNjg4M30.2nq1vzXHFi4uvl7Ghnof6VOIpk65FHCcbMkRgoGiEuU
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
