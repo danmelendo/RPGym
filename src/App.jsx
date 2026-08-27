@@ -2465,8 +2465,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 15;
-const APP_VERSION_NAME = "1.0.14";
+const APP_VERSION_CODE = 16;
+const APP_VERSION_NAME = "1.0.15";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -3107,7 +3107,7 @@ export default function App(){
     U("cincuenta_ses", totalWorkouts>=50); U("cien_ses", totalWorkouts>=100);
     U("primer_pr", prs>0||Object.keys(bests).length>=1); U("pr_5", prs>=5);
     U("series_20", seriesDone>=20); U("series_30", seriesDone>=30);
-    U("series_500", nlog.reduce((a,r)=>a + seriesDe(r), 0) >= 500);
+    U("series_500", log.reduce((a,r)=>a + seriesDe(r), seriesDone) >= 500);
     U("semana_ok", weekGoalMet); U("racha_4", weekStreak>=4); U("racha_8", weekStreak>=8);
     U("nivel_10", tentLevel>=10); U("nivel_20", tentLevel>=20); U("nivel_35", tentLevel>=35);
     U("fuerza_x2", doubled); U("explorador", routinesUsed.length>=5);
@@ -6941,7 +6941,7 @@ function ResultsView({ results, setTab, level, rank }){
 
       {/* Stats principales */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:12 }}>
-        {[["+"+r.sessionXp,"XP","var(--gold)"],[seriesDe(r),"series","var(--jade)"],[r.durationMin+" min","duración","var(--sky)"]].map((s,i)=>(
+        {[["+"+r.sessionXp,"XP","var(--gold)"],[r.seriesDone,"series","var(--jade)"],[r.durationMin+" min","duración","var(--sky)"]].map((s,i)=>(
           <div key={i} className="fh-card" style={{ padding:14, textAlign:"center" }}>
             <div className="disp" style={{ fontSize:20, fontWeight:700, color:s[2] }}>{s[0]}</div>
             <div style={{ fontSize:10, color:"var(--muted)", marginTop:2 }}>{s[1]}</div>
