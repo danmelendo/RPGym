@@ -289,6 +289,65 @@ pantalla de inicio. Se publica sola en GitHub Pages con
   vibra también por su cuenta. **Es la limitación real de la versión web** y está
   avisada en el propio documento de la web.
 
+## Aplicar migraciones de Supabase
+
+Las migraciones viven en [supabase/migrations/](supabase/migrations/) y se aplican
+con el **CLI oficial por `npx`**. En este equipo no hay `psql` ni el cliente `pg`
+instalados, así que esa es la vía:
+
+```bash
+# 1. Cargar .env sin que nada acabe en pantalla
+set -a; . ./.env >/dev/null 2>&1; set +a
+
+# 2. Montar la URL en una variable. La contraseña se URL-encodea (puede llevar
+#    caracteres que rompan la URL) y NUNCA se imprime.
+export DBURL=$(python -c "
+import os,urllib.parse
+print('postgresql://postgres.%s:%s@aws-0-eu-central-1.pooler.supabase.com:5432/postgres' % (
+  os.environ['SUPABASE_PROJECT_REF'],
+  urllib.parse.quote(os.environ['SUPABASE_DB_PASSWORD'], safe='')))
+")
+
+# 3. Mirar ANTES qué hay aplicado, y solo después empujar
+npx --yes supabase@latest migration list --db-url "$DBURL" 2>&1 | sed -E 's#postgresql://[^ "]*#<oculta>#g'
+npx --yes supabase@latest db push --db-url "$DBURL" --yes 2>&1 | sed -E 's#postgresql://[^ "]*#<oculta>#g'
+```
+
+### Las reglas que no se saltan
+
+- **La contraseña NO se imprime NUNCA.** Ni con `echo`, ni con `cat .env`, ni
+  dejándola dentro de la URL en la salida de un comando. Se lee de `.env` a una
+  variable y se pasa por `--db-url "$DBURL"`. Si necesitas enseñar `.env`, tápalo:
+  `sed -E 's/=.*/=<oculto>/'`.
+- **El `sed` de la salida es un cinturón de más, no lo quites.** Comprobado que el
+  CLI ya tapa él solo la contraseña en sus errores (enseña `host=… user=…
+  database=…`, sin la clave), pero eso no lo promete nadie para la siguiente
+  versión, y cualquier otro comando que monte la URL a mano sí podría escupirla.
+  Cuesta nada y evita la fuga que no se ve venir.
+- **El host directo `db.<ref>.supabase.co` ya NO resuelve** (Supabase lo movió a
+  IPv6). Hay que ir por el *pooler*: `aws-0-eu-central-1.pooler.supabase.com:5432`
+  y usuario `postgres.<SUPABASE_PROJECT_REF>` (con el ref, no `postgres` a secas).
+  La región **es la de este proyecto**; si algún día falla con `Tenant or user not
+  found`, es que se probó la región equivocada.
+- **`migration list` primero, siempre.** Si el historial remoto ya tiene registradas
+  las migraciones viejas, `db push` solo aplica las nuevas. Si NO lo estuvieran,
+  `db push` intentaría reejecutarlas todas contra la base viva: mirar antes cuesta
+  diez segundos y evita ese estropicio.
+- **Publicar una versión es una migración más.** La fila de `app_versions` es lo
+  que enciende el aviso de "hay versión nueva" dentro de la app: sin ella, quien ya
+  tiene la app instalada no se entera. Va con `on conflict (version_code) do update`
+  para que sea repetible, como cualquier migración. Ejemplo:
+  [20260831000000_version_1_0_18.sql](supabase/migrations/20260831000000_version_1_0_18.sql).
+- **Comprobar el resultado leyendo la fila con la anon key** (`/rest/v1/…`), que es
+  exactamente lo que verá la app. **Y forzando la codificación**: la consola de
+  Windows decodifica UTF-8 como cp1252 y hace creer que hay mojibake donde no lo
+  hay — `python -m json.tool` sobre una tubería miente con los acentos. Guarda la
+  respuesta en un fichero y ábrelo con `encoding="utf-8"`.
+- **Rutas de fichero para Python**: el `/tmp` de Git Bash no existe para el
+  intérprete de Windows. Usa el directorio de trabajo o una ruta `C:/…`.
+- No hay `supabase db execute`: para lanzar SQL suelto, se escribe una migración.
+  Que es lo correcto de todos modos — así queda en el repositorio.
+
 ## Secretos: qué puede ir al repositorio y qué no
 
 El repositorio es **público**. Todo lo sensible está en `.gitignore` y se ha
@@ -303,6 +362,9 @@ servicio.
 | `android/app/*firebase-adminsdk*.json` | **llave para enviar push a cualquiera** | ignorado |
 | `supabase/.env.firebase` | los tres valores del anterior | ignorado |
 | `android/keystore.properties` | firma de release | ignorado |
+
+La contraseña de la base (`SUPABASE_DB_PASSWORD`) se usa **solo** para aplicar
+migraciones, y **nunca se imprime**: ver [Aplicar migraciones de Supabase](#aplicar-migraciones-de-supabase).
 
 **Ni siquiera la anon key va escrita en el código.** Es pública por diseño —viaja
 dentro del APK y del bundle web—, pero es un JWT y los escáneres de secretos la
@@ -325,7 +387,7 @@ salta una alerta de GitGuardian, será una de verdad.
 | [PLAYSTORE.md](PLAYSTORE.md) | Guía de publicación en Google Play (firma, versionado, AAB, migración de testers). |
 | [supabase/FIREBASE.md](supabase/FIREBASE.md) | Puesta en marcha del push: crear el proyecto de Firebase y desplegar la Edge Function. |
 | [supabase/README.md](supabase/README.md) | **Empieza por aquí para la nube**: crear el proyecto, ejecutar el esquema y pegar las credenciales en `.env`. |
-| [supabase/migrations/](supabase/migrations/) | Tablas, funciones y políticas RLS. **Las migraciones van aquí**: es la única carpeta que mira la integración de GitHub de Supabase. |
+| [supabase/migrations/](supabase/migrations/) | Tablas, funciones y políticas RLS. **Las migraciones van aquí**: es la única carpeta que mira la integración de GitHub de Supabase. Cómo aplicarlas: **[Aplicar migraciones de Supabase](#aplicar-migraciones-de-supabase)**. |
 | [src/cloud.js](src/cloud.js) | Capa de Supabase. Todo devuelve `{ok,...}`, nunca lanza: sin red la app sigue igual. |
 | [ROADMAP-SOCIAL.md](ROADMAP-SOCIAL.md) | **Fase 1 hecha, 2-6 pendientes**: plan para la parte social con Supabase (amigos, rutinas compartidas, entrenos conjuntos, push), pensado para **uso privado sin Play**. Léelo antes de tocar nada de red. |
 | [android/version.properties](android/version.properties) | `versionCode` / `versionName` de la app. |
