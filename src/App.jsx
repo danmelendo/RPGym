@@ -8,12 +8,13 @@ import {
 } from "recharts";
 import {
   Flame, Trophy, Dumbbell, TrendingUp, Utensils, Home, Play, Check, SkipForward, Timer,
-  Zap, Award, Crown, Shield, Star, ChevronLeft, Cookie, Shuffle, Target, Sparkles, Ruler,
+  Zap, Award, Crown, Shield, Star, ChevronLeft, Shuffle, Target, Sparkles, Ruler,
   Lock, Lightbulb, ShoppingCart, CalendarDays, Compass, Moon, Sunrise, Gauge, ClipboardList,
   ScrollText, Swords, Footprints, Mountain, Heart, ShieldAlert, Info, Ban,
   Settings, Bell, CreditCard, User, Users, ChevronRight, Plus, X,
   Sun, Palette, Scale, Download, Upload, Cloud,
   Trash2, Search, ArrowUp, ArrowDown, Pencil, Copy, FileText, Eye, Minus, Share2,
+  BedDouble, Palmtree,
 } from "lucide-react";
 
 /* =========================================================================
@@ -1888,7 +1889,7 @@ const TIPS = [
   "Progresa poco a poco: +2,5 kg o +1 repetición ya es progreso real.",
   "Si te aburres, cambia de rutina, no de objetivo. La variedad mantiene la cabeza dentro.",
   "El estrés y la falta de sueño suben el cortisol y frenan la pérdida de grasa. Descansa de verdad.",
-  "Tus cheat days están para disfrutarlos sin culpa. Te los has ganado entrenando.",
+  "Los días de descanso están para gastarlos sin culpa: descansar también es entrenar.",
 ];
 
 /* Consejos específicos para rutinas de recomposición (se muestran en el descanso). */
@@ -2076,8 +2077,32 @@ const plannedDaysOf = state => { const d = state?.reminders?.days; return (d && 
    Ajustes (sus días de entreno); si no ha marcado nada, los días que propone la rutina. */
 function weeklyGoalFor(state, routine){
   const d = state?.reminders?.days;
-  if (d && d.length) return d.length;
-  return routine?.daysPerWeek || DEFAULT_TRAIN_DAYS.length;
+  if (!(d && d.length)) return routine?.daysPerWeek || DEFAULT_TRAIN_DAYS.length;
+  /* Sale de `resumenSemana` a propósito, aunque solo se quiera el número: es la
+     única forma de que el objetivo, la racha, las misiones y el informe cuenten
+     LO MISMO cuando hay vacaciones o un día de descanso canjeado. */
+  return resumenSemana([], d, mondayOf(todayISO()), semanaOpts(state)).previstos;
+}
+
+/* --- DESCANSO Y VACACIONES ---------------------------------------------------
+   Dos formas de bajar el listón de una semana sin perder la racha:
+
+   · **Día de descanso** (`restTokens`, antes "cheat day"): se gana cumpliendo la
+     semana y se canjea para que ESA semana exija una sesión menos. Uno por
+     semana como mucho — si se pudieran encadenar, una semana entera se borraría
+     de un plumazo y la racha dejaría de significar nada.
+   · **Vacaciones**: un rango de días en el que directamente no hay sesiones
+     previstas. Se guarda la LISTA de rangos, no solo el último, para que la
+     racha siga saliendo bien al recalcularla meses después.
+
+   La regla de fondo es la de siempre: se cuenta el hábito, no el calendario. */
+const enVacacion = (vacs, iso) => (vacs||[]).some(v => v && v.from && v.to && iso >= v.from && iso <= v.to);
+const vacacionDeHoy = vacs => (vacs||[]).find(v => v && v.from && v.to && todayISO() >= v.from && todayISO() <= v.to) || null;
+
+/* Todo lo que modifica cuántas sesiones exige una semana, en un solo objeto.
+   Pásalo SIEMPRE que llames a resumenSemana desde una vista. */
+function semanaOpts(state){
+  return { descansos: state?.restWeeks || {}, vacaciones: state?.vacations || [] };
 }
 
 /* Racha de hábito que RESPETA los días de descanso: cuenta los días planificados
@@ -2092,19 +2117,27 @@ function weeklyGoalFor(state, routine){
    Antes bastaba con fallar un día planificado para romper la racha, aunque esa
    semana acabaras yendo las veces previstas. */
 
-/* Cómo va una semana concreta. `lunesISO` es el lunes de esa semana. */
-function resumenSemana(log, plannedDays, lunesISO){
+/* Cómo va una semana concreta. `lunesISO` es el lunes de esa semana.
+   `opts` = { descansos, vacaciones } (ver `semanaOpts`): sin ellos cuenta los
+   días previstos a pelo, que es lo que hacía antes. */
+function resumenSemana(log, plannedDays, lunesISO, opts = {}){
   const planned = (plannedDays && plannedDays.length) ? plannedDays : DEFAULT_TRAIN_DAYS;
   const trained = new Set((log||[]).map(r=>r.date));
   const hoy = todayISO();
   const dias = Array.from({ length:7 }, (_,i)=>addDaysISO(lunesISO, i));
-  const previstos = dias.filter(d=>planned.includes(weekdayOfISO(d))).length;
+  const vacs = opts.vacaciones || [];
+  // Un día previsto que cae en vacaciones simplemente no se prevé.
+  const deVacaciones = dias.filter(d=>planned.includes(weekdayOfISO(d)) && enVacacion(vacs, d)).length;
+  const brutos = dias.filter(d=>planned.includes(weekdayOfISO(d)) && !enVacacion(vacs, d)).length;
+  const perdonados = Math.min(brutos, (opts.descansos || {})[lunesISO] || 0);
+  const previstos = Math.max(0, brutos - perdonados);
   const hechos = dias.filter(d=>trained.has(d)).length;
   // Días que aún se pueden usar para recuperar (hoy incluido).
   const porVenir = dias.filter(d=>d >= hoy && !trained.has(d)).length;
   const enCurso = lunesISO <= hoy && addDaysISO(lunesISO,6) >= hoy;
   return {
-    previstos, hechos, enCurso,
+    previstos, hechos, enCurso, perdonados,
+    vacaciones: deVacaciones > 0,
     faltan: Math.max(0, previstos - hechos),
     cumplida: hechos >= previstos,
     // Aún salvable: quedan días suficientes para llegar a lo previsto.
@@ -2115,13 +2148,16 @@ function resumenSemana(log, plannedDays, lunesISO){
 /* Racha de hábito. Cuenta días entrenados hacia atrás y se corta en la primera
    semana YA CERRADA que acabó por debajo de lo previsto. La semana en curso no
    rompe nada: todavía estás a tiempo de recuperar. */
-function habitStreak(log, plannedDays){
+function habitStreak(log, plannedDays, opts = {}){
   const trained = new Set((log||[]).map(r=>r.date));
   let streak = 0, lunes = mondayOf(todayISO());
   for(let semana=0; semana<120; semana++){
-    const r = resumenSemana(log, plannedDays, lunes);
+    const r = resumenSemana(log, plannedDays, lunes, opts);
     if(!r.enCurso && !r.cumplida) break;          // semana cerrada y fallida: aquí se corta
-    if(!r.hechos && !r.enCurso) break;            // semana vacía y cerrada (sin días previstos)
+    // Semana vacía y cerrada: corta, SALVO que estuvieras de vacaciones. Volver
+    // de dos semanas fuera y encontrarte la racha a cero es justo lo que hace
+    // que no vuelvas.
+    if(!r.hechos && !r.enCurso && !r.vacaciones) break;
     for(let i=0;i<7;i++) if(trained.has(addDaysISO(lunes,i))) streak++;
     lunes = addDaysISO(lunes, -7);
   }
@@ -2129,17 +2165,151 @@ function habitStreak(log, plannedDays){
 }
 
 /* Para las misiones y el objetivo: cuenta VECES, no días concretos. */
-function weekPlannedStatus(log, plannedDays){
-  const r = resumenSemana(log, plannedDays, mondayOf(todayISO()));
+function weekPlannedStatus(log, plannedDays, opts = {}){
+  const r = resumenSemana(log, plannedDays, mondayOf(todayISO()), opts);
   return { plannedThisWeek:r.previstos, trainedPlanned:Math.min(r.hechos, r.previstos) };
 }
 /* Contexto para evaluar las misiones semanales. */
 function missionContext(state, log){
   const ws=state.weekStart;
   const groups=Object.keys(weeklySetsByGroup(log, ws)).length;
-  const { plannedThisWeek, trainedPlanned }=weekPlannedStatus(log, state.reminders?.days);
+  const { plannedThisWeek, trainedPlanned }=weekPlannedStatus(log, state.reminders?.days, semanaOpts(state));
   return { weekPRs:state.weekPRs||0, weekGroups:groups, plannedThisWeek, trainedPlanned };
 }
+/* --- INFORME SEMANAL ---------------------------------------------------------
+   Lo que ha pasado en una semana concreta. Se calcula AL VUELO a partir del
+   historial: no se guarda ningún informe, así que restaurar una copia o corregir
+   el nombre de un ejercicio se refleja solo, sin informes viejos que arrastren
+   datos que ya no son ciertos.
+
+   Todo lo de aquí sale del móvil. La actividad de los amigos se pide aparte a la
+   nube (`cloud.novedades`), porque sin cuenta o sin red el informe tiene que
+   seguir saliendo entero: tus números no dependen de nadie. */
+
+const domingoDe = lunesISO => addDaysISO(lunesISO, 6);
+
+/* "25 – 31 de agosto" · "29 de septiembre – 5 de octubre" cuando cambia el mes. */
+function rangoSemanaTexto(lunesISO){
+  const a = parseISO(lunesISO), b = parseISO(domingoDe(lunesISO));
+  const mesA = MONTHS_ES[a.getMonth()].toLowerCase(), mesB = MONTHS_ES[b.getMonth()].toLowerCase();
+  if (mesA === mesB && a.getFullYear() === b.getFullYear()) return `${a.getDate()} – ${b.getDate()} de ${mesB}`;
+  return `${a.getDate()} de ${mesA} – ${b.getDate()} de ${mesB}`;
+}
+
+/* Series por grupo muscular dentro de un rango cerrado de fechas.
+   `weeklySetsByGroup` no sirve aquí: no tiene tope superior y se llevaría por
+   delante todo lo entrenado después de la semana que se está mirando. */
+function setsPorGrupoEnRango(log, desde, hasta){
+  const acc = {};
+  (log||[]).forEach(rec=>{
+    if(rec.date < desde || rec.date > hasta) return;
+    Object.entries(setsToGroups(rec)).forEach(([k,v])=>acc[k]=(acc[k]||0)+v);
+  });
+  return acc;
+}
+
+/* Récords de peso conseguidos en una semana.
+   Se recorre el historial en orden y se compara con la mejor marca ANTERIOR,
+   igual que hace `finishWorkout`: la primera vez que haces un ejercicio no es
+   récord, es la marca de partida. Recalcularlo así (en vez de guardar la lista)
+   es lo que permite pedir el informe de cualquier semana pasada. */
+function recordsDeSemana(log, desde, hasta){
+  const mejor = {}; const out = [];
+  [...(log||[])].sort((a,b)=>a.date.localeCompare(b.date)).forEach(rec=>{
+    if(rec.date > hasta) return;
+    const enSemana = rec.date >= desde;
+    (rec.exercises||[]).forEach(ex=>{
+      if(isCardio(ex.name)) return;                       // el cardio tiene sus propias marcas
+      (ex.logs||[]).forEach(l=>{
+        const w = parseFloat(l.weight)||0; if(w<=0) return;
+        const prev = mejor[ex.name];
+        if(prev == null){ mejor[ex.name] = w; return; }    // marca de partida, no récord
+        if(w > prev){
+          mejor[ex.name] = w;
+          if(enSemana){
+            const ya = out.find(r=>r.name===ex.name);
+            if(ya) ya.now = w; else out.push({ name:ex.name, prev, now:w, unit:"kg" });
+          }
+        }
+      });
+    });
+  });
+  return out;
+}
+
+/* Informe completo de la semana que empieza en `lunesISO`. */
+function informeSemanal({ log, state, measures, lunesISO, plannedDays }){
+  const desde = lunesISO, hasta = domingoDe(lunesISO);
+  const enRango = d => d >= desde && d <= hasta;
+  const sesiones = (log||[]).filter(r=>enRango(r.date)).sort((a,b)=>a.date.localeCompare(b.date));
+  const resumen = resumenSemana(log, plannedDays, lunesISO, semanaOpts(state));
+
+  const series = sesiones.reduce((a,r)=>a + seriesDe(r), 0);
+  const xp = sesiones.reduce((a,r)=>a + (r.xp||0), 0);
+  const ejercicios = new Set();
+  sesiones.forEach(r=>(r.exercises||[]).forEach(e=>{ if(e.logs?.length) ejercicios.add(e.name); }));
+
+  const sets = setsPorGrupoEnRango(log, desde, hasta);
+  const porGrupo = BODY_STATS.map(g=>({ ...g, sets:sets[g.id]||0 })).filter(g=>g.sets>0).sort((a,b)=>b.sets-a.sets);
+
+  const records = recordsDeSemana(log, desde, hasta);
+  /* Cardio: se mira la fecha del récord vigente. No se puede reconstruir el
+     historial de marcas de cardio como el de kilos (el registro no guarda si el
+     objetivo iban en minutos o en segundos), así que aquí sale la marca que
+     SIGUE en pie y se consiguió esa semana. Si después la batiste, aparece en el
+     informe de la semana en que la batiste, que es donde toca. */
+  const cardio = Object.entries(state.cardioBests||{})
+    .filter(([,r])=>r && r.date && enRango(r.date))
+    .map(([name,r])=>({ name, rec:r }));
+
+  const logros = ACHIEVEMENTS.filter(a=>{ const d=(state.achievements||{})[a.id]; return d && enRango(d); });
+
+  const medidas = (measures||[]).filter(m=>enRango(m.date));
+  const anterior = (measures||[]).filter(m=>m.date < desde).slice(-1)[0] || null;
+  const ultima = medidas.slice(-1)[0] || null;
+  const deltaPeso = (ultima && anterior && ultima.weightKg && anterior.weightKg)
+    ? Math.round((ultima.weightKg - anterior.weightKg)*10)/10 : null;
+
+  return { lunes:lunesISO, domingo:hasta, rango:rangoSemanaTexto(lunesISO), enCurso:resumen.enCurso,
+    sesiones, resumen, series, xp, ejercicios:[...ejercicios], porGrupo, records, cardio, logros,
+    medidas, ultima, deltaPeso };
+}
+
+/* Titular del informe: una frase que resume la semana sin regañar a nadie.
+   La semana en curso nunca se da por perdida — es la misma regla de la racha. */
+function titularSemana(inf){
+  const { resumen:r, enCurso, sesiones } = inf;
+  // Vacaciones: no había nada previsto, así que no hay nada que reprochar.
+  if(r.vacaciones && r.previstos === 0) return { color:"var(--sky)", txt: sesiones.length
+    ? `Semana de vacaciones y aun así entrenaste ${sesiones.length} ${sesiones.length===1?"vez":"veces"}. Eso es de nota.`
+    : "Semana de vacaciones. Descansar forma parte del plan: la racha sigue intacta." };
+  if(!sesiones.length) return enCurso
+    ? { color:"var(--muted)", txt:"Semana en blanco de momento. Todavía estás a tiempo." }
+    : { color:"var(--muted)", txt:"Esa semana no entrenaste. Pasa: lo que cuenta es la siguiente." };
+  if(r.cumplida) return { color:"var(--jade)",
+    txt: r.hechos > r.previstos
+      ? `Semana cumplida y con ${r.hechos - r.previstos} sesión${r.hechos-r.previstos===1?"":"es"} de propina.`
+      : "Semana cumplida: fuiste las veces que te habías propuesto." };
+  if(enCurso && r.recuperable) return { color:"var(--gold)",
+    txt:`Te ${r.faltan===1?"falta":"faltan"} ${r.faltan} ${r.faltan===1?"sesión":"sesiones"}. Cualquier día vale para recuperarlas.` };
+  if(enCurso) return { color:"var(--ember)", txt:`Ya no da tiempo a las ${r.previstos} de esta semana, pero lo que sumes ahora cuenta igual.` };
+  return { color:"var(--ember)", txt:`Te quedaste en ${r.hechos} de ${r.previstos}. Sumaste igual: entrenar poco gana a no entrenar.` };
+}
+
+/* Actividad del círculo agrupada por persona, con los eventos sueltos aparte.
+   La entrada son las filas de la vista `novedades`, que ya solo trae amigos. */
+function resumirCirculo(novedades){
+  const gente = {}; const quedadas = []; const nuevos = [];
+  (novedades||[]).forEach(n=>{
+    if(n.tipo === "quedada"){ quedadas.push(n); return; }
+    if(n.tipo === "amistad"){ nuevos.push(n); return; }
+    const g = gente[n.id] || (gente[n.id] = { id:n.id, handle:n.handle, nombre:n.display_name || "@"+n.handle, entrenos:0, prs:0, xp:0 });
+    g.entrenos += 1; g.prs += n.prs||0; g.xp += n.xp||0;
+  });
+  const lista = Object.values(gente).sort((a,b)=>b.entrenos-a.entrenos || b.xp-a.xp);
+  return { lista, quedadas, nuevos };
+}
+
 const round25 = n => Math.max(0, Math.round(n/2.5)*2.5);
 function parseTargetReps(reps){
   const t=String(reps).trim();
@@ -2357,7 +2527,7 @@ async function asegurarCanalRecordatorios(){
   } catch {}
 }
 
-async function scheduleAllReminders(reminders, sub){
+async function scheduleAllReminders(reminders, sub, vacations){
   const ln = LN(); if (!ln) return;   // el aviso real solo funciona en la app instalada
   await asegurarCanalRecordatorios();
   try { await ln.cancel({ notifications: Array.from({ length: 40 }, (_, i) => ({ id: i + 1 })) }); } catch {}
@@ -2365,7 +2535,10 @@ async function scheduleAllReminders(reminders, sub){
   /* allowWhileIdle en TODOS: sin él el plugin programa la alarma como RTC (que
      ni despierta el móvil) y Android la aplaza mientras está en reposo. Un
      recordatorio de las 19:00 que llega a las 19:40 ya no recuerda nada. */
-  if (reminders?.enabled) {
+  /* De vacaciones no se avisa de entrenar. Como la alarma semanal se repite,
+     no se puede "saltar" un rango: o se programa o no. Al volver, la propia
+     app las reprograma en cuanto se abre (loadProfileData la llama). */
+  if (reminders?.enabled && !vacacionDeHoy(vacations)) {
     (reminders.days || []).forEach((d, i) => {
       notifs.push({ id: i + 1, title: "Hora de entrenar 💪",
         body: "Tu sesión de hoy te espera. ¡Vamos a por ella!",
@@ -2385,7 +2558,7 @@ async function scheduleAllReminders(reminders, sub){
 
 const DEFAULT_STATE = {
   profile:{ name:"Atleta", age:null, weightKg:74, heightCm:178, sex:"no_especificado", units:"kg", experience:"principiante", goal:"iniciarse", onboarded:false },
-  xp:0, cheatTokens:0, totalWorkouts:0, weekStreak:0,
+  xp:0, restTokens:0, totalWorkouts:0, weekStreak:0,
   weekStart:mondayOf(todayISO()), weeklyCount:0, weekGoalMet:false,
   activeRoutine:"acli_fb", lastWorkoutDate:null, startDate:todayISO(),
   achievements:{}, bests:{}, firstBests:{}, routinesUsed:[], measureCount:0, muscleXp:{},
@@ -2397,6 +2570,8 @@ const DEFAULT_STATE = {
   nextWeight:{},                // progresión: peso sugerido para la próxima sesión por ejercicio
   missions:{ week:null, claimed:[] }, // misiones semanales completadas (por semana)
   cycle:{ enabled:false, lastPeriodStart:null, cycleLength:28, periodLength:5 }, // ciclo menstrual (opt-in)
+  restWeeks:{},                 // lunes -> sesiones perdonadas esa semana (máximo 1)
+  vacations:[],                 // rangos { from, to } en los que no se prevé entrenar
 };
 
 /* =========================================================================
@@ -2493,8 +2668,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 18;
-const APP_VERSION_NAME = "1.0.17";
+const APP_VERSION_CODE = 19;
+const APP_VERSION_NAME = "1.0.18";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2787,6 +2962,10 @@ export default function App(){
   const [session, setSession] = useState(null);
   const [results, setResults] = useState(null);
   const [routineDraft, setRoutineDraft] = useState(null);   // rutina que se está configurando
+  /* Informe semanal: qué semana se está mirando y a dónde vuelve el botón de
+     salir (sale solo el lunes y también desde la ficha: hay que volver al de antes). */
+  const [informeLunes, setInformeLunes] = useState(()=>mondayOf(todayISO()));
+  const [informeVuelve, setInformeVuelve] = useState("home");
   /* --- Nube (opcional). Si no hay credenciales, todo esto se queda a null y la
      app va 100% local, exactamente como antes. Ver ROADMAP-SOCIAL.md. --- */
   const [cloudSession, setCloudSession] = useState(null);
@@ -2904,6 +3083,31 @@ export default function App(){
 
   const persist = useCallback((ns,nl,nm)=>{ saveKey("gym:state",ns); if(nl) saveKey("gym:log",nl); if(nm) saveKey("gym:measures",nm); },[]);
 
+  /* El informe de la semana que acaba de cerrarse SALE SOLO la primera vez que
+     abres la app con la semana ya terminada (en la práctica, el lunes). Después
+     se consulta cuando quieras desde la ficha de personaje.
+
+     `gym:informeVisto` guarda el lunes de la última semana ya enseñada, así que
+     no vuelve a salir por mucho que abras y cierres. No se enseña si esa semana
+     no tienes nada que contar: un móvil recién estrenado no necesita un informe
+     en blanco de bienvenida. */
+  const informeAuto = useRef(false);
+  useEffect(()=>{
+    if(loading || needsOnboarding || informeAuto.current) return;
+    // Con la nube configurada, primero hay que pasar la pantalla de entrada:
+    // si no, el informe se daría por visto detrás del login.
+    if(cloud.cloudEnabled && (!sesionResuelta || (!cloudSession && !sinCuenta))) return;
+    informeAuto.current = true;
+    (async()=>{
+      const lunes = addDaysISO(mondayOf(todayISO()), -7);
+      if(await loadGlobal("gym:informeVisto", null) === lunes) return;
+      saveGlobal("gym:informeVisto", lunes);
+      const domingo = addDaysISO(lunes, 6);
+      if(!log.some(r => r.date >= lunes && r.date <= domingo)) return;   // nada que contar
+      setInformeLunes(lunes); setInformeVuelve("home"); setTab("informe");
+    })();
+  }, [loading, needsOnboarding, sesionResuelta, cloudSession, sinCuenta]);
+
   function setTheme(t){ setThemeState(t); saveGlobal("gym:theme", t); }
 
   // Sincroniza fondo del body, color-scheme y barra de estado (Android) con el tema.
@@ -2927,12 +3131,17 @@ export default function App(){
     const cd = await loadKey("gym:customdiet", null);
     const nowMon = mondayOf(todayISO());
     if (s.weekStart !== nowMon) { if (!s.weekGoalMet) s.weekStreak = 0; s.weekStart = nowMon; s.weeklyCount = 0; s.weekGoalMet = false; s.weekPRs = 0; }
+    /* El "cheat day" pasó a ser un DÍA DE DESCANSO (1.0.18): mismo contador,
+       otro significado. Se arrastra el valor viejo para no regalar ni quitar
+       nada a quien venga de una versión anterior o restaure una copia antigua. */
+    if (s.restTokens == null && s.cheatTokens != null) s.restTokens = s.cheatTokens;
     const merged = { ...DEFAULT_STATE, ...s,
       profile: { ...DEFAULT_STATE.profile, ...(s.profile || {}) },
       reminders: { ...DEFAULT_STATE.reminders, ...(s.reminders || {}) },
       sub: { ...DEFAULT_STATE.sub, ...(s.sub || {}) },
       missions: { ...DEFAULT_STATE.missions, ...(s.missions || {}) },
-      cycle: { ...DEFAULT_STATE.cycle, ...(s.cycle || {}) } };
+      cycle: { ...DEFAULT_STATE.cycle, ...(s.cycle || {}) },
+      restWeeks: s.restWeeks || {}, vacations: Array.isArray(s.vacations) ? s.vacations : [] };
     // Arrastra los nombres de ejercicio que se hayan corregido desde la última versión.
     const mig = migrarNombres({ state:merged, log:l, customRoutines:(Array.isArray(cr)?cr:[]) });
     if(mig.tocado){ saveKey("gym:state", mig.state); saveKey("gym:log", mig.log); saveKey("gym:routines", mig.customRoutines); }
@@ -2941,7 +3150,7 @@ export default function App(){
     setCustomRoutinesState(mig.customRoutines.map(normalizeCustomRoutine));
     setCustomDietState(normalizeCustomDiet(cd));
     setNeedsOnboarding(!mig.state.profile?.onboarded);
-    scheduleAllReminders(mig.state.reminders, mig.state.sub);
+    scheduleAllReminders(mig.state.reminders, mig.state.sub, mig.state.vacations);
   }
   function updateProfile(fields){
     const np = { ...state.profile, ...fields }; const ns = { ...state, profile: np };
@@ -2955,7 +3164,7 @@ export default function App(){
       profile: { ...state.profile, ...profileData, units:"kg", onboarded:true },
       reminders, cycle: cycle ? { ...state.cycle, ...cycle } : state.cycle,
       activeRoutine, startDate: todayISO(), weekStart: mondayOf(todayISO()) };
-    setState(ns); persist(ns); scheduleAllReminders(reminders, ns.sub);
+    setState(ns); persist(ns); scheduleAllReminders(reminders, ns.sub, ns.vacations);
     setNeedsOnboarding(false); setTab("home");
   }
   async function resetProgress(){
@@ -2988,8 +3197,8 @@ export default function App(){
     setSession(null); setResults(null); setTab("home");
     return { ok:true, msg:"Progreso restaurado." };
   }
-  function setReminders(r){ const ns = { ...state, reminders: r }; setState(ns); persist(ns); scheduleAllReminders(r, ns.sub); }
-  function setSub(s){ const ns = { ...state, sub: s }; setState(ns); persist(ns); scheduleAllReminders(ns.reminders, s); }
+  function setReminders(r){ const ns = { ...state, reminders: r }; setState(ns); persist(ns); scheduleAllReminders(r, ns.sub, ns.vacations); }
+  function setSub(s){ const ns = { ...state, sub: s }; setState(ns); persist(ns); scheduleAllReminders(ns.reminders, s, ns.vacations); }
   function setCycle(c){ const ns = { ...state, cycle: { ...state.cycle, ...c } }; setState(ns); persist(ns); }
 
   function startWorkout(routineId, dayIdx){
@@ -3113,9 +3322,9 @@ export default function App(){
       const after=catLevel(muscleXp[c]); if(after>before) muscleLevelUps.push({ cat:c, level:after }); });
 
     const goal = weeklyGoalFor(state, findRoutine(state.activeRoutine, customRoutines));
-    let weeklyCount=state.weeklyCount+1, weekGoalMet=state.weekGoalMet, weekStreak=state.weekStreak, cheatTokens=state.cheatTokens;
+    let weeklyCount=state.weeklyCount+1, weekGoalMet=state.weekGoalMet, weekStreak=state.weekStreak, restTokens=state.restTokens;
     let xpGoal=0, goalJustMet=false;
-    if(!weekGoalMet && weeklyCount>=goal){ weekGoalMet=true; goalJustMet=true; weekStreak+=1; cheatTokens+=1; xpGoal=200; }
+    if(!weekGoalMet && weeklyCount>=goal){ weekGoalMet=true; goalJustMet=true; weekStreak+=1; restTokens+=1; xpGoal=200; }
 
     const totalWorkouts=state.totalWorkouts+1;
     const routinesUsed = state.routinesUsed.includes(session.routineId) ? state.routinesUsed : [...state.routinesUsed, session.routineId];
@@ -3194,7 +3403,7 @@ export default function App(){
     }
 
     // Récord de racha de hábito
-    const newStreak=habitStreak(nlog, state.reminders?.days);
+    const newStreak=habitStreak(nlog, state.reminders?.days, semanaOpts(state));
     const bestStreak=Math.max(state.bestStreak||0, newStreak);
 
     // ¿Había alguien más? El bonus solo cuenta si de verdad entrenasteis juntos.
@@ -3206,7 +3415,7 @@ export default function App(){
 
     const finalXp=state.xp+sessionXp+achXp+missionXp+xpAmigo+xpConjunto; const finalLevel=levelFromXp(finalXp);
 
-    const ns={ ...state, xp:finalXp, cheatTokens, totalWorkouts, weeklyCount, weekGoalMet, weekStreak,
+    const ns={ ...state, xp:finalXp, restTokens, totalWorkouts, weeklyCount, weekGoalMet, weekStreak,
       lastWorkoutDate:todayISO(), achievements:ach, bests, firstBests, routinesUsed, muscleXp,
       nextWeight, weekPRs, missions, bestStreak, cardioBests };
     setState(ns); setLog(nlog); persist(ns,nlog);
@@ -3214,7 +3423,7 @@ export default function App(){
     setResults({
       routineName:session.routineName, dayName:session.dayName, durationMin, seriesDone,
       volume:Math.round(volume), xpBase, xpSets, xpPr, xpGoal, missionXp, achXp, xpAmigo, amigoDe, xpConjunto, companeros, sessionXp:sessionXp+achXp+missionXp+xpAmigo+xpConjunto,
-      prs:prList, seriesDelta, unlocked, cheatEarned:goalJustMet, levelUp: finalLevel>prevLevel ? finalLevel : null,
+      prs:prList, seriesDelta, unlocked, restEarned:goalJustMet, levelUp: finalLevel>prevLevel ? finalLevel : null,
       muscleLevelUps, mGains, progressed, missionsDone, newStreak, bestStreak, bestStreakBeat: newStreak>(state.bestStreak||0),
       rankName: rankFor(finalLevel).name,
     });
@@ -3250,7 +3459,46 @@ export default function App(){
     setMeasures(nm); setState(ns); persist(ns,null,nm);
     showToast({ title:"Medición guardada", sub:"El progreso se nota antes en los números que en el espejo", icon:Ruler });
   }
-  function useCheat(){ if(state.cheatTokens<=0) return; const ns={ ...state, cheatTokens:state.cheatTokens-1 }; setState(ns); persist(ns); showToast({ title:"¡Que aproveche!", sub:"Cheat day canjeado. Te lo has ganado.", icon:Cookie }); }
+  /* Canjear un día de descanso: esta semana exige una sesión menos.
+     Solo UNO por semana — encadenarlos borraría la semana entera y la racha
+     dejaría de contar nada. Y no se deja gastar en una semana ya cumplida o sin
+     nada que perdonar: sería tirar la ficha a la basura. */
+  function useRest(){
+    const lunes = mondayOf(todayISO());
+    if((state.restTokens||0) <= 0) return;
+    if((state.restWeeks||{})[lunes]) { showToast({ title:"Ya has descansado", sub:"Solo se puede canjear un día por semana.", icon:BedDouble }); return; }
+    const antes = resumenSemana(log, plannedDaysOf(state), lunes, semanaOpts(state));
+    if(antes.previstos <= 0 || state.weekGoalMet){ showToast({ title:"No hace falta", sub:"Esta semana ya la tienes hecha. Guárdatelo para otra.", icon:BedDouble }); return; }
+    const restWeeks = { ...(state.restWeeks||{}), [lunes]:1 };
+    const ns = { ...state, restTokens:state.restTokens-1, restWeeks };
+    /* Si al perdonar el día la semana queda cumplida, se da por cumplida y la
+       racha sigue — que es justo para lo que sirve. Sin XP ni ficha nueva: eso
+       se gana entrenando, y si no se caería en un bucle de regalarse fichas. */
+    const despues = resumenSemana(log, plannedDaysOf(state), lunes, semanaOpts(ns));
+    if(!ns.weekGoalMet && ns.weeklyCount >= despues.previstos){ ns.weekGoalMet = true; ns.weekStreak = (ns.weekStreak||0)+1; }
+    setState(ns); persist(ns);
+    showToast({ title:"Día de descanso canjeado", sub:`Esta semana te bastan ${despues.previstos} sesion${despues.previstos===1?"":"es"}. Descansa sin culpa.`, icon:BedDouble });
+  }
+
+  /* Vacaciones: durante el rango no hay sesiones previstas, así que la racha no
+     se rompe y los recordatorios se callan. Se guarda el histórico de rangos
+     para que la racha siga saliendo bien cuando se recalcule meses después. */
+  function setVacaciones(rango){
+    const vacs = [...(state.vacations||[])].filter(v => v && v.from && v.to);
+    const ns = { ...state, vacations: rango ? [...vacs, rango] : vacs };
+    setState(ns); persist(ns); scheduleAllReminders(ns.reminders, ns.sub, ns.vacations);
+    if(rango) showToast({ title:"Buenas vacaciones", sub:"La racha te espera intacta. Vuelve con ganas.", icon:Palmtree });
+  }
+  /* Volver antes de tiempo: se recorta el rango en curso a ayer. */
+  function terminarVacaciones(){
+    const hoy = todayISO(), ayer = addDaysISO(hoy, -1);
+    const vacs = (state.vacations||[])
+      .map(v => (v.from <= hoy && v.to >= hoy) ? { ...v, to: ayer } : v)
+      .filter(v => v.to >= v.from);
+    const ns = { ...state, vacations: vacs };
+    setState(ns); persist(ns); scheduleAllReminders(ns.reminders, ns.sub, ns.vacations);
+    showToast({ title:"De vuelta", sub:"Se acabó el descanso. A por ello.", icon:Flame });
+  }
   function setActiveRoutine(id){ const ns={ ...state, activeRoutine:id }; setState(ns); persist(ns); }
   function saveMealPlan(mp){ setMealPlan(mp); saveKey("gym:mealplan", mp); }
   function setExcludes(next){ setExcludesState(next); saveKey("gym:excludes", next); }
@@ -3260,7 +3508,8 @@ export default function App(){
      te haya mandado. Antes había que cerrar la app para verlo. */
   async function refrescarAmigos(){ return refrescarSocial(); }
   function abrirAmigo(a){ setAmigoAbierto(a); setTab("amigo"); }
-  function cerrarAmigo(){ setAmigoAbierto(null); setTab("progreso"); }
+  function abrirInforme(lunes, desde){ setInformeLunes(lunes || mondayOf(todayISO())); setInformeVuelve(desde || "home"); setTab("informe"); }
+  function cerrarAmigo(){ setAmigoAbierto(null); setTab("amigos"); }
 
   /* Lo que cambia porque lo mueve OTRO: quién te ha pedido amistad, quién te
      ha mandado una rutina, qué quedadas hay, quién está entrenando. Sin esto la
@@ -3624,14 +3873,13 @@ export default function App(){
       <StyleTag/>
       <Toast toast={toast}/>
       <div className="fh-shell">
-        {tab==="home" && <HomeView {...{ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines,
-          cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), quedadas, novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno, superadoPor,
-          onRefrescarQuedadas:refrescarQuedadas, cargandoQuedadas,
-          onCargarTabla:(p,a)=>cloud.leaderboard(p, a),
+        {tab==="home" && <HomeView {...{ state, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines,
+          cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno, superadoPor,
           copiaNube, onRestaurarNube:restaurarDeNube, onDescartarCopia:()=>setCopiaNube(null),
-          pendientes:solicitudes.length + enviosRutina.length, amigos }}/>}
+          pendientes:solicitudes.length + enviosRutina.length }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina, setTab }}/>}
-        {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines, setTab }}/>}
+        {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines, setTab,
+          onAbrirInforme:lunes=>abrirInforme(lunes, "ficha") }}/>}
         {tab==="avisos" && <AvisosView {...{ solicitudes, envios:enviosRutina,
           onResponderSolicitud:responderSolicitud, onResponderRutina:responderRutina,
           onVolver:()=>setTab("home") }}/>}
@@ -3640,17 +3888,21 @@ export default function App(){
         {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests, sesionConjunta,
           peso:state.profile?.weightKg, sexo:state.profile?.sex, misBests:state.bests }}/>}
         {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank }}/>}
-        {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines,
-          cloudEnabled:cloud.cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos:refrescarAmigos, onQuitarAmigo:quitarAmigo, onAbrirAmigo:abrirAmigo,
-          quedadas, onRefrescarQuedadas:refrescarQuedadas }}/>}
+        {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines, setTab, quedadas }}/>}
+        {tab==="informe" && <InformeSemanalView {...{ state, log, measures, lunes:informeLunes, setLunes:setInformeLunes,
+          cloudEnabled:cloud.cloudEnabled, perfil, onVolver:()=>setTab(informeVuelve) }}/>}
+        {tab==="amigos" && <AmigosView {...{ perfil, cloudEnabled:cloud.cloudEnabled, setTab,
+          amigos, onRefrescarAmigos:refrescarAmigos, onQuitarAmigo:quitarAmigo, onAbrirAmigo:abrirAmigo,
+          quedadas, onRefrescarQuedadas:refrescarQuedadas, cargandoQuedadas,
+          onCargarTabla:(pe,a)=>cloud.leaderboard(pe, a) }}/>}
         {tab==="logros" && <AchievementsView {...{ state, level }}/>}
-        {tab==="dieta" && <DietView {...{ state, useCheat, mealPlan, saveMealPlan, excludes, setExcludes, setTab, customDiet, saveCustomDiet }}/>}
+        {tab==="dieta" && <DietView {...{ state, mealPlan, saveMealPlan, excludes, setExcludes, setTab, customDiet, saveCustomDiet }}/>}
         {tab==="editor" && <RoutineBuilderView {...{ draft:routineDraft, setDraft:setRoutineDraft, onSave:saveRoutineFromEditor, onCancel:closeEditor, isNew:draftIsNew }}/>}
         {tab==="ajustes" && <SettingsView {...{ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup,
-          cloudEnabled:cloud.cloudEnabled, perfil }}/>}
-        {tab==="cuenta" && <AccountView {...{ state, level, setTab, session:cloudSession, perfil,
+          setVacaciones, terminarVacaciones,
+          cloudEnabled:cloud.cloudEnabled, perfil, session:cloudSession,
           onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onVerificar:verificarCuenta,
-          onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle }}/>}
+          onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle, level }}/>}
       </div>
 
       {tab!=="workout" && tab!=="results" && tab!=="editor" && (
@@ -4182,10 +4434,13 @@ function cuandoTexto(iso){
 }
 
 /* Quedadas: proponer una y contestar a las de tus amigos. */
-/* Dos caras del mismo panel: en Inicio se ven las quedadas y se contesta
-   ("modo lista"); en RPGym es donde se proponen ("modo crear"). Separarlo
-   descarga Inicio, que es lo que se mira de pasada. */
-function QuedadasPanel({ quedadas, onRefrescar, cargando, modo="lista" }){
+/* Ver, contestar y proponer quedadas. Vive en la vista de Amigos, junto al
+   resto de lo social; los modos "lista" y "crear" siguen existiendo por si
+   alguna vez hace falta partirlo otra vez. */
+/* Tres modos: "lista" (solo ver y contestar), "crear" (solo proponer) y
+   "todo", que es el que usa la vista de Amigos: allí las quedadas se ven y se
+   proponen en el mismo sitio, que es como se piensan. */
+function QuedadasPanel({ quedadas, onRefrescar, cargando, modo="todo" }){
   const [creando, setCreando] = useState(false);
   const [f, setF] = useState(()=>{
     const d = new Date(); d.setDate(d.getDate()+1); d.setHours(19,0,0,0);
@@ -4230,31 +4485,33 @@ function QuedadasPanel({ quedadas, onRefrescar, cargando, modo="lista" }){
     if (r.ok) setGente(r.gente);
   }
 
-  const soloCrear = modo === "crear";
+  const verLista = modo !== "crear";
+  const verCrear  = modo !== "lista";
+  const soloCrear = !verLista;
 
   return (<>
     <div style={sectionTitle}>
       {soloCrear ? "PROPONER UNA QUEDADA"
         : `QUEDADAS ${quedadas.length > 0 ? `· ${quedadas.length}` : ""}`}
-      {!soloCrear && quedadas.some(q=>q.mi_respuesta==="invitado") && (
+      {verLista && quedadas.some(q=>q.mi_respuesta==="invitado") && (
         <span style={{ color:"var(--gold)" }}> · TE ESPERAN</span>
       )}
     </div>
     <div className="fh-card" style={{ padding:16 }}>
       {soloCrear && !creando && (
         <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
-          Di día, hora y sitio. Tus amigos lo ven en su Inicio y contestan: saber que va alguien más es lo que evita que os rajéis.
+          Di día, hora y sitio. Tus amigos lo ven y contestan: saber que va alguien más es lo que evita que os rajéis.
         </p>
       )}
-      {!soloCrear && !quedadas.length && (
+      {verLista && !quedadas.length && (
         <p style={{ fontSize:12.5, color:"var(--muted)", margin:0, lineHeight:1.5 }}>
-          No hay ninguna a la vista. Propón una desde la pestaña <b style={{ color:"var(--txt)" }}>RPGym</b>.
+          No hay ninguna a la vista. {verCrear ? "Propón una aquí abajo." : "Propón una desde Amigos."}
         </p>
       )}
 
-      {!soloCrear && cargando && !quedadas.length && <Empty text="Buscando quedadas…"/>}
+      {verLista && cargando && !quedadas.length && <Empty text="Buscando quedadas…"/>}
 
-      {!soloCrear && quedadas.map((q,i)=>{
+      {verLista && quedadas.map((q,i)=>{
         const voy = q.mi_respuesta === "voy";
         const no  = q.mi_respuesta === "no";
         // 'invitado' = te han llamado a ti por tu nombre y aún no has contestado.
@@ -4310,7 +4567,7 @@ function QuedadasPanel({ quedadas, onRefrescar, cargando, modo="lista" }){
         );
       })}
 
-      {soloCrear && (!creando ? (
+      {verCrear && (!creando ? (
         <button className="fh-btn" onClick={()=>{ setCreando(true); setMsg(null); }}
           style={{ width:"100%", background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
           <CalendarDays size={15} color="var(--gold)"/> Proponer una quedada
@@ -4388,7 +4645,7 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar, onAbrir }){
   }
 
   const puedeCompartir = typeof navigator !== "undefined" && !!navigator.share;
-  const invitacion = c => `¡Éntrale a RPGym conmigo! Instala la app y mete este código en Cuenta → Amigos:\n\n${c}\n\nAsí nos vemos en la clasificación.`;
+  const invitacion = c => `¡Éntrale a RPGym conmigo! Instala la app y mete este código en Amigos:\n\n${c}\n\nAsí nos vemos en la clasificación.`;
 
   async function invitar(){
     setModo("invitar"); setMsg(null);
@@ -4980,7 +5237,11 @@ function AmigoView({ amigo, misBests, customRoutines, onVolver, onToast }){
   );
 }
 
-function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle, arranque, onSinCuenta, onRestaurarTexto }){
+/* `arranque` = pantalla de entrada (antes de la app, sin flecha de volver).
+   `embebido` = va dentro de la pestaña Cuenta de Ajustes, que ya tiene su propia
+   cabecera: aquí sobran el título y la flecha, y dos flechas de volver seguidas
+   confundían sobre a dónde se vuelve. */
+function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle, arranque, onSinCuenta, onRestaurarTexto, embebido }){
   const [modo, setModo] = useState("entrar");          // entrar | registro
   const [f, setF] = useState({ email:"", password:"", handle:"", displayName:"" });
   const [msg, setMsg] = useState(null);
@@ -5025,7 +5286,7 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
 
   /* --- Registro hecho, falta el código del correo --- */
   if (!session && pidiendoCodigo) return (
-    <div className="fh-in">
+    <div className={embebido ? "" : "fh-in"}>
       <header style={{ padding:"22px 2px 8px", display:"flex", alignItems:"center", gap:10 }}>
         <button onClick={()=>{ setPidiendoCodigo(null); setMsg(null); }} aria-label="Volver" style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
         <div>
@@ -5070,7 +5331,8 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
 
   /* --- Sin sesión: entrar o registrarse --- */
   if (!session) return (
-    <div className="fh-in">
+    <div className={embebido ? "" : "fh-in"}>
+      {!embebido && (
       <header style={{ padding:"22px 2px 8px", display:"flex", alignItems:"center", gap:10 }}>
         {!arranque && (
           <button onClick={()=>setTab("home")} aria-label="Volver" style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
@@ -5082,6 +5344,7 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
           </p>
         </div>
       </header>
+      )}
 
       <div className="fh-card" style={{ padding:13, marginTop:8, display:"flex", gap:10, alignItems:"flex-start" }}>
         <Info size={16} color="var(--gold)" style={{ flexShrink:0, marginTop:1 }}/>
@@ -5102,13 +5365,13 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
           <div style={label}>Nombre de usuario</div>
           <input value={f.handle} maxLength={20} autoCapitalize="none" autoCorrect="off"
             onChange={e=>set({ handle:e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g,"") })}
-            placeholder="dani_melendo" style={{ textAlign:"left", fontFamily:"'JetBrains Mono',monospace" }}/>
+            placeholder="tu_apodo" style={{ textAlign:"left", fontFamily:"'JetBrains Mono',monospace" }}/>
           <div style={{ fontSize:11.5, color:"var(--faint)", margin:"7px 2px 0", lineHeight:1.45 }}>
-            Único para todo el grupo: es lo que evita que dos Danieles se confundan. 3-20 caracteres, sin espacios.
+            Único para todo el grupo: es lo que evita que dos personas con el mismo nombre se confundan. 3-20 caracteres, sin espacios.
           </div>
           <div style={{ ...label, marginTop:14 }}>Nombre que verán tus amigos</div>
           <input value={f.displayName} maxLength={40} onChange={e=>set({ displayName:e.target.value })}
-            placeholder={state.profile?.name || "Dani"} style={{ textAlign:"left" }}/>
+            placeholder={state.profile?.name || "Tu nombre"} style={{ textAlign:"left" }}/>
         </>)}
 
         <div style={{ ...label, marginTop:modo==="registro"?14:0 }}>Correo</div>
@@ -5189,7 +5452,8 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
   /* --- Con sesión: perfil + leaderboard --- */
   const yo = perfil?.handle;
   return (
-    <div className="fh-in">
+    <div className={embebido ? "" : "fh-in"}>
+      {!embebido && (
       <header style={{ padding:"22px 2px 8px", display:"flex", alignItems:"center", gap:10 }}>
         <button onClick={()=>setTab("home")} aria-label="Volver" style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
         <div style={{ flex:1, minWidth:0 }}>
@@ -5199,6 +5463,7 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
           </p>
         </div>
       </header>
+      )}
 
       {perfil && (
         <div className="fh-card fh-framed" style={{ padding:16, display:"flex", alignItems:"center", gap:14 }}>
@@ -5285,7 +5550,22 @@ function UpdateBanner({ info, onClose }){
   );
 }
 
-function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup, cloudEnabled, perfil }){
+/* Ajustes por PESTAÑAS. De un tirón eran diez secciones seguidas y llegar a
+   los recordatorios exigía bajar media pantalla. La cuenta es una pestaña más:
+   se configura una vez y no se vuelve a tocar, así que no merecía un botón fijo
+   en la cabecera de Inicio (ese sitio es ahora de los amigos).
+   La fila de pestañas se desliza en horizontal: en 480px no caben seis. */
+const SETTINGS_TABS = [
+  { id:"perfil",     label:"Perfil",     icon:User },
+  { id:"entreno",    label:"Entreno",    icon:Dumbbell },
+  { id:"avisos",     label:"Avisos",     icon:Bell },
+  { id:"cuenta",     label:"Cuenta",     icon:Users },
+  { id:"copias",     label:"Copias",     icon:Cloud },
+  { id:"privacidad", label:"Privacidad", icon:Lock },
+];
+
+function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup, setVacaciones, terminarVacaciones, cloudEnabled, perfil, session, level, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle }){
+  const [sec, setSec] = useState("perfil");
   const p = state.profile || {};
   const rem = state.reminders || { enabled:false, hour:19, minute:0, days:[1,3,5] };
   const sub = state.sub || { enabled:false, renewalDay:1, price:"" };
@@ -5296,6 +5576,8 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [restoreText, setRestoreText] = useState("");
   const [backupMsg, setBackupMsg] = useState(null);
+  const vacHoy = vacacionDeHoy(state.vacations);
+  const [vacF, setVacF] = useState(()=>({ from: todayISO(), to: addDaysISO(todayISO(), 7) }));
 
   async function makeBackup(){
     setRestoreOpen(false); setBackupMsg(null);
@@ -5348,10 +5630,24 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
         <button onClick={()=>setTab("home")} aria-label="Volver" style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)" }}><ChevronRight size={18} style={{ transform:"rotate(180deg)" }}/></button>
         <div>
           <h1 style={{ margin:0, fontSize:22 }}>Ajustes</h1>
-          <p style={{ margin:"3px 0 0", fontSize:13, color:"var(--muted)" }}>Perfil, experiencia, recordatorios y datos.</p>
+          <p style={{ margin:"3px 0 0", fontSize:13, color:"var(--muted)" }}>{SETTINGS_TABS.find(t=>t.id===sec)?.label}</p>
         </div>
       </header>
 
+      <div style={{ display:"flex", gap:7, overflowX:"auto", padding:"10px 2px 4px", scrollbarWidth:"none" }}>
+        {SETTINGS_TABS.map(t=>{
+          const on = sec === t.id; const I = t.icon;
+          return (
+            <button key={t.id} onClick={()=>setSec(t.id)} className="fh-btn" aria-pressed={on}
+              style={{ flexShrink:0, padding:"9px 13px", fontSize:12.5, whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:6,
+                       background:on?"var(--gold)":"var(--card)", color:on?"#0F131A":"var(--muted)", border:on?"none":"1px solid var(--line)" }}>
+              <I size={14}/> {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {sec==="perfil" && (<>
       {/* --- Apariencia --- */}
       <div style={sectionTitle}>APARIENCIA</div>
       <div className="fh-card" style={{ padding:16 }}>
@@ -5450,6 +5746,9 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
         </div>
       </>)}
 
+      </>)}
+
+      {sec==="entreno" && (<>
       {/* --- Días de entrenamiento (siempre editable; definen la racha) --- */}
       <div style={sectionTitle}>DÍAS DE ENTRENAMIENTO</div>
       <div className="fh-card" style={{ padding:16 }}>
@@ -5467,29 +5766,38 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
         </div>
       </div>
 
-      {/* --- Recordatorios --- */}
-      <div style={sectionTitle}>RECORDATORIOS DE ENTRENAMIENTO</div>
-      <div className="fh-card" style={{ padding:16 }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
-          <span style={{ display:"flex", alignItems:"center", gap:9, fontSize:14 }}><Bell size={16} color="var(--gold)"/> Avisarme para entrenar</span>
-          <ToggleSwitch on={rem.enabled} onClick={toggleReminders}/>
+      {/* --- Vacaciones --- */}
+      <div style={sectionTitle}>VACACIONES</div>
+      <div className="fh-card" style={{ padding:16, borderColor: vacHoy ? "var(--sky)" : undefined }}>
+        <div style={{ display:"flex", alignItems:"center", gap:9, fontSize:14, marginBottom:6 }}>
+          <Palmtree size={16} color="var(--sky)"/> {vacHoy ? "Estás de vacaciones" : "Me voy unos días"}
         </div>
-        {rem.enabled && (
-          <>
-            <div style={{ display:"flex", gap:10, marginTop:14 }}>
-              <div style={{ flex:1 }}><div style={label}>Hora</div>
-                <select value={rem.hour} onChange={e=>setReminders({ ...rem, hour:Number(e.target.value) })}>
-                  {Array.from({ length:24 }, (_,h)=><option key={h} value={h}>{String(h).padStart(2,"0")}</option>)}
-                </select></div>
-              <div style={{ flex:1 }}><div style={label}>Minuto</div>
-                <select value={rem.minute} onChange={e=>setReminders({ ...rem, minute:Number(e.target.value) })}>
-                  {[0,15,30,45].map(m=><option key={m} value={m}>{String(m).padStart(2,"0")}</option>)}
-                </select></div>
-            </div>
-            <div style={{ fontSize:11.5, color:"var(--faint)", marginTop:12, lineHeight:1.45 }}>Te avisaremos a esta hora los días marcados arriba en <b style={{ color:"var(--muted)" }}>Días de entrenamiento</b>.</div>
-          </>
-        )}
-        <div style={{ marginTop:14, fontSize:11.5, color:"var(--faint)", lineHeight:1.45 }}>Los recordatorios en segundo plano solo funcionan en la app instalada (APK), no en el navegador.</div>
+        {vacHoy ? (<>
+          <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
+            Hasta el <b style={{ color:"var(--txt)" }}>{parseISO(vacHoy.to).getDate()} de {MONTHS_ES[parseISO(vacHoy.to).getMonth()].toLowerCase()}</b>.
+            Esos días no cuentan como sesiones perdidas, la racha no se rompe y no se te avisa de entrenar.
+          </p>
+          <button className="fh-btn" onClick={terminarVacaciones}
+            style={{ width:"100%", background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:12, fontSize:13, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+            <Flame size={15} color="var(--ember)"/> He vuelto, retomar el plan
+          </button>
+        </>) : (<>
+          <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
+            Un viaje, una lesión o una semana imposible. Esos días <b style={{ color:"var(--txt)" }}>no se prevé ninguna sesión</b>:
+            la racha te espera intacta y los recordatorios se callan. Volver con ganas vale más que arrastrar una racha rota.
+          </p>
+          <div style={{ display:"flex", gap:10 }}>
+            <div style={{ flex:1 }}><div style={label}>Desde</div>
+              <input type="date" value={vacF.from} onChange={e=>setVacF(v=>({ ...v, from:e.target.value }))}/></div>
+            <div style={{ flex:1 }}><div style={label}>Hasta</div>
+              <input type="date" value={vacF.to} min={vacF.from} onChange={e=>setVacF(v=>({ ...v, to:e.target.value }))}/></div>
+          </div>
+          <button className="fh-btn" onClick={()=>setVacaciones({ from:vacF.from, to:vacF.to })}
+            disabled={!vacF.from || !vacF.to || vacF.to < vacF.from}
+            style={{ width:"100%", marginTop:12, background:"var(--sky)", padding:12, fontSize:13, opacity:(!vacF.from||!vacF.to||vacF.to<vacF.from)?.6:1, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+            <Palmtree size={15}/> Marcar estos días como vacaciones
+          </button>
+        </>)}
       </div>
 
       {/* --- Suscripción del gym --- */}
@@ -5518,6 +5826,55 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
         )}
       </div>
 
+      </>)}
+
+      {sec==="avisos" && (<>
+      {/* --- Recordatorios --- */}
+      <div style={sectionTitle}>RECORDATORIOS DE ENTRENAMIENTO</div>
+      <div className="fh-card" style={{ padding:16 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+          <span style={{ display:"flex", alignItems:"center", gap:9, fontSize:14 }}><Bell size={16} color="var(--gold)"/> Avisarme para entrenar</span>
+          <ToggleSwitch on={rem.enabled} onClick={toggleReminders}/>
+        </div>
+        {rem.enabled && (
+          <>
+            <div style={{ display:"flex", gap:10, marginTop:14 }}>
+              <div style={{ flex:1 }}><div style={label}>Hora</div>
+                <select value={rem.hour} onChange={e=>setReminders({ ...rem, hour:Number(e.target.value) })}>
+                  {Array.from({ length:24 }, (_,h)=><option key={h} value={h}>{String(h).padStart(2,"0")}</option>)}
+                </select></div>
+              <div style={{ flex:1 }}><div style={label}>Minuto</div>
+                <select value={rem.minute} onChange={e=>setReminders({ ...rem, minute:Number(e.target.value) })}>
+                  {[0,15,30,45].map(m=><option key={m} value={m}>{String(m).padStart(2,"0")}</option>)}
+                </select></div>
+            </div>
+            <div style={{ fontSize:11.5, color:"var(--faint)", marginTop:12, lineHeight:1.45 }}>Te avisaremos a esta hora los días marcados arriba en <b style={{ color:"var(--muted)" }}>Días de entrenamiento</b>.</div>
+          </>
+        )}
+        <div style={{ marginTop:14, fontSize:11.5, color:"var(--faint)", lineHeight:1.45 }}>Los recordatorios en segundo plano solo funcionan en la app instalada (APK), no en el navegador.</div>
+      </div>
+
+      </>)}
+
+      {sec==="cuenta" && (<>
+      {/* --- Cuenta --- */}
+      {!cloudEnabled ? (
+        <div className="fh-card" style={{ padding:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:9, fontSize:14, marginBottom:6 }}><Users size={16} color="var(--faint)"/> Sin conexión configurada</div>
+          <p style={{ fontSize:12.5, color:"var(--muted)", margin:0, lineHeight:1.5 }}>
+            Esta copia de RPGym va 100% en local: no hay cuenta que crear ni nada que subir.
+          </p>
+        </div>
+      ) : (
+        /* La misma pantalla de siempre, sin su cabecera: aquí ya estás dentro
+           de Ajustes y una segunda cabecera con su flecha de volver confundía. */
+        <AccountView {...{ state, level, setTab, session, perfil, onEntrar, onRegistrar,
+          onVerificar, onSalir, onCambiarHandle, embebido:true }}/>
+      )}
+
+      </>)}
+
+      {sec==="copias" && (<>
       {/* --- Copia de seguridad --- */}
       <div style={sectionTitle}>COPIA DE SEGURIDAD</div>
       <div className="fh-card" style={{ padding:16 }}>
@@ -5578,6 +5935,9 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
         )}
       </div>
 
+      </>)}
+
+      {sec==="privacidad" && (<>
       {/* --- Privacidad --- */}
       <div style={sectionTitle}>PRIVACIDAD</div>
       <div className="fh-card" style={{ padding:16 }}>
@@ -5608,6 +5968,8 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
         )}
       </div>
 
+      </>)}
+
       <div style={{ height:24 }}/>
     </div>
   );
@@ -5625,18 +5987,19 @@ function ToggleSwitch({ on, onClick }){
    INICIO
    ========================================================================= */
 
-function StreakCard({ log, plannedDays, bestStreak, setTab }){
+function StreakCard({ log, plannedDays, bestStreak, setTab, opts = {} }){
   const planned = (plannedDays && plannedDays.length) ? plannedDays : DEFAULT_TRAIN_DAYS;
-  const streak = habitStreak(log, planned);
+  const streak = habitStreak(log, planned, opts);
   const record = Math.max(bestStreak||0, streak);
   const trained = new Set((log||[]).map(r=>r.date));
   const today = todayISO();
   const mon = mondayOf(today);
   const labels = ["L","M","X","J","V","S","D"];
-  const semana = resumenSemana(log, planned, mon);
+  const semana = resumenSemana(log, planned, mon, opts);
   const days = Array.from({ length:7 }, (_,i)=>{
     const iso = addDaysISO(mon, i);
-    const isPlanned = planned.includes(weekdayOfISO(iso));
+    // Un día de vacaciones no cuenta como previsto: se pinta como descanso.
+    const isPlanned = planned.includes(weekdayOfISO(iso)) && !enVacacion(opts.vacaciones, iso);
     const isTrained = trained.has(iso);
     return { iso, label:labels[i], isPlanned, isTrained,
       isToday:iso===today, isFuture:iso>today,
@@ -5695,6 +6058,8 @@ function StreakCard({ log, plannedDays, bestStreak, setTab }){
         ) : semana.faltan > 0 && semana.recuperable ? (
           <>Te {semana.faltan===1?"falta":"faltan"} <b style={{ color:"var(--gold)" }}>{semana.faltan} {semana.faltan===1?"sesión":"sesiones"}</b> esta semana.
           {" "}<b style={{ color:"var(--txt)" }}>Cualquier día vale</b>: si te saltaste uno, recupéralo otro y la racha sigue intacta.</>
+        ) : semana.previstos === 0 ? (
+          <>Esta semana no hay nada previsto. Descansa: la racha sigue en pie.</>
         ) : (
           <>Ya no da tiempo a las {semana.previstos} de esta semana. No pasa nada: la semana que viene empieza de cero.</>
         )}
@@ -5758,7 +6123,7 @@ function CyclePhaseCard({ state, setTab }){
   );
 }
 
-function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, quedadas, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, onRefrescarQuedadas, cargandoQuedadas, onCargarTabla, copiaNube, onRestaurarNube, onDescartarCopia, pendientes, amigos }){
+function HomeView({ state, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, copiaNube, onRestaurarNube, onDescartarCopia, pendientes }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const RankIcon=rank.icon;
@@ -5766,6 +6131,8 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
   const last=log.slice(-6).map((s,i)=>({ i, v:seriesDe(s) }));
   const week=weeksBetween(state.startDate, todayISO())+1;
   const greeting=useMemo(()=>greetingFor(state.profile?.name), [state.profile?.name]);
+  const opts=semanaOpts(state);
+  const deVacaciones=vacacionDeHoy(state.vacations);
 
   return (
     <div className="fh-in">
@@ -5775,7 +6142,7 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
           <h1 style={{ margin:"3px 0 0", fontSize:21, lineHeight:1.2 }}>{greeting}</h1>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-          <div className="fh-chip" style={{ background:"rgba(232,176,75,.14)", color:"var(--gold)", display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap", flexShrink:0 }} title="Días entrenados seguidos. Solo se corta si cierras una semana con menos sesiones de las previstas: el día concreto da igual."><Flame size={13}/> {habitStreak(log, state.reminders?.days)} d</div>
+          <div className="fh-chip" style={{ background:"rgba(232,176,75,.14)", color:"var(--gold)", display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap", flexShrink:0 }} title="Días entrenados seguidos. Solo se corta si cierras una semana con menos sesiones de las previstas: el día concreto da igual."><Flame size={13}/> {habitStreak(log, state.reminders?.days, opts)} d</div>
           {cloudEnabled && perfil && (
             <button onClick={()=>setTab("avisos")} aria-label={pendientes ? `Avisos: ${pendientes} sin responder` : "Avisos"}
               style={{ background:"var(--card)", border:`1px solid ${pendientes?"var(--gold)":"var(--line)"}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:pendientes?"var(--gold)":"var(--muted)", flexShrink:0, position:"relative" }}>
@@ -5787,14 +6154,27 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
               )}
             </button>
           )}
+          {/* Aquí estaba el acceso a la cuenta, que ahora vive dentro de Ajustes:
+              lo que se mira a diario es la gente, no el correo con el que entras. */}
           {cloudEnabled && (
-            <button onClick={()=>setTab("cuenta")} aria-label="Tu cuenta" style={{ background:"var(--card)", border:`1px solid ${perfil?"var(--gold)":"var(--line)"}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:perfil?"var(--gold)":"var(--muted)", flexShrink:0 }}><User size={17}/></button>
+            <button onClick={()=>setTab("amigos")} aria-label="Amigos" style={{ background:"var(--card)", border:`1px solid ${perfil?"var(--gold)":"var(--line)"}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:perfil?"var(--gold)":"var(--muted)", flexShrink:0 }}><Users size={17}/></button>
           )}
           <button onClick={()=>setTab("ajustes")} aria-label="Ajustes" style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><Settings size={17}/></button>
         </div>
       </header>
 
       <UpdateBanner info={updateInfo} onClose={onCloseUpdate}/>
+
+      {deVacaciones && (
+        <div className="fh-card" style={{ padding:14, margin:"0 0 12px", borderColor:"var(--sky)", display:"flex", alignItems:"center", gap:11 }}>
+          <Palmtree size={18} color="var(--sky)" style={{ flexShrink:0 }}/>
+          <div style={{ flex:1, minWidth:0, fontSize:12.5, color:"var(--txt)", lineHeight:1.45 }}>
+            Estás de vacaciones hasta el <b>{parseISO(deVacaciones.to).getDate()} de {MONTHS_ES[parseISO(deVacaciones.to).getMonth()].toLowerCase()}</b>. La racha te espera.
+          </div>
+          <button className="fh-btn" onClick={terminarVacaciones}
+            style={{ flexShrink:0, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:"8px 12px", fontSize:12 }}>Volver ya</button>
+        </div>
+      )}
 
       {state.sub?.enabled && (()=>{
         const d = daysUntil(nextRenewalDate(state.sub.renewalDay));
@@ -5848,11 +6228,9 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
       {cloudEnabled && perfil && <EntrenandoAhora sesiones={entrenando} onUnirme={onUnirme} setTab={setTab}/>}
       {cloudEnabled && perfil && <MeHanSuperado filas={superadoPor} setTab={setTab}/>}
       {cloudEnabled && perfil && <NovedadesCard novedades={novedades} onCerrar={onCerrarNovedades} setTab={setTab}/>}
-      {cloudEnabled && perfil && <QuedadasPanel modo="lista" quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={cargandoQuedadas}/>}
-      {cloudEnabled && perfil && <ClasificacionCard perfil={perfil} cargar={onCargarTabla} señal={amigos.length}/>}
 
       {/* Racha (respeta descansos) */}
-      <StreakCard log={log} plannedDays={state.reminders?.days} bestStreak={state.bestStreak} setTab={setTab}/>
+      <StreakCard log={log} plannedDays={state.reminders?.days} bestStreak={state.bestStreak} setTab={setTab} opts={opts}/>
 
       {/* Misiones de la semana */}
       <MissionsCard state={state} log={log}/>
@@ -5881,6 +6259,11 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
           <div style={{ display:"flex", alignItems:"center", gap:8 }}><Target size={16} color="var(--jade)"/><span className="disp" style={{ fontWeight:600, fontSize:15 }}>Objetivo semanal</span></div>
           <span style={{ fontSize:12, color:"var(--muted)" }}>{routine?.name}</span>
         </div>
+        {goal === 0 ? (
+          <div style={{ fontSize:12.5, color:"var(--muted)", lineHeight:1.5 }}>
+            Esta semana no tienes ninguna sesión prevista{deVacaciones ? " (estás de vacaciones)" : ""}. Lo que entrenes va de propina.
+          </div>
+        ) : (
         <div style={{ display:"flex", gap:7 }}>
           {Array.from({length:goal}).map((_,i)=>(
             <div key={i} style={{ flex:1, height:34, borderRadius:9, display:"flex", alignItems:"center", justifyContent:"center",
@@ -5889,11 +6272,13 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
             </div>
           ))}
         </div>
+        )}
         <div style={{ fontSize:12, color:"var(--muted)", marginTop:10 }}>
           {(() => {
             const faltan = Math.max(0, goal - state.weeklyCount);
             if(state.weekGoalMet) return "¡Semana completada! Sigue sumando o descansa sin culpa.";
-            return `Te ${faltan===1?"falta":"faltan"} ${faltan} ${faltan===1?"sesión":"sesiones"} para +200 XP y un cheat day. El día lo eliges tú.`;
+            if(goal === 0) return "Vuelve cuando quieras: la racha no se rompe.";
+            return `Te ${faltan===1?"falta":"faltan"} ${faltan} ${faltan===1?"sesión":"sesiones"} para +200 XP y un día de descanso. El día lo eliges tú.`;
           })()}
         </div>
         {/* Qué días has marcado tú: el objetivo sale de aquí, no de la rutina. */}
@@ -5905,13 +6290,21 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
         </div>
       </div>
 
-      {/* Cheat + mini gráfica */}
+      {/* Días de descanso + mini gráfica */}
+      {(() => {
+        const fichas = state.restTokens || 0;
+        const gastado = !!(state.restWeeks||{})[mondayOf(todayISO())];
+        return (
       <div style={{ display:"flex", gap:12, marginTop:12 }}>
-        <button className="fh-card" onClick={useCheat} disabled={state.cheatTokens<=0}
-          style={{ flex:1, padding:16, textAlign:"left", cursor:state.cheatTokens>0?"pointer":"default", opacity:state.cheatTokens>0?1:.55 }}>
-          <Cookie size={18} color="var(--ember)"/>
-          <div className="disp" style={{ fontSize:26, fontWeight:700, marginTop:6 }}>{state.cheatTokens}</div>
-          <div style={{ fontSize:11, color:"var(--muted)" }}>cheat days {state.cheatTokens>0?"· toca para canjear":"· gánalos"}</div>
+        <button className="fh-card" onClick={useRest} disabled={fichas<=0 || gastado}
+          style={{ flex:1, padding:16, textAlign:"left", cursor:(fichas>0&&!gastado)?"pointer":"default", opacity:(fichas>0&&!gastado)?1:.55 }}>
+          <BedDouble size={18} color="var(--sky)"/>
+          <div className="disp" style={{ fontSize:26, fontWeight:700, marginTop:6 }}>{fichas}</div>
+          <div style={{ fontSize:11, color:"var(--muted)", lineHeight:1.35 }}>
+            {gastado ? "días de descanso · ya usaste uno esta semana"
+              : fichas>0 ? "días de descanso · resta una sesión a esta semana"
+              : "días de descanso · gánalos cumpliendo la semana"}
+          </div>
         </button>
         <div className="fh-card" style={{ flex:1, padding:16 }}>
           <TrendingUp size={18} color="var(--gold)"/>
@@ -5922,6 +6315,8 @@ function HomeView({ state, level, rank, log, useCheat, setTab, setActiveRoutine,
           <div style={{ fontSize:11, color:"var(--muted)" }}>series recientes</div>
         </div>
       </div>
+        );
+      })()}
     </div>
   );
 }
@@ -5964,9 +6359,9 @@ function ShareRoutinePanel({ routine, onClose, publicada, onPublicar, setTab }){
         </div>
 
         <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:11, paddingTop:11, borderTop:"1px solid var(--line)", lineHeight:1.5 }}>
-          ¿Se la quieres mandar a alguien en concreto? Entra en <b style={{ color:"var(--txt)" }}>RPGym → Amigos</b>, toca a quien sea y usa <b style={{ color:"var(--txt)" }}>Pasarle una rutina</b>. Le llega a sus avisos y decide.
+          ¿Se la quieres mandar a alguien en concreto? Entra en <b style={{ color:"var(--txt)" }}>Amigos</b>, toca a quien sea y usa <b style={{ color:"var(--txt)" }}>Pasarle una rutina</b>. Le llega a sus avisos y decide.
         </div>
-        <button className="fh-btn" onClick={()=>setTab("progreso")}
+        <button className="fh-btn" onClick={()=>setTab("amigos")}
           style={{ width:"100%", marginTop:10, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:10, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
           <Users size={14} color="var(--gold)"/> Ir a mis amigos
         </button>
@@ -7137,9 +7532,9 @@ function ResultsView({ results, setTab, level, rank }){
         </div>
       )}
 
-      {r.cheatEarned && (
+      {r.restEarned && (
         <div className="fh-card" style={{ padding:14, marginBottom:12, display:"flex", alignItems:"center", gap:10, borderColor:"var(--ember)" }}>
-          <Cookie size={20} color="var(--ember)"/><div style={{ fontSize:13 }}>¡Objetivo semanal cumplido! Has ganado <b style={{ color:"var(--ember)" }}>1 cheat day</b>.</div>
+          <BedDouble size={20} color="var(--sky)"/><div style={{ fontSize:13 }}>¡Objetivo semanal cumplido! Has ganado <b style={{ color:"var(--sky)" }}>1 día de descanso</b>.</div>
         </div>
       )}
 
@@ -7337,7 +7732,7 @@ function CycleCalendar({ cycle }){
   );
 }
 
-function ProgressView({ state, log, measures, addMeasurement, customRoutines, cloudEnabled, perfil, setTab, amigos, onRefrescarAmigos, onQuitarAmigo, onAbrirAmigo, quedadas, onRefrescarQuedadas }){
+function ProgressView({ state, log, measures, addMeasurement, customRoutines, setTab, quedadas }){
   const [form, setForm] = useState({ weightKg:"", chest:"", waist:"", arm:"" });
   const volData=log.slice(-12).map((s,i)=>({ name:`S${i+1}`, v:seriesDe(s) }));
   const weightData=measures.map(m=>({ name:m.date.slice(5), v:m.weightKg }));
@@ -7361,23 +7756,9 @@ function ProgressView({ state, log, measures, addMeasurement, customRoutines, cl
       <header style={{ padding:"22px 2px 8px", display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10 }}>
         <div style={{ flex:1, minWidth:0 }}>
           <h1 style={{ margin:0, fontSize:22 }}>RPGym</h1>
-          <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Tu progreso y tu gente.</p>
+          <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Tu progreso, mes a mes.</p>
         </div>
-        {cloudEnabled && (
-          <button onClick={()=>setTab("cuenta")} aria-label="Cuenta"
-            style={{ background:"var(--card)", border:`1px solid ${perfil?"var(--gold)":"var(--line)"}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:perfil?"var(--gold)":"var(--muted)", flexShrink:0 }}>
-            <User size={17}/>
-          </button>
-        )}
       </header>
-
-      {cloudEnabled && perfil && (
-        <>
-          <AmigosPanel amigos={amigos} onRefrescarAmigos={onRefrescarAmigos} onQuitar={onQuitarAmigo} onAbrir={onAbrirAmigo}/>
-          <QuedadasPanel modo="crear" quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={false}/>
-          <div style={{ fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" }}>TU PROGRESO</div>
-        </>
-      )}
 
       <WorkoutCalendar log={log} sub={state.sub} quedadas={quedadas}/>
 
@@ -7471,10 +7852,391 @@ function ProgressView({ state, log, measures, addMeasurement, customRoutines, cl
 }
 
 /* =========================================================================
+   INFORME SEMANAL
+   ========================================================================= */
+
+/* El repaso de una semana entera: lo que entrenaste, lo que rompiste, lo que
+   desbloqueaste y qué hizo tu gente mientras tanto. Se puede pasear hacia atrás
+   semana a semana, porque todo se recalcula del historial (ver `informeSemanal`).
+
+   No tiene pestaña propia: SALE SOLO la primera vez que abres la app con la
+   semana ya cerrada (en la práctica, el lunes) y después se consulta desde la
+   ficha de personaje. Se sale con el botón de volver: si se lo quitas, se queda
+   sin salida. */
+/* Piezas sueltas del informe. Van fuera del componente a propósito: definidas
+   dentro, React las ve como un tipo nuevo en cada render y desmonta y vuelve a
+   montar el bloque entero. */
+const InformeStat = ({ icon:I, color, valor, sub }) => (
+  <div className="fh-card" style={{ flex:1, padding:"13px 10px", textAlign:"center", minWidth:0 }}>
+    <I size={16} color={color}/>
+    <div className="disp" style={{ fontSize:22, fontWeight:700, marginTop:5, lineHeight:1 }}>{valor}</div>
+    <div style={{ fontSize:10.5, color:"var(--muted)", marginTop:4, lineHeight:1.3 }}>{sub}</div>
+  </div>
+);
+const InformeTitulo = ({ icon:I, color, children, nota }) => (
+  <div style={{ marginBottom:10 }}>
+    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+      <I size={16} color={color}/><span className="disp" style={{ fontWeight:600, fontSize:15 }}>{children}</span>
+    </div>
+    {nota && <div style={{ fontSize:11, color:"var(--faint)", marginTop:4, lineHeight:1.45 }}>{nota}</div>}
+  </div>
+);
+
+function InformeSemanalView({ state, log, measures, lunes, setLunes, cloudEnabled, perfil, onVolver }){
+  const planned = plannedDaysOf(state);
+  const inf = useMemo(
+    ()=>informeSemanal({ log, state, measures, lunesISO:lunes, plannedDays:planned }),
+    [log, state, measures, lunes, planned]);
+  const titular = titularSemana(inf);
+  const nivel = levelFromXp(state.xp), rango = rankFor(nivel);
+  const RankIcon = rango.icon;
+  const xpInto = state.xp - cumXpForLevel(nivel), xpNeed = cumXpForLevel(nivel+1) - cumXpForLevel(nivel);
+
+  /* Hasta dónde se puede retroceder: la primera semana con historial. Hacia
+     delante, nunca más allá de la semana en curso. */
+  const lunesHoy = mondayOf(todayISO());
+  const primerDia = (log||[]).reduce((a,r)=>(!a || r.date<a) ? r.date : a, null);
+  const lunesMin = mondayOf(primerDia || state.startDate || todayISO());
+  const puedeAtras = lunes > lunesMin;
+  const puedeAlante = lunes < lunesHoy;
+
+  /* Actividad del círculo. Va aparte de todo lo demás a propósito: sin cuenta,
+     sin red o con la nube caída el informe sale igual, solo sin esta sección. */
+  const [circulo, setCirculo] = useState(null);      // null mientras carga
+  const [falloCirculo, setFalloCirculo] = useState(false);
+  useEffect(()=>{
+    if(!cloudEnabled || !perfil){ setCirculo({ lista:[], quedadas:[], nuevos:[] }); return; }
+    let vivo = true; setCirculo(null); setFalloCirculo(false);
+    (async()=>{
+      /* Aquí SÍ toca `toISOString()`: la vista `novedades` guarda instantes
+         (timestamptz), no días, así que hay que pasarle la medianoche local
+         convertida a UTC. Lo que no se puede es sacar un día de vuelta de ahí. */
+      const desde = new Date(inf.lunes + "T00:00:00").toISOString();
+      const hasta = new Date(addDaysISO(inf.domingo,1) + "T00:00:00").toISOString();
+      const r = await cloud.novedades(desde, { hasta, limite:300 });
+      if(!vivo) return;
+      if(r.ok) setCirculo(resumirCirculo(r.novedades));
+      else { setFalloCirculo(true); setCirculo({ lista:[], quedadas:[], nuevos:[] }); }
+    })();
+    return ()=>{ vivo = false; };
+  }, [inf.lunes, inf.domingo, cloudEnabled, perfil]);
+
+  const maxSets = Math.max(1, ...inf.porGrupo.map(g=>g.sets));
+  const labels = ["L","M","X","J","V","S","D"];
+  const entrenados = new Set(inf.sesiones.map(r=>r.date));
+  const hoy = todayISO();
+
+  return (
+    <div className="fh-in">
+      <header style={{ padding:"22px 2px 12px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={onVolver} aria-label="Volver"
+          style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
+        <div style={{ minWidth:0 }}>
+          <h1 style={{ margin:0, fontSize:22 }}>Informe semanal</h1>
+          <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Todo lo que pasó, en una página.</p>
+        </div>
+      </header>
+
+      {/* Qué semana se está mirando */}
+      <div className="fh-card" style={{ padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+        <button onClick={()=>puedeAtras && setLunes(addDaysISO(lunes,-7))} disabled={!puedeAtras} aria-label="Semana anterior"
+          style={{ background:"none", border:"none", padding:6, cursor:puedeAtras?"pointer":"default", color:puedeAtras?"var(--muted)":"var(--line2)" }}><ChevronLeft size={18}/></button>
+        <div style={{ textAlign:"center", minWidth:0 }}>
+          <div className="disp" style={{ fontWeight:600, fontSize:14.5 }}>{inf.rango}</div>
+          <div style={{ fontSize:10.5, color:"var(--faint)", marginTop:2 }}>{inf.enCurso ? "Semana en curso · aún puede cambiar" : "Semana cerrada"}</div>
+        </div>
+        <button onClick={()=>puedeAlante && setLunes(addDaysISO(lunes,7))} disabled={!puedeAlante} aria-label="Semana siguiente"
+          style={{ background:"none", border:"none", padding:6, cursor:puedeAlante?"pointer":"default", color:puedeAlante?"var(--muted)":"var(--line2)" }}><ChevronRight size={18}/></button>
+      </div>
+
+      {/* Titular */}
+      <div className="fh-card fh-framed" style={{ padding:16, marginTop:12, borderColor:titular.color }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+          <FileText size={16} color={titular.color}/>
+          <span className="disp" style={{ fontWeight:700, fontSize:15 }}>{inf.resumen.hechos} de {inf.resumen.previstos} sesiones</span>
+        </div>
+        <p style={{ margin:0, fontSize:13, color:"var(--txt)", lineHeight:1.55 }}>{titular.txt}</p>
+        {inf.resumen.perdonados > 0 && (
+          <div style={{ display:"flex", alignItems:"center", gap:7, marginTop:9, fontSize:11.5, color:"var(--sky)" }}>
+            <BedDouble size={13}/> Canjeaste un día de descanso: esa semana pedía una sesión menos.
+          </div>
+        )}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:5, marginTop:13 }}>
+          {Array.from({ length:7 }, (_,i)=>{
+            const iso = addDaysISO(inf.lunes, i);
+            const fue = entrenados.has(iso);
+            const previsto = planned.includes(weekdayOfISO(iso)) && !enVacacion(state.vacations, iso);
+            const futuro = iso > hoy;
+            let bg="transparent", brd="1px solid var(--line)", col="var(--faint)";
+            /* Mismos colores que la tarjeta de racha de Inicio: si aquí
+               significaran otra cosa, habria que aprenderse dos leyendas. */
+            if(fue){ bg = previsto ? "var(--gold)" : "var(--jade)"; brd="none"; col="#0F131A"; }
+            else if(!previsto){ bg="var(--bg2)"; }
+            else if(iso === hoy){ brd="1px solid var(--gold)"; col="var(--gold)"; }   // hoy, aún pendiente
+            else if(futuro){ brd="1px dashed var(--line2)"; }
+            else if(inf.resumen.cumplida || inf.resumen.recuperable){ brd="1px dashed var(--jade)"; col="var(--jade)"; }
+            else { brd="1px solid var(--crimson)"; col="var(--crimson)"; }
+            return (
+              <div key={iso} style={{ textAlign:"center" }}>
+                <div style={{ fontSize:9.5, color:"var(--faint)", marginBottom:3, fontWeight:600 }}>{labels[i]}</div>
+                <div style={{ aspectRatio:"1", borderRadius:8, background:bg, border:brd, display:"flex", alignItems:"center", justifyContent:"center", color:col }}>
+                  {fue ? (previsto ? <Check size={14}/> : <Sparkles size={13}/>)
+                    : !previsto ? <Moon size={11}/>
+                    : (previsto && iso === hoy) ? <Flame size={12}/>
+                    : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Los cuatro números de la semana */}
+      <div style={{ display:"flex", gap:8, marginTop:12 }}>
+        <InformeStat icon={Dumbbell} color="var(--gold)"  valor={inf.sesiones.length} sub={inf.sesiones.length===1?"sesión":"sesiones"}/>
+        <InformeStat icon={Target}   color="var(--jade)"  valor={inf.series}          sub="series"/>
+        <InformeStat icon={Crown}    color="var(--ember)" valor={inf.records.length + inf.cardio.length} sub={(inf.records.length+inf.cardio.length)===1?"récord":"récords"}/>
+        <InformeStat icon={Zap}      color="var(--arcane)" valor={inf.xp}             sub="XP"/>
+      </div>
+
+      {/* Sesión a sesión */}
+      <div className="fh-card" style={{ padding:16, marginTop:12 }}>
+        <InformeTitulo icon={ClipboardList} color="var(--gold)" nota="Lo que hiciste cada día, en el orden en que lo hiciste.">Tus sesiones</InformeTitulo>
+        {inf.sesiones.length ? (
+          <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+            {inf.sesiones.map((r,i)=>{
+              const d = parseISO(r.date);
+              const extra = !planned.includes(weekdayOfISO(r.date));
+              return (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:11 }}>
+                  <div style={{ width:38, flexShrink:0, textAlign:"center", padding:"5px 0", borderRadius:9, background:"var(--bg2)", border:"1px solid var(--line)" }}>
+                    <div style={{ fontSize:9.5, color:"var(--faint)", fontWeight:600 }}>{labels[(d.getDay()+6)%7]}</div>
+                    <div className="disp" style={{ fontSize:14, fontWeight:700 }}>{d.getDate()}</div>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:"var(--txt)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.dayName}</div>
+                    <div style={{ fontSize:11, color:"var(--faint)", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.routineName}</div>
+                  </div>
+                  {extra && <span className="fh-chip" style={{ background:"rgba(63,185,132,.14)", color:"var(--jade)", flexShrink:0 }}>EXTRA</span>}
+                  <span className="mono" style={{ fontSize:11, color:"var(--muted)", flexShrink:0 }}>{seriesDe(r)} series</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : <Empty text={inf.enCurso ? "Aún no has entrenado esta semana" : "Ninguna sesión esa semana"}/>}
+      </div>
+
+      {/* Reparto del trabajo */}
+      {inf.porGrupo.length > 0 && (
+        <div className="fh-card" style={{ padding:16, marginTop:12 }}>
+          <InformeTitulo icon={Swords} color="var(--mana)" nota={`${inf.ejercicios.length} ejercicio${inf.ejercicios.length===1?"":"s"} distinto${inf.ejercicios.length===1?"":"s"}. Series por atributo: así se reparte lo que has trabajado.`}>Qué entrenaste</InformeTitulo>
+          <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+            {inf.porGrupo.map(g=>{ const I=g.icon; return (
+              <div key={g.id} style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <I size={14} color={g.color} style={{ flexShrink:0 }}/>
+                <span style={{ fontSize:12.5, color:"var(--txt)", width:66, flexShrink:0 }}>{g.id}</span>
+                <div style={{ flex:1, height:8, background:"var(--line)", borderRadius:99, overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:`${(g.sets/maxSets)*100}%`, background:g.color, borderRadius:99 }}/>
+                </div>
+                <span className="mono" style={{ fontSize:11, color:"var(--muted)", width:26, textAlign:"right", flexShrink:0 }}>{g.sets}</span>
+              </div>
+            ); })}
+          </div>
+        </div>
+      )}
+
+      {/* Récords */}
+      {(inf.records.length > 0 || inf.cardio.length > 0) && (
+        <div className="fh-card" style={{ padding:16, marginTop:12, borderColor:"var(--gold)" }}>
+          <InformeTitulo icon={Crown} color="var(--gold)" nota="Marcas que superaste esa semana. Aquí los kilos sí significan algo.">Récords de la semana</InformeTitulo>
+          <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+            {inf.records.map(r=>(
+              <div key={r.name} style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <TrendingUp size={14} color="var(--gold)" style={{ flexShrink:0 }}/>
+                <span style={{ flex:1, minWidth:0, fontSize:12.5, color:"var(--txt)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.name}</span>
+                <span className="mono" style={{ fontSize:11.5, color:"var(--faint)", flexShrink:0 }}>{numES(r.prev)} →</span>
+                <span className="mono" style={{ fontSize:12.5, color:"var(--gold)", fontWeight:700, flexShrink:0 }}>{numES(r.now)} {r.unit}</span>
+              </div>
+            ))}
+            {inf.cardio.map(c=>(
+              <div key={c.name} style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <Heart size={14} color="#E56B9F" style={{ flexShrink:0 }}/>
+                <span style={{ flex:1, minWidth:0, fontSize:12.5, color:"var(--txt)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</span>
+                <span className="mono" style={{ fontSize:11.5, color:"var(--muted)", flexShrink:0 }}>{cardioRecordText(c.rec)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Logros */}
+      {inf.logros.length > 0 && (
+        <div className="fh-card" style={{ padding:16, marginTop:12 }}>
+          <InformeTitulo icon={Trophy} color="var(--arcane)">Logros desbloqueados</InformeTitulo>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {inf.logros.map(a=>{ const I=a.icon; return (
+              <div key={a.id} style={{ display:"flex", alignItems:"center", gap:11 }}>
+                <div style={{ width:34, height:34, borderRadius:10, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--gold)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <I size={15} color="var(--gold)"/>
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:600 }}>{a.title}</div>
+                  <div style={{ fontSize:11, color:"var(--faint)", marginTop:1 }}>{a.desc}</div>
+                </div>
+                <span className="mono" style={{ fontSize:11, color:"var(--gold)", flexShrink:0 }}>+{a.xp}</span>
+              </div>
+            ); })}
+          </div>
+        </div>
+      )}
+
+      {/* Nivel */}
+      <div className="fh-card" style={{ padding:16, marginTop:12, display:"flex", alignItems:"center", gap:16 }}>
+        <Ring pct={xpInto/xpNeed} size={80} stroke={7} color={rango.color}>
+          <RankIcon size={15} color={rango.color}/>
+          <div className="cinzel" style={{ fontSize:19, fontWeight:700, lineHeight:1, marginTop:1 }}>{nivel}</div>
+        </Ring>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div className="cinzel" style={{ fontSize:17, fontWeight:700, color:rango.color }}>{rango.name}</div>
+          <div style={{ fontSize:12, color:"var(--muted)", marginTop:3 }}>
+            {inf.xp > 0 ? <>Esa semana sumaste <b style={{ color:"var(--txt)" }}>{inf.xp} XP</b> entrenando.</> : "Esa semana no sumaste XP."}
+          </div>
+          <div style={{ fontSize:11, color:"var(--faint)", marginTop:4, lineHeight:1.45 }}>
+            Ahora vas por {xpInto} / {xpNeed} XP para el nivel {nivel+1}. El nivel y el rango son los de hoy, no los de esa semana.
+          </div>
+        </div>
+      </div>
+
+      {/* Medidas */}
+      {inf.medidas.length > 0 && (
+        <div className="fh-card" style={{ padding:16, marginTop:12 }}>
+          <InformeTitulo icon={Scale} color="var(--sky)">Lo que anotaste</InformeTitulo>
+          <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+            <div className="disp" style={{ fontSize:24, fontWeight:700 }}>{numES(inf.ultima.weightKg)} kg</div>
+            {inf.deltaPeso != null && inf.deltaPeso !== 0 && (
+              <span className="fh-chip" style={{ background:"var(--bg2)", color:inf.deltaPeso<0?"var(--jade)":"var(--muted)", display:"flex", alignItems:"center", gap:4 }}>
+                {inf.deltaPeso<0 ? <ArrowDown size={11}/> : <ArrowUp size={11}/>} {numES(Math.abs(inf.deltaPeso))} kg
+              </span>
+            )}
+            <span style={{ fontSize:11.5, color:"var(--faint)" }}>{inf.medidas.length} medición{inf.medidas.length===1?"":"es"} esa semana</span>
+          </div>
+          {inf.ultima.waist && <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:7 }}>Cintura: {numES(inf.ultima.waist)} cm. En recomposición dice más que la báscula.</div>}
+        </div>
+      )}
+
+      {/* Tu círculo */}
+      {cloudEnabled && perfil && (
+        <div className="fh-card" style={{ padding:16, marginTop:12 }}>
+          <InformeTitulo icon={Users} color="var(--jade)" nota="Lo que hicieron tus amigos esa semana. Solo lo que hacen, nunca lo que les falta.">Tu círculo</InformeTitulo>
+          {circulo == null ? <Empty text="Cargando lo de tu gente…"/> : falloCirculo ? (
+            <div style={{ fontSize:12, color:"var(--faint)", lineHeight:1.5 }}>No se ha podido consultar. Tu informe sale igual: esto es lo único que necesita red.</div>
+          ) : (!circulo.lista.length && !circulo.quedadas.length && !circulo.nuevos.length) ? (
+            <Empty text="Semana tranquila por ahí"/>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {circulo.lista.map(g=>(
+                <div key={g.id} style={{ display:"flex", alignItems:"center", gap:11 }}>
+                  <div style={{ width:32, height:32, borderRadius:10, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <Dumbbell size={14} color="var(--jade)"/>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre}</div>
+                    <div style={{ fontSize:11, color:"var(--faint)", marginTop:1 }}>
+                      {g.entrenos} entreno{g.entrenos===1?"":"s"}
+                      {g.prs > 0 ? ` · ${g.prs} récord${g.prs===1?"":"s"}` : ""}
+                    </div>
+                  </div>
+                  {g.prs > 0 && <Crown size={14} color="var(--gold)" style={{ flexShrink:0 }}/>}
+                  <span className="mono" style={{ fontSize:11, color:"var(--muted)", flexShrink:0 }}>{g.xp} XP</span>
+                </div>
+              ))}
+              {circulo.quedadas.map((n,i)=>(
+                <div key={"q"+i} style={{ display:"flex", alignItems:"center", gap:11 }}>
+                  <div style={{ width:32, height:32, borderRadius:10, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <CalendarDays size={14} color="var(--sky)"/>
+                  </div>
+                  <div style={{ flex:1, minWidth:0, fontSize:12.5, color:"var(--txt)" }}>{n.display_name || "@"+n.handle} propuso una quedada</div>
+                </div>
+              ))}
+              {circulo.nuevos.map((n,i)=>(
+                <div key={"a"+i} style={{ display:"flex", alignItems:"center", gap:11 }}>
+                  <div style={{ width:32, height:32, borderRadius:10, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <Users size={14} color="var(--gold)"/>
+                  </div>
+                  <div style={{ flex:1, minWidth:0, fontSize:12.5, color:"var(--txt)" }}>{n.display_name || "@"+n.handle} entró en tu círculo</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ fontSize:11.5, color:"var(--faint)", margin:"14px 4px 4px", lineHeight:1.55, textAlign:"center" }}>
+        El informe se calcula de tu historial cada vez que lo abres: no hay nada guardado que se quede desfasado.
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   AMIGOS
+   ========================================================================= */
+
+/* Todo lo que tiene que ver con tu gente, en un sitio: quiénes son, cómo vais
+   en la clasificación y las quedadas. Antes estaba repartido entre Inicio (que
+   se cargaba de cosas) y la pestaña RPGym (que es tu progreso, no el de nadie
+   más). Se entra por el botón de la cabecera de Inicio — el que antes abría la
+   cuenta, que ahora vive en Ajustes — y se sale con el botón de volver. */
+function AmigosView({ perfil, cloudEnabled, setTab, amigos, onRefrescarAmigos, onQuitarAmigo, onAbrirAmigo,
+                      quedadas, onRefrescarQuedadas, cargandoQuedadas, onCargarTabla }){
+  return (
+    <div className="fh-in">
+      <header style={{ padding:"22px 2px 8px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={()=>setTab("home")} aria-label="Volver a Inicio"
+          style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
+        <div style={{ minWidth:0 }}>
+          <h1 style={{ margin:0, fontSize:22 }}>Amigos</h1>
+          <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Tu círculo, las quedadas y quién va ganando.</p>
+        </div>
+      </header>
+
+      {!cloudEnabled ? (
+        <div className="fh-card" style={{ padding:16, marginTop:8 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:9, fontSize:14, marginBottom:6 }}><Users size={16} color="var(--faint)"/> Sin conexión configurada</div>
+          <p style={{ fontSize:12.5, color:"var(--muted)", margin:0, lineHeight:1.5 }}>
+            Esta copia de RPGym va 100% en local. La parte de amigos necesita una cuenta y este móvil no la tiene configurada.
+          </p>
+        </div>
+      ) : !perfil ? (
+        <div className="fh-card" style={{ padding:16, marginTop:8 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:9, fontSize:14, marginBottom:6 }}><Users size={16} color="var(--gold)"/> Necesitas una cuenta</div>
+          <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
+            Es lo único que la app pide conexión para hacer. Con cuenta puedes añadir amigos, quedar para ir juntos
+            y compararos. Sin ella, el resto de RPGym funciona exactamente igual.
+          </p>
+          <button className="fh-btn" onClick={()=>setTab("ajustes")}
+            style={{ width:"100%", background:"var(--gold)", padding:12, fontSize:13, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+            <User size={15}/> Crear cuenta o entrar
+          </button>
+        </div>
+      ) : (
+        <>
+          <AmigosPanel amigos={amigos} onRefrescarAmigos={onRefrescarAmigos} onQuitar={onQuitarAmigo} onAbrir={onAbrirAmigo}/>
+          <QuedadasPanel modo="todo" quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={cargandoQuedadas}/>
+          <ClasificacionCard perfil={perfil} cargar={onCargarTabla} señal={amigos.length}/>
+        </>
+      )}
+
+      <div style={{ height:24 }}/>
+    </div>
+  );
+}
+
+/* =========================================================================
    FICHA DE PERSONAJE
    ========================================================================= */
 
-function CharacterView({ state, level, rank, log, customRoutines, setTab }){
+function CharacterView({ state, level, rank, log, customRoutines, setTab, onAbrirInforme }){
   const RankIcon=rank.icon;
   const [openStat, setOpenStat] = useState(null);
   const [openEx, setOpenEx] = useState(null);   // ejercicio recomendado desplegado
@@ -7532,6 +8294,19 @@ function CharacterView({ state, level, rank, log, customRoutines, setTab }){
           <div style={{ fontSize:11, color:"var(--faint)", marginTop:7 }}>Faltan {xpNeed-xpInto} XP para nivel {level+1}</div>
         </div>
       </div>
+
+      {/* El informe semanal sale solo el lunes; a partir de ahí se consulta aquí,
+          que es donde uno viene a mirarse las estadísticas. Abre la semana en
+          curso: la anterior está a un toque de la flecha de dentro. */}
+      <button className="fh-card" onClick={()=>onAbrirInforme(mondayOf(todayISO()))}
+        style={{ width:"100%", padding:14, marginTop:12, display:"flex", alignItems:"center", gap:11, cursor:"pointer", textAlign:"left" }}>
+        <FileText size={17} color="var(--gold)" style={{ flexShrink:0 }}/>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div className="disp" style={{ fontWeight:600, fontSize:14.5 }}>Informe semanal</div>
+          <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:2 }}>Sesiones, récords, logros y lo que hizo tu gente.</div>
+        </div>
+        <ChevronRight size={16} color="var(--faint)" style={{ flexShrink:0 }}/>
+      </button>
 
       {/* Poder total explicado (suma de niveles de los 7 atributos) */}
       <div className="fh-card" style={{ padding:"14px 16px", marginTop:12 }}>
@@ -7969,7 +8744,7 @@ function CustomDietEditor({ diet, onSave, onClose }){
   );
 }
 
-function DietView({ state, useCheat, mealPlan, saveMealPlan, excludes, setExcludes, setTab, customDiet, saveCustomDiet }){
+function DietView({ state, mealPlan, saveMealPlan, excludes, setExcludes, setTab, customDiet, saveCustomDiet }){
   const [view, setView] = useState("semana"); // semana | compra
   const [showEx, setShowEx] = useState(false);
   const [dietTip, setDietTip] = useState(()=>Math.floor(Math.random()*FEMALE_DIET_TIPS.length));
@@ -8073,15 +8848,6 @@ function DietView({ state, useCheat, mealPlan, saveMealPlan, excludes, setExclud
         ))}
       </div>
 
-      {state.cheatTokens>0 && (
-        <button className="fh-card" onClick={useCheat} style={{ width:"100%", padding:16, marginBottom:14, textAlign:"left", cursor:"pointer", borderColor:"var(--ember)", background:"linear-gradient(135deg,var(--card),var(--card2))" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <div style={{ background:"var(--ember)", borderRadius:12, padding:10, display:"flex" }}><Cookie size={22} color="#fff"/></div>
-            <div><div className="disp" style={{ fontWeight:700, fontSize:15 }}>Tienes {state.cheatTokens} cheat day{state.cheatTokens>1?"s":""}</div>
-              <div style={{ fontSize:12, color:"var(--muted)" }}>Te lo has ganado entrenando. Toca para canjear.</div></div>
-          </div>
-        </button>
-      )}
 
       {/* SEMANA · plan generado por la app */}
       {view==="semana" && !useMine && (<div className="fh-in">
@@ -8209,21 +8975,6 @@ function DietView({ state, useCheat, mealPlan, saveMealPlan, excludes, setExclud
           </div>); })}
         <p style={{ fontSize:11, color:"var(--faint)", textAlign:"center", marginTop:6, lineHeight:1.5 }}>Cantidades aproximadas <b style={{ color:"var(--muted)" }}>para una persona</b> y los 7 días del plan. Carnes y pescados en crudo; arroz, pasta, avena y legumbres en seco. Ajusta a ojo según lo que ya tengas en casa.</p>
       </div>)}
-
-      {/* Regla del plato: solo con el plan de la app; con una pauta profesional manda la suya. */}
-      {!useMine && (
-      <div className="fh-card" style={{ padding:16, marginTop:6 }}>
-        <div className="disp" style={{ fontWeight:600, fontSize:15, marginBottom:10 }}>Regla del plato (para recomposición)</div>
-        <div style={{ display:"flex", height:16, borderRadius:8, overflow:"hidden", marginBottom:10 }}>
-          <div style={{ flex:2, background:"var(--jade)" }}/><div style={{ flex:2, background:"var(--ember)" }}/><div style={{ flex:1, background:"var(--gold)" }}/>
-        </div>
-        <div style={{ display:"flex", gap:14, fontSize:11.5, color:"var(--muted)", flexWrap:"wrap" }}>
-          <span><b style={{ color:"var(--jade)" }}>●</b> ½ verdura/fruta</span>
-          <span><b style={{ color:"var(--ember)" }}>●</b> algo más de ⅓ proteína</span>
-          <span><b style={{ color:"var(--gold)" }}>●</b> resto hidratos</span>
-        </div>
-      </div>
-      )}
 
       <p style={{ fontSize:11.5, color:"var(--faint)", textAlign:"center", marginTop:14, lineHeight:1.55 }}>
         {useMine

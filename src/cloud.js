@@ -588,11 +588,15 @@ export async function borrarCopia(){
 /* --- Novedades del círculo ------------------------------------------------
    Lo que ha pasado desde la última vez que abriste la app. Se derivan de los
    datos que ya existen: no hay tabla de actividad que mantener ni proteger. */
-export async function novedades(desde){
+/* `hasta` y `limite` los usa el informe semanal, que pide una semana cerrada y
+   necesita todas sus filas, no las 40 últimas. Sin ellos se comporta igual que
+   siempre: lo ocurrido desde la última visita. */
+export async function novedades(desde, { hasta = null, limite = 40 } = {}){
   if (!supabase) return sinNube;
   try {
-    let q = supabase.from("novedades").select("*").order("cuando", { ascending:false }).limit(40);
+    let q = supabase.from("novedades").select("*").order("cuando", { ascending:false }).limit(limite);
     if (desde) q = q.gt("cuando", desde);
+    if (hasta) q = q.lt("cuando", hasta);
     const { data, error } = await q;
     if (error) return { ok:false, msg:traducir(error) };
     return { ok:true, novedades:data || [] };
