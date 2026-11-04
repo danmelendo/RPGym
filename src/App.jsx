@@ -1040,7 +1040,8 @@ const CARDIO_MAQUINAS = {
   /* Vatios ≈ base + paso·nivel. Valores típicos de una bici de gimnasio a
      unas 70 rpm: nivel 1 ronda los 30 W y nivel 20 pasa de 250 W. */
   "Bici estática":            { modo:"nivel", wBase:20, wPaso:12, distancia:"bici" },
-  "Elíptica":                 { modo:"nivel", wBase:25, wPaso:11, distancia:"zancada" },
+  "Bici reclinada":           { modo:"nivel", wBase:20, wPaso:12, distancia:"bici" },
+  "Elíptica":                { modo:"nivel", wBase:25, wPaso:11, distancia:"zancada" },
   "Máquina de remo":          { modo:"nivel", wBase:40, wPaso:14, distancia:"remo" },
   "Escaladora":               { modo:"nivel", wBase:35, wPaso:13, distancia:null },
 };
@@ -1121,7 +1122,7 @@ const isCardio = name => EX_MUSCLE[name] === "Cardio";
 /* Cardio de máquina con consola: pide km, kcal y nivel. La comba o los
    intervalos por segundos no tienen consola que mirar: solo tiempo. */
 const MACHINE_CARDIO = new Set([
-  "Cinta de correr", "Caminar en cinta", "Bici estática", "Elíptica",
+  "Cinta de correr", "Caminar en cinta", "Bici estática", "Bici reclinada", "Elíptica",
   "Máquina de remo", "Escaladora", "Calentamiento en cinta o bici",
 ]);
 /* Solo pedimos datos de consola si es máquina Y el objetivo va en minutos
@@ -1139,8 +1140,9 @@ const REST_BY_MUSCLE = { Pierna:120, Femoral:100, Espalda:100, Pecho:100, Hombro
 function defaultRest(name){ const r = REST_BY_MUSCLE[EX_MUSCLE[name]]; return r == null ? 60 : r; }
 function defaultReps(name){
   if(isCardio(name)) return "20 min";                        // cardio: se anota tiempo, no repeticiones
-  if(!isBodyweight(name)) return "10-12";
-  return /plancha/i.test(name) ? "45 s" : "12-15";           // isométricos: segundos
+  if(/plancha/i.test(name)) return "45 s";                   // isométricos: segundos, también con lastre
+  if(name === "Mountain climbers") return "30 s";            // como en las rutinas de la app
+  return isBodyweight(name) ? "12-15" : "10-12";
 }
 /* El cardio continuo es una sola tirada, no tres series. */
 function defaultSets(name){ return isCardio(name) ? 1 : 3; }
@@ -1413,7 +1415,7 @@ const EX_IMG = {
   "Flexiones inclinadas": "exercises/Incline_Push-Up/0.jpg",
   "Fondos en paralelas": "exercises/Dips_-_Chest_Version/0.jpg",
   "Fondos asistidos": "exercises/Dips_-_Chest_Version/0.jpg",
-  "Fondos en paralelas lastrados": "exercises/Ring_Dips/0.jpg",
+  "Fondos en paralelas lastrados": "exercises/Parallel_Bar_Dip/0.jpg",
   "Jalón agarre cerrado": "exercises/Close-Grip_Front_Lat_Pulldown/0.jpg",
   "Jalón agarre neutro": "exercises/V-Bar_Pulldown/0.jpg",
   "Jalón al pecho": "exercises/Wide-Grip_Lat_Pulldown/0.jpg",
@@ -1434,7 +1436,7 @@ const EX_IMG = {
   "Press militar": "exercises/Standing_Military_Press/0.jpg",
   "Press militar mancuernas": "exercises/Standing_Dumbbell_Press/0.jpg",
   "Pullover en polea": "exercises/Straight-Arm_Pulldown/0.jpg",
-  "Pájaros en polea": "exercises/Reverse_Flyes/0.jpg",
+  "Pájaros en polea": "exercises/Cable_Rear_Delt_Fly/0.jpg",
   "Remo con barra": "exercises/Bent_Over_Barbell_Row/0.jpg",
   "Remo con mancuerna": "exercises/One-Arm_Dumbbell_Row/0.jpg",
   "Remo en máquina": "exercises/Seated_Cable_Rows/0.jpg",
@@ -1442,10 +1444,10 @@ const EX_IMG = {
   "Plancha lateral": "exercises/Side_Bridge/0.jpg",
   "Rueda abdominal": "exercises/Ab_Roller/0.jpg",
   "Sentadilla": "exercises/Barbell_Squat/0.jpg",
-  "Sentadilla búlgara": "exercises/Split_Squats/0.jpg",
+  "Sentadilla búlgara": "exercises/Split_Squat_with_Dumbbells/0.jpg",
   "Sentadilla frontal": "exercises/Front_Barbell_Squat/0.jpg",
   "Sentadilla goblet": "exercises/Goblet_Squat/0.jpg",
-  "Zancadas con barra": "exercises/Dumbbell_Lunges/0.jpg",
+  "Zancadas con barra": "exercises/Barbell_Lunge/0.jpg",
   "Zancadas con mancuernas": "exercises/Dumbbell_Lunges/0.jpg",
   "Hip thrust": "exercises/Barbell_Hip_Thrust/0.jpg",
   "Puente de glúteo": "exercises/Butt_Lift_Bridge/0.jpg",
@@ -2668,8 +2670,8 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 19;
-const APP_VERSION_NAME = "1.0.18";
+const APP_VERSION_CODE = 20;
+const APP_VERSION_NAME = "1.0.19";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
