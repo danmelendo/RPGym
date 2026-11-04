@@ -2673,6 +2673,13 @@ const APP_VERSION_NAME = "1.0.18";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
+/* El entreno en curso. Con el móvil en el bolsillo Android puede matar la app, y
+   sin esto se perdían todas las series hasta darle a Terminar. No va en
+   BACKUP_KEYS a propósito: es un estado de paso, no progreso. */
+const ENTRENO_KEY = "gym:entreno";
+/* Un hueco mayor que esto entre el último cambio y la vuelta no cuenta como
+   tiempo entrenado: si no, un entreno recuperado horas después duraría horas. */
+const PAUSA_SIN_CONTAR_MS = 10 * 60 * 1000;
 const BACKUP_APP = "rpgym";
 const BACKUP_APP_LEGACY = "forja-habito";   // copias hechas con el nombre antiguo
 const BACKUP_FORMAT = 1;
@@ -3002,8 +3009,28 @@ export default function App(){
     setThemeState(savedTheme);
     setStorePrefix("");            // usuario único (sin prefijo, conserva datos previos)
     await loadProfileData();
+    await recuperarEntreno();
     setLoading(false);
   })(); },[]);
+
+  /* Vuelve al entreno que estaba a medias, en la pantalla de entreno: desde
+     Inicio no habría forma de llegar a él. Va antes de `setLoading(false)` para
+     que el efecto de abajo no guarde un `null` encima antes de leerlo. */
+  async function recuperarEntreno(){
+    const guardado = await loadKey(ENTRENO_KEY, null);
+    if(!guardado?.session) return;
+    const parado = Date.now() - (guardado.guardadoEn || Date.now());
+    const startedAt = guardado.session.startedAt + (parado > PAUSA_SIN_CONTAR_MS ? parado : 0);
+    setSession({ ...guardado.session, startedAt });
+    if(guardado.conjunta) setSesionConjunta(guardado.conjunta);
+    setTab("workout");
+    showToast({ title:"Entreno recuperado", sub:`${guardado.session.dayName}: sigue donde lo dejaste.`, icon:Dumbbell });
+  }
+
+  useEffect(()=>{
+    if(loading) return;
+    saveKey(ENTRENO_KEY, session ? { session, conjunta:sesionConjunta, guardadoEn:Date.now() } : null);
+  }, [session, sesionConjunta, loading]);
 
   /* Todo lo que se trae de la nube en cuanto hay sesión. Se llama desde los DOS
      sitios donde puede aparecer una: al abrir la app con la sesión guardada y al
@@ -3098,6 +3125,9 @@ export default function App(){
     // si no, el informe se daría por visto detrás del login.
     if(cloud.cloudEnabled && (!sesionResuelta || (!cloudSession && !sinCuenta))) return;
     informeAuto.current = true;
+    // Con un entreno recuperado saldría del entreno sin forma de volver. Sale en
+    // la siguiente apertura: `gym:informeVisto` no se ha tocado.
+    if(session) return;
     (async()=>{
       const lunes = addDaysISO(mondayOf(todayISO()), -7);
       if(await loadGlobal("gym:informeVisto", null) === lunes) return;
@@ -3419,6 +3449,9 @@ export default function App(){
       lastWorkoutDate:todayISO(), achievements:ach, bests, firstBests, routinesUsed, muscleXp,
       nextWeight, weekPRs, missions, bestStreak, cardioBests };
     setState(ns); setLog(nlog); persist(ns,nlog);
+    // Justo aquí, sin esperas por medio: si la app muere ya apuntado el entreno,
+    // recuperarlo y terminarlo otra vez lo contaría dos veces.
+    saveKey(ENTRENO_KEY, null);
 
     setResults({
       routineName:session.routineName, dayName:session.dayName, durationMin, seriesDone,
@@ -7029,8 +7062,9 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
   const [howOpen, setHowOpen] = useState(null);
   /* Cronómetro del cardio: { exI, setI, desde }. Cuenta HACIA ARRIBA desde que
      le das a Comenzar; el tiempo real es el que decides tú al parar, no un
-     objetivo que hay que teclear al acabar. */
-  const [crono, setCrono] = useState(null);
+     objetivo que hay que teclear al acabar. Va dentro de la sesión para que siga
+     contando si Android mata la app: con la cinta en marcha nadie toca el móvil. */
+  const crono = session?.crono || null;
   const [ahora, setAhora] = useState(Date.now());
   const [sustituyendo, setSustituyendo] = useState(null);   // índice del ejercicio a cambiar
   useEffect(()=>{
@@ -7086,7 +7120,7 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
 
   /* --- Cronómetro de cardio ---------------------------------------------- */
 
-  function arrancarCrono(exI, setI){ setAhora(Date.now()); setCrono({ exI, setI, desde:Date.now() }); }
+  function arrancarCrono(exI, setI){ setAhora(Date.now()); setSession({ ...session, crono:{ exI, setI, desde:Date.now() } }); }
 
   /* Al parar se apuntan los minutos de verdad y se rellenan km y kcal con la
      estimación. Son un punto de partida: si miras la consola y dice otra cosa,
@@ -7115,8 +7149,7 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
       }
       return n;
     }) }));
-    setSession({ ...session, exercises });
-    setCrono(null);
+    setSession({ ...session, exercises, crono:null });
   }
 
   /* --- Sustituir un ejercicio -------------------------------------------- */
@@ -7150,9 +7183,8 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
         : { weight:sug, reps: parseTargetReps(reps), done:false })),
     };
     const exercises = session.exercises.map((e,i)=> i===exI ? nuevo : e);
-    setSession({ ...session, exercises });
+    setSession({ ...session, exercises, crono: crono?.exI === exI ? null : crono });
     setSustituyendo(null);
-    if(crono?.exI === exI) setCrono(null);
   }
 
   const mult=ENERGY[session.energy].mult;
