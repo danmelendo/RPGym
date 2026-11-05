@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import * as cloud from "./cloud.js";
 import * as cripto from "./cripto.js";
 import * as push from "./push.js";
+import AVATAR from "./avatar-data.json";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
@@ -11,7 +12,7 @@ import {
   Zap, Award, Crown, Shield, Star, ChevronLeft, Shuffle, Target, Sparkles, Ruler,
   Lock, Lightbulb, ShoppingCart, CalendarDays, Compass, Moon, Sunrise, Gauge, ClipboardList,
   ScrollText, Swords, Footprints, Mountain, Heart, ShieldAlert, Info, Ban,
-  Settings, Bell, CreditCard, User, Users, ChevronRight, Plus, X,
+  Settings, Bell, CreditCard, User, Users, ChevronRight, ChevronDown, Plus, X,
   Sun, Palette, Scale, Download, Upload, Cloud,
   Trash2, Search, ArrowUp, ArrowDown, Pencil, Copy, FileText, Eye, Minus, Share2, Volume2,
   BedDouble, Palmtree,
@@ -2537,7 +2538,7 @@ const DEFAULT_STATE = {
   xp:0, restTokens:0, totalWorkouts:0, weekStreak:0,
   weekStart:mondayOf(todayISO()), weeklyCount:0, weekGoalMet:false,
   activeRoutine:"acli_fb", lastWorkoutDate:null, startDate:todayISO(),
-  achievements:{}, bests:{}, firstBests:{}, routinesUsed:[], measureCount:0, muscleXp:{},
+  achievements:{}, bests:{}, firstBests:{}, routinesUsed:[], measureCount:0, muscleXp:{}, avatar:null,
   reminders:{ enabled:false, hour:19, minute:0, days:[1,3,5] }, // días 0=Dom..6=Sáb
   sub:{ enabled:false, renewalDay:1, price:"" },
   cardioBests:{},               // récords de cardio por ejercicio: { min, km, kcal, level, pace, date }
@@ -2634,8 +2635,6 @@ async function saveKey(key, val){ try{ await window.storage.set(STORE_PREFIX+key
    URL. Mientras esté vacío, Ajustes muestra solo el resumen, sin enlace roto. */
 const PRIVACY_URL = "";
 
-/* Versión de esta build. Debe ir a la par de android/version.properties: es lo
-   que compara la app contra app_versions para avisar de que hay una nueva. */
 /* XP extra la primera vez que haces la rutina de un amigo. Fijo y modesto:
    premia probar lo de otro, no repetirlo en bucle. */
 const XP_RUTINA_AMIGO = 75;
@@ -2644,11 +2643,15 @@ const XP_RUTINA_AMIGO = 75;
    proporcional al volumen, saldría a cuenta apuntarse a todo para inflar XP. */
 const XP_CONJUNTO = 60;
 
-const APP_VERSION_CODE = 20;
-const APP_VERSION_NAME = "1.0.20";
+/* Versión de esta build. La inyecta vite.config.js desde android/version.properties:
+   es lo que se compara con app_versions para avisar de que hay una nueva. Antes se
+   escribía a mano aquí, y en la 1.0.20 se quedó en 20 con la fila en 21: la app
+   avisaba de una actualización a quien ya la tenía instalada. */
+const APP_VERSION_CODE = __VERSION_CODE__;
+const APP_VERSION_NAME = __VERSION_NAME__;
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
-const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
+const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet","gym:juego"];
 /* El entreno en curso. Con el móvil en el bolsillo Android puede matar la app, y
    sin esto se perdían todas las series hasta darle a Terminar. No va en
    BACKUP_KEYS a propósito: es un estado de paso, no progreso. */
@@ -2659,6 +2662,33 @@ const PAUSA_SIN_CONTAR_MS = 10 * 60 * 1000;
 const BACKUP_APP = "rpgym";
 const BACKUP_APP_LEGACY = "forja-habito";   // copias hechas con el nombre antiguo
 const BACKUP_FORMAT = 1;
+
+/* ¿Qué va más adelantado, este móvil o la copia? Se mira el último entreno y,
+   si coincide, cuántos hay y el XP. La fecha de subida no sirve: una copia subida
+   desde aquí siempre es posterior a tu último entreno y no por eso trae nada nuevo. */
+const fechaCorta = iso => parseISO(iso).toLocaleDateString("es-ES",{ day:"numeric", month:"long" });
+function resumenProgreso(st, lg){
+  const fechas = (lg||[]).map(r=>r?.date).filter(Boolean).sort();
+  return { entrenos:Math.max(st?.totalWorkouts||0, (lg||[]).length), ultimo:fechas[fechas.length-1] || st?.lastWorkoutDate || null, xp:st?.xp||0 };
+}
+function compararProgreso(aqui, copia){
+  const a=aqui.ultimo||"", c=copia.ultimo||"";
+  if(a!==c) return c>a ? "copia" : "movil";
+  if(aqui.entrenos!==copia.entrenos) return copia.entrenos>aqui.entrenos ? "copia" : "movil";
+  if(aqui.xp!==copia.xp) return copia.xp>aqui.xp ? "copia" : "movil";
+  return "igual";
+}
+/* Abre la copia en el móvil para resumirla. Sin clave (o si la contraseña cambió)
+   devuelve null: no se sabe qué lleva, y eso no es motivo para insistir. */
+async function resumenCopiaNube(copia){
+  try {
+    const clave = await cripto.recuperarClave();
+    if(!clave) return null;
+    const obj = JSON.parse(await cripto.descifrar(copia.cifrado, copia.iv, clave));
+    const leer = k => { const v=obj.data?.[k]; return v ? JSON.parse(v) : null; };
+    return { ...resumenProgreso(leer("gym:state"), leer("gym:log")), prefijo:obj.prefijo||"" };
+  } catch { return null; }
+}
 
 /* Claves globales (no dependen del perfil activo) */
 async function loadGlobal(key, fb){ try{ const r=await window.storage.get(key); return r?JSON.parse(r.value):fb; }catch{ return fb; } }
@@ -2708,9 +2738,14 @@ const StyleTag = () => (
       --txt:#F2EAD8; --muted:#A99FC2; --faint:#7F7499;
       --gold:#FFC83D; --amber:#FFA726; --ember:#FF6B35; --crimson:#E8433F; --blood:#A32036;
       --jade:#3DDC84; --emerald:#3DDC84; --violet:#C08BFF; --arcane:#C08BFF; --sky:#4FC3F7; --mana:#4FC3F7;
+      --gym:url('rpg/fondo-gym.png'); --velo:linear-gradient(rgba(16,13,26,.28),rgba(16,13,26,.74));
       font-family:'Inter',system-ui,sans-serif; color:var(--txt); min-height:100vh;
-      background:url('rpg/muro-oscuro.png') 0 0/64px 64px,#100D1A; image-rendering:pixelated; }
+      background:var(--bg); position:relative; isolation:isolate; }
+    /* El gimnasio se queda quieto detrás y las tarjetas pasan por encima. Va en un fixed y
+       no con background-attachment, que en el WebView de Android da tirones al desplazar. */
+    .fh::before { content:""; position:fixed; inset:0; z-index:-1; background:var(--velo),var(--gym) center bottom/cover no-repeat; image-rendering:pixelated; }
     .fh * { image-rendering:auto; }
+    .fh .fh-escena { position:relative; overflow:hidden; background:var(--gym) center 62%/cover no-repeat; image-rendering:pixelated; }
     .fh *,.fh *::before,.fh *::after { border-radius:0!important; }
     .fh h1 { font-family:'Jersey 15',monospace; letter-spacing:.01em; font-weight:700; }
     .fh .cinzel { font-family:'Jersey 15',monospace; letter-spacing:.02em; }
@@ -2771,6 +2806,14 @@ const StyleTag = () => (
     .fh-sprite { display:inline-block; flex-shrink:0; background-repeat:no-repeat; }
     .fh .fh-sprite { image-rendering:pixelated; }
     .fh-idle { animation:fh-bob 1.1s steps(2) infinite; }
+    .fh-andar { animation:fh-andar .8s steps(8) infinite; }
+    @keyframes fh-andar { from{background-position-x:calc(var(--s)*-1)} to{background-position-x:calc(var(--s)*-9)} }
+    .fh-embiste { animation:fh-embiste .2s steps(3); }
+    @keyframes fh-embiste { 40%{transform:translateX(38px)} }
+    .fh-sacude { animation:fh-sacude .22s steps(4); }
+    @keyframes fh-sacude { 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+    .fh-texto-golpe { position:absolute; left:50%; top:40%; font-size:11px; white-space:nowrap; text-shadow:1px 1px 0 #000; pointer-events:none; animation:fh-texto-golpe .6s steps(6) both; }
+    @keyframes fh-texto-golpe { from{transform:translate(-50%,0);opacity:1} to{transform:translate(-50%,-26px);opacity:0} }
     .fh-flota { position:fixed; z-index:280; pointer-events:none; white-space:nowrap; font-family:'Press Start 2P',monospace;
       font-size:11px; text-shadow:2px 2px 0 #000; animation:fh-sube .95s steps(10) both; }
 
@@ -2814,7 +2857,7 @@ const StyleTag = () => (
       --txt:#2B2218; --muted:#655944; --faint:#857960;
       --gold:#B8862B; --amber:#C4881C; --ember:#C7492A; --crimson:#BE3F3F; --blood:#8E2323;
       --jade:#2E8C63; --emerald:#2E8C63; --violet:#7C5BD6; --arcane:#7C5BD6; --sky:#3E86A8; --mana:#3E86A8;
-      background:url('rpg/arena-claro.png') 0 0/64px 64px,#F3ECDE;
+      --gym:url('rpg/fondo-gym-claro.png'); --velo:linear-gradient(rgba(243,236,222,.78) 0,rgba(243,236,222,.6) 40%,rgba(243,236,222,.82));
     }
     .fh[data-theme="light"] .fh-card { box-shadow:0 3px 0 rgba(90,70,30,.2); }
     .fh[data-theme="light"] .fh-card::before { box-shadow:none; }
@@ -2854,17 +2897,145 @@ function Sprite({ id, size=32, className="", style, titulo }){
     style={{ width:size, height:size, backgroundImage:"url('rpg/tiny-dungeon.png')", backgroundSize:`${192*esc}px ${176*esc}px`,
       backgroundPosition:`-${(id%12)*size}px -${Math.floor(id/12)*size}px`, ...style }}/>;
 }
-/* Un héroe por rango: el personaje mejora contigo. Solo hay dos personajes
-   femeninos sin armadura; de Guerrero para arriba van con casco y valen igual. */
-const HEROES = [85,88,98,97,96,87,84], HEROINAS = [99,100,98,97,96,87,84];
-function heroeDe(level, sexo){
-  const i = RANKS.reduce((a,r,n)=> level>=r.min ? n : a, 0);
-  return (sexo==="mujer" ? HEROINAS : HEROES)[i];
+/* --- Avatar ------------------------------------------------------------------
+   Personaje por capas del proyecto LPC, generado con scripts/generar-avatar.py. Cada
+   capa trae dos filas (frente y perfil) de 9 fotogramas: el primero es de pie y los
+   otros ocho, andando. Las recolorables vienen indexadas: el gris del píxel es el
+   escalón de la rampa, así un solo fichero vale para todos los colores. */
+const RAMPAS = {
+  piel:{ clara:["#271920","#99423c","#cc8665","#E4A47C","#F9D5BA","#FAECE7"], dorada:["#281716","#9E3E37","#D28144","#EA9F54","#FDD082","#FBE7A4"],
+    oliva:["#271920","#442725","#7F4C31","#AE6B3F","#D38B59","#E4A47C"], tostada:["#271920","#503734","#785946","#936849","#BA8454","#C7935F"],
+    morena:["#1A1213","#442725","#644133","#7F4C31","#AE6B3F","#D38B59"], oscura:["#120E10","#412B29","#5F4539","#76513A","#9C663E","#B8773F"],
+    ebano:["#000000","#1A1213","#2E1F1C","#442725","#603429","#7F4C31"], orca:["#140C09","#09320B","#19541D","#228236","#39AA4E","#53BF71"],
+    gelida:["#16171B","#46425D","#586B90","#748DA4","#A9C9CA","#C8E8E8"] },
+  pelo:{ negro:["#000000","#080A0A","#101414","#1C2222","#31313E","#4A5057"], castano:["#200C0D","#3A130E","#63200B","#81310A","#B6550E","#D28102"],
+    marron:["#1A0E04","#301B07","#60350F","#7D4513","#AE682A","#C88D58"], rubio:["#331313","#552B15","#AC5D1F","#E09E2B","#FCCF56","#FFE67D"],
+    platino:["#1C0E06","#7D5D5D","#A87D52","#C0AB81","#EDDF95","#F6F6F3"], pelirrojo:["#300500","#6A1A00","#9C3B01","#CC6901","#FAA301","#FFE01E"],
+    rojo:["#300000","#870000","#A40712","#CB0000","#E21414","#F1583A"], gris:["#0E0E0E","#292929","#4B4B4B","#777777","#AAAAAA","#D9D9D9"],
+    blanco:["#1D1D21","#484E57","#8B9498","#B8BBBC","#D8DCDC","#FFFFFF"], rosa:["#330410","#71043A","#B60A68","#E941AA","#E976C4","#EA95D5"],
+    morado:["#13112D","#2B225A","#402E82","#7141B2","#A966DD","#D085ED"], azul:["#000027","#00005E","#000091","#0041B4","#0074CB","#1E85EF"],
+    verde:["#000400","#001400","#002D00","#005000","#007C00","#00A700"] },
+  armadura:{ acero:["#14161c","#2c3240","#4f5a6e","#7f8ca3","#b4c0d2","#e6edf5"], oro:["#241505","#5a3410","#96601a","#cf9a2b","#efc95a","#fff0a8"],
+    bronce:["#1c0e06","#4a2410","#7a4018","#a8642a","#cf8f4a","#efc083"], cuero:["#170d08","#38200f","#5a3519","#7d4f2a","#a3713f","#c99a63"],
+    carmesi:["#1c0a10","#4a1020","#7f1d2e","#b72f3c","#e0605a","#f7a68e"], esmeralda:["#06170f","#0e3a25","#17603b","#259054","#4cc078","#a0eab0"],
+    zafiro:["#080f26","#142a5c","#1f4590","#2f6ec4","#5a9fe6","#aedcf8"], amatista:["#160a26","#351858","#56288a","#7d45bb","#a978dd","#dcb8f5"],
+    obsidiana:["#08080c","#14141c","#22222e","#363644","#55556a","#8a8aa0"], hueso:["#2a2318","#5a4e3a","#8a7c60","#b5a98a","#d9cfb4","#f5efdc"] },
+};
+const NOMBRES_COLOR = { clara:"Clara", dorada:"Dorada", oliva:"Oliva", tostada:"Tostada", morena:"Morena", oscura:"Oscura", ebano:"Ébano", orca:"Orca", gelida:"Gélida",
+  negro:"Negro", castano:"Castaño", marron:"Marrón", rubio:"Rubio", platino:"Platino", pelirrojo:"Pelirrojo", rojo:"Rojo", gris:"Gris", blanco:"Blanco", rosa:"Rosa", morado:"Morado", azul:"Azul", verde:"Verde",
+  acero:"Acero", oro:"Oro", bronce:"Bronce", cuero:"Cuero", carmesi:"Carmesí", esmeralda:"Esmeralda", zafiro:"Zafiro", amatista:"Amatista", obsidiana:"Obsidiana", hueso:"Hueso" };
+const OJOS = { brown:["Marrones","#6B3A1E"], blue:["Azules","#2F7FD6"], green:["Verdes","#2E9E58"], gray:["Grises","#8A949E"], purple:["Violetas","#8A4FD0"], red:["Rojos","#D0342C"], orange:["Ámbar","#E58A1F"], yellow:["Dorados","#E8C63A"] };
+
+/* Las ramas. Cada serie cuenta para UNA, según cómo se ha entrenado. Se recalculan
+   del historial, como el informe semanal: restaurar una copia o renombrar un ejercicio
+   se refleja solo, y quien actualiza ya tiene ganado lo que le toca. */
+const RAMAS = [
+  { id:"guerrero",   nombre:"Guerrero",   estilo:"Hipertrofia", color:"#E8433F", armadura:"acero",     cuenta:"Series de 7 a 12 repeticiones con carga.", resumen:"Armadura pesada y mandoble." },
+  { id:"picaro",     nombre:"Pícaro",     estilo:"Definición",  color:"#3DDC84", armadura:"cuero",     cuenta:"Series de más de 12 repeticiones con carga.", resumen:"Cuero ligero y dagas." },
+  { id:"barbaro",    nombre:"Bárbaro",    estilo:"Fuerza",      color:"#FFA726", armadura:"bronce",    cuenta:"Series de 6 repeticiones o menos con carga.", resumen:"Bronce, pieles y hacha de guerra." },
+  { id:"explorador", nombre:"Explorador", estilo:"Cardio",      color:"#4FC3F7", armadura:"esmeralda", cuenta:"Cardio: 5 minutos valen como una serie.", resumen:"Ropa de viaje, capa y arco." },
+  { id:"monje",      nombre:"Monje",      estilo:"Peso corporal", color:"#C08BFF", armadura:"hueso",   cuenta:"Ejercicios sin carga: core, flexiones, isométricos.", resumen:"Hábito del templo y bastón." },
+];
+const RAMA = Object.fromEntries(RAMAS.map(r=>[r.id,r]));
+const RANURAS = [["cabeza","Cabeza",true],["hombros","Hombros",true],["torso","Torso",false],["brazos","Brazos",true],["piernas","Piernas",false],
+  ["pies","Pies",false],["espalda","Espalda",true],["arma","Arma",false],["escudo","Escudo",true]];
+const PIEZAS_POR_RAMA = RAMAS.reduce((a,r)=>({ ...a, [r.id]:Object.entries(AVATAR.piezas).filter(([,p])=>p.rama===r.id).map(([id,p])=>({ id, ...p })).sort((x,y)=>x.u-y.u) }), {});
+/* Lo que tapa la cabeza entera: con estas piezas el pelo asomaría por fuera. */
+const TAPA_PELO = new Set(["g_yelmo","p_capucha","e_capucha","m_capucha"]);
+
+function ramaDeSerie(nombre, reps){
+  if(isCardio(nombre)) return "explorador";
+  if(BODYWEIGHT_EX.has(nombre)) return "monje";
+  const n = Number(reps)||0;
+  if(n>12) return "picaro";
+  return n && n<=6 ? "barbaro" : "guerrero";
+}
+function puntosDeRama(log){
+  const p = Object.fromEntries(RAMAS.map(r=>[r.id,0]));
+  (log||[]).forEach(rec=>(rec.exercises||[]).forEach(ex=>(ex.logs||[]).forEach(l=>{
+    const enMinutos = isCardio(ex.name) && repUnit(ex.objetivo)==="MIN";
+    p[ramaDeSerie(ex.name, l.reps)] += enMinutos ? Math.max(1, Math.round((Number(l.reps)||0)/5)) : 1;
+  })));
+  return p;
+}
+const ramaDominante = puntos => RAMAS.reduce((a,r)=> (puntos[r.id]||0) > (a ? puntos[a.id] : 0) ? r : a, null);
+const siguientePieza = (rama, puntos) => PIEZAS_POR_RAMA[rama].find(p=>p.u>(puntos[rama]||0)) || null;
+function piezasNuevas(antes, despues){
+  return Object.values(PIEZAS_POR_RAMA).flat().filter(p=>p.u>0 && (antes[p.rama]||0)<p.u && (despues[p.rama]||0)>=p.u);
+}
+/* Lo mejor que tengas ganado de esa rama, una pieza por ranura. */
+function equipoDeRama(rama, puntos){
+  const eq = {};
+  PIEZAS_POR_RAMA[rama].forEach(p=>{ if(p.u<=(puntos[rama]||0)) eq[p.ranura] = p.id; });
+  return eq;
+}
+function avatarPorDefecto(perfil, puntos){
+  const sexo = perfil?.sex==="mujer" ? "f" : "m", rama = (ramaDominante(puntos) || RAMAS[0]).id;
+  return { sexo, rama, piel:"clara", pelo:sexo==="f" ? "ponytail" : "plain", colorPelo:"castano", barba:null, ojos:"brown",
+    armadura:RAMA[rama].armadura, equipo:equipoDeRama(rama, puntos) };
+}
+
+function capasAvatar(av){
+  const piezas = Object.values(av.equipo||{}).filter(id=>AVATAR.piezas[id]);
+  const sinPelo = piezas.some(id=>TAPA_PELO.has(id));
+  return [ ...AVATAR.cuerpo[av.sexo], AVATAR.ojos[av.ojos] || AVATAR.ojos.brown,
+    ...(!sinPelo && AVATAR.pelos[av.pelo]?.capas || []),
+    ...(!sinPelo && AVATAR.barbas[av.barba]?.capas || []),
+    ...piezas.flatMap(id=>AVATAR.piezas[id].capas[av.sexo]) ].sort((a,b)=>a.z-b.z);
+}
+const capasCargadas = new Map(), hojasAvatar = new Map();
+function cargarCapa(s){
+  if(!capasCargadas.has(s)) capasCargadas.set(s, new Promise(ok=>{ const i = new Image(); i.onload = ()=>ok(i); i.onerror = ()=>ok(null); i.src = `avatar/${s}.png`; }));
+  return capasCargadas.get(s);
+}
+const rgb = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+async function hojaAvatar(av){
+  const clave = JSON.stringify(av);
+  if(hojasAvatar.has(clave)) return hojasAvatar.get(clave);
+  const capas = capasAvatar(av), imgs = await Promise.all(capas.map(c=>cargarCapa(c.s)));
+  const lienzo = document.createElement("canvas"); lienzo.width = 576; lienzo.height = 128;
+  const ctx = lienzo.getContext("2d");
+  const rampas = { piel:RAMPAS.piel[av.piel], pelo:RAMPAS.pelo[av.colorPelo], armadura:RAMPAS.armadura[av.armadura] };
+  capas.forEach((c,i)=>{
+    if(!imgs[i]) return;
+    if(!c.g){ ctx.drawImage(imgs[i],0,0); return; }
+    const t = document.createElement("canvas"); t.width = 576; t.height = 128;
+    const tc = t.getContext("2d", { willReadFrequently:true }); tc.drawImage(imgs[i],0,0);
+    const d = tc.getImageData(0,0,576,128), px = d.data, tabla = (rampas[c.g] || RAMPAS.armadura.acero).map(rgb);
+    for(let p=0;p<px.length;p+=4){
+      if(!px[p+3]) continue;
+      const [r,g,b] = tabla[Math.min(5, Math.round(px[p]/40))];
+      px[p] = r; px[p+1] = g; px[p+2] = b;
+    }
+    tc.putImageData(d,0,0); ctx.drawImage(t,0,0);
+  });
+  const url = lienzo.toDataURL();
+  if(hojasAvatar.size>60) hojasAvatar.clear();
+  hojasAvatar.set(clave, url);
+  return url;
+}
+function useHojaAvatar(av){
+  const clave = JSON.stringify(av);
+  const [url, setUrl] = useState(()=>hojasAvatar.get(clave) || null);
+  useEffect(()=>{ let vivo = true; hojaAvatar(av).then(u=>{ if(vivo) setUrl(u); }); return ()=>{ vivo = false; }; }, [clave]);
+  return url;
+}
+function Avatar({ av, escala=2, dir="frente", andar=false, className="", style, titulo }){
+  const url = useHojaAvatar(av), s = 64*escala;
+  return <span className={`fh-sprite ${andar ? "fh-andar" : ""} ${className}`} role={titulo ? "img" : undefined} aria-label={titulo} aria-hidden={titulo ? undefined : true}
+    style={{ width:s, height:s, "--s":`${s}px`, backgroundImage:url ? `url(${url})` : undefined, backgroundSize:`${s*9}px ${s*2}px`,
+      backgroundPosition:`0 ${dir==="perfil" ? -s : 0}px`, ...style }}/>;
+}
+/* Solo la cara, para los sitios pequeños. El recuadro de 26 px es donde cae la cabeza. */
+function AvatarCara({ av, size=32, style }){
+  const url = useHojaAvatar(av), k = size/26;
+  return <span className="fh-sprite" aria-hidden="true" style={{ width:size, height:size, backgroundImage:url ? `url(${url})` : undefined,
+    backgroundSize:`${576*k}px ${128*k}px`, backgroundPosition:`${-19*k}px ${-7*k}px`, ...style }}/>;
 }
 const CORAZON = ["..XX.XX..",".XOXXXXX.","XOXXXXXXX","XXXXXXXXX",".XXXXXXX.","..XXXXX..","...XXX...","....X...."];
-function CorazonPixel({ size=72, className="" }){
+function CorazonPixel({ size=72, className="", style }){
   return (
-    <svg className={className} width={size} height={size*8/9} viewBox="0 0 9 8" shapeRendering="crispEdges" role="img" aria-label="Vida extra">
+    <svg className={className} style={style} width={size} height={size*8/9} viewBox="0 0 9 8" shapeRendering="crispEdges" role="img" aria-label="Vida">
       {CORAZON.flatMap((fila,y)=>[...fila].map((c,x)=> c==="." ? null : <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={c==="O" ? "#FFD2D0" : "#E8433F"}/>))}
     </svg>
   );
@@ -2912,14 +3083,15 @@ function TituloArcade({ texto }){
     {[...texto].map((c,i)=><span key={i} aria-hidden="true" style={{ animationDelay:`${i*.05}s` }}>{c===" " ? "\u00A0" : c}</span>)}
   </div>;
 }
-function EfectoPantalla({ efecto, onFin }){
+function EfectoPantalla({ efecto, onFin, avatar, onVerEquipo }){
   const hecho = useRef(false);
   const cerrar = ()=>{ if(hecho.current) return; hecho.current = true; onFin(); };
-  const espera = efecto.tipo === "gameOver";     // este no se va solo: hay que decidir continuar
+  const espera = efecto.tipo === "gameOver" || efecto.tipo === "botin";     // estos no se van solos: hay que decidir
   useEffect(()=>{
     if(efecto.tipo==="levelUp"){ sfx("levelup",.6); vibrar([50,40,120]); }
     if(efecto.tipo==="vidaExtra"){ sfx("vida",.6); vibrar([40,30,40,30,90]); }
     if(efecto.tipo==="gameOver"){ sfx("gameover",.6); vibrar(220); }
+    if(efecto.tipo==="botin"){ sfx("record",.6); vibrar([30,30,30,30,90]); }
     if(espera) return;
     const t = setTimeout(cerrar, 3400);
     return ()=>clearTimeout(t);
@@ -2938,6 +3110,19 @@ function EfectoPantalla({ efecto, onFin }){
     </div>
   );
 
+  if(efecto.tipo==="botin") return (
+    <div className="fx" style={{ "--fx":"#3DDC84" }} role="dialog" aria-modal="true" aria-label="New Gear">
+      <div className="fx-rayos"/>
+      <Particulas colores={["#3DDC84","#FFC83D","#FFFFFF"]}/>
+      <span className="fx-salto" style={{ display:"inline-flex" }}><Sprite id={SPR.cofre} size={96}/></span>
+      <TituloArcade texto="NEW GEAR!"/>
+      <div className="fx-sub">{efecto.piezas[0].n}</div>
+      <div className="fx-nota">{efecto.piezas.length>1 ? `Y ${efecto.piezas.length-1} más. ` : ""}Ganado con tus series de {RAMA[efecto.piezas[0].rama].estilo.toLowerCase()}.</div>
+      <button className="fh-btn fx-boton" onClick={()=>{ cerrar(); onVerEquipo(); }} autoFocus>VER EQUIPO</button>
+      <button className="fh-btn" onClick={cerrar} style={{ background:"none", color:"#C9C2DC", padding:10, fontSize:17 }}>Seguir</button>
+    </div>
+  );
+
   const vida = efecto.tipo==="vidaExtra";
   const color = vida ? "#FF5A5F" : "#FFC83D";
   return (
@@ -2946,7 +3131,7 @@ function EfectoPantalla({ efecto, onFin }){
       <Particulas colores={vida ? ["#FF5A5F","#FFD2D0","#FFFFFF"] : ["#FFC83D","#FFFFFF","#3DDC84","#4FC3F7"]}/>
       {vida
         ? <CorazonPixel size={90} className="fx-latido"/>
-        : <span className="fx-salto" style={{ display:"inline-flex" }}><Sprite id={efecto.sprite} size={96}/></span>}
+        : <span className="fx-salto" style={{ display:"inline-flex" }}><Avatar av={avatar} escala={2}/></span>}
       <TituloArcade texto={vida ? "EXTRA LIFE!" : "LEVEL UP!"}/>
       {vida ? <>
         <div className="fx-sub">+1 día de descanso</div>
@@ -2989,11 +3174,98 @@ function Toast({ toast }){
   );
 }
 
+/* --- Minijuego del descanso ---------------------------------------------------
+   Un solo toque, con una mano y con las manos sudadas: la aguja va y viene, y hay que
+   parar en la zona verde. El centro dorado es crítico y quita el doble. No da XP ni
+   nada que cuente: es para hacer corto el descanso, no para que salga a cuenta alargarlo.
+   La aguja se mueve escribiendo en el DOM y no con estado: RestTimer repinta cada 100 ms
+   y esto va en cada fotograma. Por eso va en memo. */
+const MONSTRUOS = [108,120,123,122,124,109,110,121];
+const partidaNueva = () => ({ hp:3, max:3, vidas:3, caidos:0, centro:50, golpes:0, texto:null, acierto:false, ko:false });
+const JuegoDescanso = React.memo(function JuegoDescanso({ avatar }){
+  const [j, setJ] = useState(partidaNueva);
+  const [record, setRecord] = useState(0);
+  const aguja = useRef(null), pos = useRef(0), t0 = useRef(0);
+  const periodo = Math.max(560, 1200 - j.caidos*60), zona = Math.max(12, 30 - j.caidos*2), critico = zona/3;
+
+  useEffect(()=>{ loadKey("gym:juego",0).then(v=>setRecord(Number(v)||0)); }, []);
+  useEffect(()=>{
+    if(j.ko) return;
+    let id;
+    const paso = t=>{
+      if(!t0.current) t0.current = t;
+      const k = ((t-t0.current)/periodo) % 2;
+      pos.current = (k<1 ? k : 2-k)*100;
+      if(aguja.current) aguja.current.style.left = `${pos.current}%`;
+      id = requestAnimationFrame(paso);
+    };
+    id = requestAnimationFrame(paso);
+    return ()=>cancelAnimationFrame(id);
+  }, [periodo, j.ko]);
+
+  function golpear(){
+    if(j.ko){ t0.current = 0; setJ(partidaNueva()); return; }
+    const d = Math.abs(pos.current - j.centro);
+    const dano = d<=critico/2 ? 2 : d<=zona/2 ? 1 : 0;
+    const centro = 22 + Math.random()*56, golpes = j.golpes+1;
+    if(!dano){
+      vibrar(60);
+      const vidas = j.vidas-1;
+      setJ({ ...j, vidas, centro, golpes, texto:"FALLO", acierto:false, ko:vidas<=0 });
+      return;
+    }
+    const hp = j.hp-dano;
+    if(hp>0){
+      sfx("serie",.3); vibrar(15);
+      setJ({ ...j, hp, centro, golpes, texto:dano===2 ? "¡CRÍTICO!" : `-${dano}`, acierto:true });
+      return;
+    }
+    sfx("record",.35); vibrar([20,30,40]);
+    const caidos = j.caidos+1, max = 3 + Math.floor(caidos/2);
+    if(caidos>record){ setRecord(caidos); saveKey("gym:juego", caidos); }
+    setJ({ ...j, hp:max, max, caidos, centro, golpes, texto:dano===2 ? "¡CRÍTICO!" : "¡K.O.!", acierto:true });
+  }
+
+  return (
+    <div role="button" tabIndex={0} aria-label="Minijuego. Toca cuando la aguja pase por la zona verde."
+      onPointerDown={golpear} onKeyDown={e=>{ if(e.key===" "||e.key==="Enter"){ e.preventDefault(); golpear(); } }}
+      style={{ cursor:"pointer", touchAction:"manipulation", userSelect:"none", WebkitUserSelect:"none", marginBottom:14 }}>
+      <div className="fh-escena" style={{ height:132, borderWidth:2, borderStyle:"solid", borderColor:"var(--line2)" }}>
+        <div style={{ position:"absolute", top:7, left:8, right:8, display:"flex", justifyContent:"space-between", alignItems:"center", zIndex:2 }}>
+          <span style={{ display:"flex", gap:3 }}>{[0,1,2].map(i=><CorazonPixel key={i} size={15} style={{ opacity:i<j.vidas ? 1 : .22 }}/>)}</span>
+          <span className="arcade" style={{ fontSize:9, color:"#FFF", textShadow:"1px 1px 0 #000" }}>{j.caidos} · MÁX {record}</span>
+        </div>
+        <span key={`h${j.acierto ? j.golpes : 0}`} className={j.acierto ? "fh-embiste" : ""} style={{ position:"absolute", left:"6%", bottom:-14, display:"inline-flex" }}>
+          <Avatar av={avatar} escala={2} dir="perfil"/>
+        </span>
+        <span key={`m${j.caidos}-${j.golpes}`} className={j.golpes ? "fh-sacude" : ""} style={{ position:"absolute", right:"8%", bottom:8, display:"inline-flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+          <span style={{ display:"flex", gap:2 }}>{Array.from({ length:j.max }, (_,i)=><i key={i} style={{ width:7, height:7, background:i<j.hp ? "#E8433F" : "rgba(0,0,0,.55)", boxShadow:"0 0 0 1px #000" }}/>)}</span>
+          <Sprite id={MONSTRUOS[j.caidos%MONSTRUOS.length]} size={64}/>
+        </span>
+        {j.texto && <span key={j.golpes} className="arcade fh-texto-golpe" style={{ color:j.acierto ? "#FFC83D" : "#FF8A80" }}>{j.texto}</span>}
+        {j.ko && <div style={{ position:"absolute", inset:0, background:"rgba(6,8,13,.72)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8, zIndex:3 }}>
+          <span className="arcade" style={{ fontSize:13, color:"#FFF" }}>K.O.</span>
+          <span style={{ fontSize:12, color:"#D9D3E8" }}>{j.caidos} {j.caidos===1 ? "monstruo" : "monstruos"} · toca para repetir</span>
+        </div>}
+      </div>
+      <div style={{ position:"relative", height:24, marginTop:6, background:"var(--bg2)", border:"2px solid var(--line2)", overflow:"hidden" }}>
+        <i style={{ position:"absolute", top:0, bottom:0, left:`${j.centro-zona/2}%`, width:`${zona}%`, background:"var(--jade)" }}/>
+        <i style={{ position:"absolute", top:0, bottom:0, left:`${j.centro-critico/2}%`, width:`${critico}%`, background:"var(--gold)" }}/>
+        <i ref={aguja} style={{ position:"absolute", top:-2, bottom:-2, width:4, marginLeft:-2, left:0, background:"#FFF", boxShadow:"0 0 0 1px #000" }}/>
+      </div>
+      <div style={{ fontSize:11, color:"var(--faint)", marginTop:6 }}>Toca cuando la aguja pase por el verde. El dorado es crítico.</div>
+    </div>
+  );
+});
+
 /* Temporizador de descanso: pop-up a pantalla completa que bloquea el avance.
    Solo pinta: la hora de fin vive en la sesión (`session.descanso`), así sobrevive a
    que Android mate la app y al volver sigue donde debe. */
-function RestTimer({ hasta, total, onDone, onSaltar, onMas15, isRecomp }){
+function RestTimer({ hasta, total, onDone, onSaltar, onMas15, isRecomp, avatar }){
   const pool = isRecomp ? RECOMP_TIPS : TIPS;
+  const [jugar, setJugar] = useState(true);
+  useEffect(()=>{ loadGlobal("gym:descansoJuego", true).then(setJugar); }, []);
+  const alternarJuego = ()=>{ setJugar(v=>{ saveGlobal("gym:descansoJuego", !v); return !v; }); };
   const [queda, setQueda] = useState(() => Math.max(0, hasta - Date.now()));
   const [tip, setTip] = useState(() => pick(pool));
   const onDoneRef = useRef(onDone); onDoneRef.current = onDone;
@@ -3029,26 +3301,28 @@ function RestTimer({ hasta, total, onDone, onSaltar, onMas15, isRecomp }){
   // Portal al root .fh: evita que un ancestro con transform (animación .fh-in) rompa el position:fixed.
   const target = (typeof document!=="undefined" && document.getElementById("rpgym-root")) || (typeof document!=="undefined" ? document.body : null);
   const overlay = (
-    <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(6,8,13,.9)", backdropFilter:"blur(7px)", display:"flex", alignItems:"center", justifyContent:"center", padding:22 }}>
-      <div className="fh-card fh-pop" style={{ padding:26, borderColor:"var(--ember)", background:"linear-gradient(160deg,var(--card),var(--card2))", maxWidth:420, width:"100%", textAlign:"center" }}>
-        <div style={{ fontSize:11, color:"var(--muted)", fontWeight:700, letterSpacing:".14em", marginBottom:16 }}>DESCANSO</div>
-        <div style={{ display:"flex", justifyContent:"center", marginBottom:18 }}>
+    <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(6,8,13,.9)", backdropFilter:"blur(7px)", display:"flex", alignItems:"center", justifyContent:"center", padding:16, overflowY:"auto" }}>
+      <div className="fh-card fh-pop" style={{ padding:jugar ? 16 : 26, borderColor:"var(--ember)", background:"linear-gradient(160deg,var(--card),var(--card2))", maxWidth:420, width:"100%", textAlign:"center", margin:"auto" }}>
+        <div style={{ fontSize:11, color:"var(--muted)", fontWeight:700, letterSpacing:".14em", marginBottom:jugar ? 10 : 16 }}>DESCANSO</div>
+        <div style={{ display:"flex", justifyContent:"center", marginBottom:jugar ? 12 : 18 }}>
           {/* Sin transición: con la app oculta no se pinta nada y, al volver, la animación
               arrancaba desde lo último pintado y barría el anillo durante medio segundo. */}
-          <Ring pct={pct} size={168} stroke={11} color="var(--ember)" transicion="none">
-            <div className="mono" style={{ fontSize:40, fontWeight:700, lineHeight:1 }}>{mm}:{ss}</div>
-            <div style={{ fontSize:10, color:"var(--muted)", fontWeight:600, marginTop:4 }}>RECUPÉRATE</div>
+          <Ring pct={pct} size={jugar ? 112 : 168} stroke={jugar ? 8 : 11} color="var(--ember)" transicion="none">
+            <div className="mono" style={{ fontSize:jugar ? 27 : 40, fontWeight:700, lineHeight:1 }}>{mm}:{ss}</div>
+            {!jugar && <div style={{ fontSize:10, color:"var(--muted)", fontWeight:600, marginTop:4 }}>RECUPÉRATE</div>}
           </Ring>
         </div>
-        <div className="fh-card" style={{ padding:15, background:"var(--bg2)", textAlign:"left", marginBottom:16 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:6, color:"var(--gold)", fontSize:10, fontWeight:700, letterSpacing:".1em", marginBottom:6 }}>
-            <Lightbulb size={13}/> CONSEJO
+        {jugar ? <JuegoDescanso avatar={avatar}/> : (
+          <div className="fh-card" onClick={()=>setTip(pick(pool))} style={{ padding:15, background:"var(--bg2)", textAlign:"left", marginBottom:16, cursor:"pointer" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, color:"var(--gold)", fontSize:10, fontWeight:700, letterSpacing:".1em", marginBottom:6 }}>
+              <Lightbulb size={13}/> CONSEJO
+            </div>
+            <div style={{ fontSize:13.5, lineHeight:1.5, color:"var(--txt)" }}>{tip}</div>
           </div>
-          <div style={{ fontSize:13.5, lineHeight:1.5, color:"var(--txt)" }}>{tip}</div>
-        </div>
+        )}
         <div style={{ display:"flex", gap:8 }}>
           <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--txt)", padding:"13px 6px", border:"1px solid var(--line2)", whiteSpace:"nowrap" }} onClick={onMas15}>+15 s</button>
-          <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--muted)", padding:13, border:"1px solid var(--line2)" }} onClick={()=>setTip(pick(pool))}>Otro consejo</button>
+          <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--muted)", padding:13, border:"1px solid var(--line2)" }} onClick={alternarJuego}>{jugar ? "Consejo" : "Jugar"}</button>
           <button className="fh-btn" style={{ flex:1, background:"var(--ember)", color:"#fff", padding:13, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }} onClick={onSaltar}><SkipForward size={16}/> Saltar</button>
         </div>
         <div style={{ fontSize:11, color:"var(--faint)", marginTop:12 }}>Termina o salta el descanso para seguir con el siguiente ejercicio.</div>
@@ -3121,6 +3395,9 @@ export default function App(){
   const [efectos, setEfectos] = useState([]);    // cola de pantallas: LEVEL UP, EXTRA LIFE, GAME OVER
   const [sonido, setSonidoState] = useState(true);
   const lanzarEfecto = (...nuevos)=>setEfectos(q=>[...q, ...nuevos.map(e=>({ ...e, id:Date.now()+Math.random() }))]);
+  const puntos = useMemo(()=>puntosDeRama(log), [log]);
+  const avatar = useMemo(()=>state.avatar || avatarPorDefecto(state.profile, puntos), [state.avatar, state.profile?.sex, puntos]);
+  function guardarAvatar(av){ const ns = { ...state, avatar:av }; setState(ns); persist(ns); }
   const [routineDraft, setRoutineDraft] = useState(null);   // rutina que se está configurando
   /* Informe semanal: qué semana se está mirando y a dónde vuelve el botón de
      salir (sale solo el lunes y también desde la ficha: hay que volver al de antes). */
@@ -3234,13 +3511,6 @@ export default function App(){
     if(sol.ok) setSolicitudes(sol.solicitudes);
     const env = await cloud.rutinasRecibidas();
     if(env.ok) setEnviosRutina(env.envios);
-    // Móvil recién instalado con cuenta ya usada: si no hay nada que perder y en
-    // la nube hay copia, se ofrece. No se pregunta cuando ya hay progreso aquí:
-    // sería una invitación a pisárselo sin querer (para eso están los Ajustes).
-    if(!state.totalWorkouts && !(log||[]).length){
-      const c = await cloud.bajarCopia();
-      if(c.ok && c.copia) setCopiaNube(c.copia);
-    }
     // Registra el dispositivo en FCM. Sin google-services.json el plugin no
     // existe y esto no hace nada: la app funciona igual.
     if(push.pushDisponible()) push.activarPush();
@@ -3401,8 +3671,8 @@ export default function App(){
      con otra clave y obliga a desinstalar). Solo texto: nada de plugins. */
   async function exportBackup(){
     const data = {};
-    for (const k of BACKUP_KEYS) { try { const r = await window.storage.get(k); data[k] = r ? r.value : null; } catch { data[k] = null; } }
-    return JSON.stringify({ app:BACKUP_APP, format:BACKUP_FORMAT, exportedAt:new Date().toISOString(), theme, data });
+    for (const k of BACKUP_KEYS) { try { const r = await window.storage.get(STORE_PREFIX+k); data[k] = r ? r.value : null; } catch { data[k] = null; } }
+    return JSON.stringify({ app:BACKUP_APP, format:BACKUP_FORMAT, exportedAt:new Date().toISOString(), theme, prefijo:STORE_PREFIX, data });
   }
   async function importBackup(text){
     let obj;
@@ -3410,7 +3680,7 @@ export default function App(){
     if ((obj?.app !== BACKUP_APP && obj?.app !== BACKUP_APP_LEGACY) || !obj.data) return { ok:false, msg:"Esa copia no es de RPGym." };
     for (const k of BACKUP_KEYS) {
       const v = obj.data[k];
-      try { if (v == null) await window.storage.delete(k); else await window.storage.set(k, v); } catch {}
+      try { if (v == null) await window.storage.delete(STORE_PREFIX+k); else await window.storage.set(STORE_PREFIX+k, v); } catch {}
     }
     if (obj.theme) setTheme(obj.theme);
     await loadProfileData();
@@ -3654,9 +3924,11 @@ export default function App(){
     });
     setSession(null); setTab("results");
     const fx = [];
-    if(finalLevel>prevLevel) fx.push({ tipo:"levelUp", nivel:finalLevel, sprite:heroeDe(finalLevel, state.profile?.sex),
+    if(finalLevel>prevLevel) fx.push({ tipo:"levelUp", nivel:finalLevel,
       rango: rankFor(finalLevel).name!==rankFor(prevLevel).name ? rankFor(finalLevel).name : null });
     if(goalJustMet) fx.push({ tipo:"vidaExtra" });
+    const botin = piezasNuevas(puntosDeRama(log), puntosDeRama(nlog));
+    if(botin.length) fx.push({ tipo:"botin", piezas:botin });
     if(fx.length) lanzarEfecto(...fx);
 
     // Sube el estado de juego (si hay cuenta). Sin bloquear.
@@ -3789,6 +4061,27 @@ export default function App(){
     perfilSubidoRef.current = true;
     subirPerfil(perfil);
     sincronizarRutinasSeguidas();     // ahora sí: las rutinas locales ya están leídas
+    // eslint-disable-next-line
+  },[loading, perfil?.handle]);
+
+  /* Ofrece la copia de la nube solo si aporta algo: el móvil está vacío o la copia
+     va por delante de lo que hay aquí. Tampoco puede ir en cargarSocial(): allí
+     `state` es el de por defecto, parecía que el móvil estaba vacío y la tarjeta
+     salía en cada arranque. "Ahora no" vale para esa copia hasta que suba otra. */
+  const copiaMiradaRef = useRef(false);
+  useEffect(()=>{
+    if(loading || !cloud.cloudEnabled || !perfil || copiaMiradaRef.current) return;
+    copiaMiradaRef.current = true;
+    (async()=>{
+      const c = await cloud.bajarCopia();
+      if(!c.ok || !c.copia) return;
+      if(await loadGlobal("gym:copiaDescartada", null) === c.copia.updated_at) return;
+      const aqui = resumenProgreso(state, log), nube = await resumenCopiaNube(c.copia);
+      if(nube && nube.prefijo !== STORE_PREFIX) return;      // es de otro perfil
+      const vacio = !aqui.entrenos;
+      const ofrecer = vacio ? (!nube || nube.entrenos>0) : (nube && compararProgreso(aqui, nube)==="copia");
+      if(ofrecer) setCopiaNube({ ...c.copia, vacio, nube, aqui });
+    })();
     // eslint-disable-next-line
   },[loading, perfil?.handle]);
 
@@ -3983,7 +4276,7 @@ export default function App(){
     await cloud.salir();
     setCloudSession(null); setPerfil(null);
     setAmigos([]); setQuedadas([]); setNovedades([]); setEntrenando([]); setSuperadoPor([]);
-    setSolicitudes([]); setEnviosRutina([]);
+    setSolicitudes([]); setEnviosRutina([]); setCopiaNube(null); copiaMiradaRef.current = false;
     socialCargadoPara.current = null; setAmigoAbierto(null);
     setSinCuenta(false); setTab("home");    // al salir se vuelve a la pantalla de entrar
     showToast({ title:"Sesión cerrada", sub:"Tu progreso sigue en este móvil.", icon:Lock });
@@ -4117,26 +4410,38 @@ export default function App(){
     </div>
   );
 
+  /* Sale al crear el perfil y, a quien ya lo tenía, al abrir la versión que trae el
+     avatar. Con un entreno a medias se espera: lo primero es volver a él. */
+  if(!state.avatar && !session) return (
+    <div className="fh" id="rpgym-root" data-theme={theme}>
+      <StyleTag/>
+      <div className="fh-shell" style={{ paddingBottom:24 }}>
+        <HeroeView arranque avatar={avatar} puntos={puntos} onCambiar={guardarAvatar} onAhoraNo={()=>guardarAvatar(avatar)}/>
+      </div>
+    </div>
+  );
+
   return (
     <div className="fh" id="rpgym-root" data-theme={theme}>
       <StyleTag/>
       <Toast toast={toast}/>
-      {efectos[0] && <EfectoPantalla key={efectos[0].id} efecto={efectos[0]} onFin={()=>setEfectos(q=>q.slice(1))}/>}
+      {efectos[0] && <EfectoPantalla key={efectos[0].id} efecto={efectos[0]} avatar={avatar} onVerEquipo={()=>setTab("heroe")} onFin={()=>setEfectos(q=>q.slice(1))}/>}
       <div className="fh-shell">
-        {tab==="home" && <HomeView {...{ state, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines,
+        {tab==="home" && <HomeView {...{ state, avatar, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines,
           cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno, superadoPor,
-          copiaNube, onRestaurarNube:restaurarDeNube, onDescartarCopia:()=>setCopiaNube(null),
+          copiaNube, onRestaurarNube:restaurarDeNube, onDescartarCopia:()=>{ saveGlobal("gym:copiaDescartada", copiaNube?.updated_at); setCopiaNube(null); },
           pendientes:solicitudes.length + enviosRutina.length }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina, setTab }}/>}
-        {tab==="ficha" && <CharacterView {...{ state, level, rank, log, customRoutines, setTab,
+        {tab==="ficha" && <CharacterView {...{ state, avatar, puntos, level, rank, log, customRoutines, setTab,
           onAbrirInforme:lunes=>abrirInforme(lunes, "ficha") }}/>}
+        {tab==="heroe" && <HeroeView avatar={avatar} puntos={puntos} onCambiar={guardarAvatar} onVolver={()=>setTab("ficha")}/>}
         {tab==="avisos" && <AvisosView {...{ solicitudes, envios:enviosRutina,
           onResponderSolicitud:responderSolicitud, onResponderRutina:responderRutina,
           onVolver:()=>setTab("home") }}/>}
         {tab==="amigo" && amigoAbierto && <AmigoView {...{ amigo:amigoAbierto, misBests:state.bests,
           customRoutines, onVolver:cerrarAmigo, onToast:showToast }}/>}
         {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests, sesionConjunta,
-          peso:state.profile?.weightKg, sexo:state.profile?.sex, misBests:state.bests, nextWeight:state.nextWeight,
+          peso:state.profile?.weightKg, sexo:state.profile?.sex, misBests:state.bests, nextWeight:state.nextWeight, avatar,
           onAbandonar:()=>lanzarEfecto({ tipo:"gameOver", titulo:"Entreno abandonado", nota:"Las series de hoy no cuentan. Tu racha y tu nivel siguen como estaban." }) }}/>}
         {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank, customRoutines, onGuardarCambios:guardarCambiosRutina }}/>}
         {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines, setTab, quedadas }}/>}
@@ -4149,17 +4454,17 @@ export default function App(){
         {tab==="logros" && <AchievementsView {...{ state, level }}/>}
         {tab==="dieta" && <DietView {...{ state, mealPlan, saveMealPlan, excludes, setExcludes, setTab, customDiet, saveCustomDiet }}/>}
         {tab==="editor" && <RoutineBuilderView {...{ draft:routineDraft, setDraft:setRoutineDraft, onSave:saveRoutineFromEditor, onCancel:closeEditor, isNew:draftIsNew }}/>}
-        {tab==="ajustes" && <SettingsView {...{ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, sonido, setSonido, resetProgress, exportBackup, importBackup,
+        {tab==="ajustes" && <SettingsView {...{ state, log, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, sonido, setSonido, resetProgress, exportBackup, importBackup,
           setVacaciones, terminarVacaciones,
           cloudEnabled:cloud.cloudEnabled, perfil, session:cloudSession,
           onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onVerificar:verificarCuenta,
           onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle, level }}/>}
       </div>
 
-      {tab!=="workout" && tab!=="results" && tab!=="editor" && (
+      {tab!=="workout" && tab!=="results" && tab!=="editor" && tab!=="heroe" && (
         <nav className="fh-nav"><div className="fh-nav-inner">
-          {[{id:"home",spr:SPR.puerta,label:"Inicio"},{id:"rutinas",spr:SPR.espada,label:"Rutinas"},{id:"progreso",spr:heroeDe(level, state.profile?.sex),label:"RPGym"},{id:"logros",spr:SPR.cofre,label:"Logros"},{id:"dieta",spr:SPR.pocion,label:"Dieta"}].map(t=>(
-            <button key={t.id} className={tab===t.id?"on":""} onClick={()=>setTab(t.id)} aria-current={tab===t.id?"page":undefined}><Sprite id={t.spr} size={32}/><span>{t.label}</span></button>
+          {[{id:"home",spr:SPR.puerta,label:"Inicio"},{id:"rutinas",spr:SPR.espada,label:"Rutinas"},{id:"progreso",cara:true,label:"RPGym"},{id:"logros",spr:SPR.cofre,label:"Logros"},{id:"dieta",spr:SPR.pocion,label:"Dieta"}].map(t=>(
+            <button key={t.id} className={tab===t.id?"on":""} onClick={()=>setTab(t.id)} aria-current={tab===t.id?"page":undefined}>{t.cara ? <AvatarCara av={avatar} size={32}/> : <Sprite id={t.spr} size={32}/>}<span>{t.label}</span></button>
           ))}
         </div></nav>
       )}
@@ -4369,8 +4674,9 @@ function OnboardingWizard({ onDone, initial, importBackup }){
 /* Copia de seguridad en la nube, cifrada en el móvil.
    Resuelve "cambio de móvil sin perder nada" sin que el detalle de los entrenos
    salga del dispositivo: el servidor solo guarda bytes que no puede leer. */
-function CopiaNubePanel({ exportBackup, importBackup }){
+function CopiaNubePanel({ exportBackup, importBackup, progreso }){
   const [copia, setCopia] = useState(null);
+  const [comparada, setComparada] = useState(null);   // movil | copia | igual | otroPerfil
   const [estado, setEstado] = useState("mirando");   // mirando | listo | trabajando
   const [msg, setMsg] = useState(null);
   const [confirmar, setConfirmar] = useState(false);
@@ -4378,7 +4684,10 @@ function CopiaNubePanel({ exportBackup, importBackup }){
   async function mirar(){
     const r = await cloud.bajarCopia();
     setEstado("listo");
-    if (r.ok) setCopia(r.copia);
+    if (!r.ok) return;
+    setCopia(r.copia); setComparada(null);
+    const nube = r.copia ? await resumenCopiaNube(r.copia) : null;
+    if (nube) setComparada(nube.prefijo !== STORE_PREFIX ? "otroPerfil" : compararProgreso(progreso, nube));
   }
   useEffect(()=>{ mirar(); }, []);
 
@@ -4439,6 +4748,14 @@ function CopiaNubePanel({ exportBackup, importBackup }){
             <div style={{ fontSize:11, color:"var(--faint)", marginTop:3 }}>
               desde {copia.dispositivo || "otro dispositivo"} · {(copia.bytes/1024).toFixed(0)} KB cifrados
             </div>
+            {comparada && (
+              <div style={{ fontSize:11.5, marginTop:6, color:comparada==="copia"?"var(--gold)":"var(--muted)" }}>
+                {{ movil:"Este móvil va por delante: actualiza la copia para no perderlo.",
+                   copia:"La copia va por delante de este móvil.",
+                   igual:"Copia y móvil están al día.",
+                   otroPerfil:"Esta copia es de otro perfil." }[comparada]}
+              </div>
+            )}
           </>) : (
             <div style={{ fontSize:12.5, color:"var(--muted)" }}>Todavía no has subido ninguna copia.</div>
           )}
@@ -5815,7 +6132,7 @@ const SETTINGS_TABS = [
   { id:"privacidad", label:"Privacidad", icon:Lock },
 ];
 
-function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, sonido, setSonido, resetProgress, exportBackup, importBackup, setVacaciones, terminarVacaciones, cloudEnabled, perfil, session, level, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle }){
+function SettingsView({ state, log, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, sonido, setSonido, resetProgress, exportBackup, importBackup, setVacaciones, terminarVacaciones, cloudEnabled, perfil, session, level, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle }){
   const [sec, setSec] = useState("perfil");
   const p = state.profile || {};
   const rem = state.reminders || { enabled:false, hour:19, minute:0, days:[1,3,5] };
@@ -6174,7 +6491,7 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
         {backupMsg && <div style={{ marginTop:11, fontSize:12.5, color:backupMsg.ok?"var(--jade)":"var(--crimson)", lineHeight:1.45 }}>{backupMsg.msg}</div>}
       </div>
 
-      {cloudEnabled && perfil && <CopiaNubePanel exportBackup={exportBackup} importBackup={importBackup}/>}
+      {cloudEnabled && perfil && <CopiaNubePanel exportBackup={exportBackup} importBackup={importBackup} progreso={resumenProgreso(state, log)}/>}
 
       {/* --- Zona de datos / borrar progreso --- */}
       <div style={sectionTitle}>DATOS</div>
@@ -6222,6 +6539,13 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
             <Shield size={15} color="var(--jade)"/> Leer la política de privacidad
           </a>
         )}
+      </div>
+
+      <div style={{ fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" }}>CRÉDITOS DEL ARTE</div>
+      <div className="fh-card" style={{ padding:16, fontSize:12, color:"var(--muted)", lineHeight:1.5 }}>
+        <p style={{ margin:"0 0 8px" }}>Personajes: <b style={{ color:"var(--txt)" }}>Liberated Pixel Cup</b> (LPC), bajo licencias OGA-BY 3.0, CC-BY-SA 3.0 y CC0. Detalle de cada capa en <span className="mono">avatar/CREDITOS.csv</span> y en opengameart.org/content/lpc-collection.</p>
+        <p style={{ margin:"0 0 8px" }}>Autores: {AVATAR.autores.join(", ")}.</p>
+        <p style={{ margin:0 }}>Iconos: Tiny Dungeon de Kenney (CC0). Sonidos: Juhani Junkala (CC0). Fondo: generado con FLUX.1 schnell.</p>
       </div>
 
       </>)}
@@ -6379,7 +6703,7 @@ function CyclePhaseCard({ state, setTab }){
   );
 }
 
-function HomeView({ state, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, copiaNube, onRestaurarNube, onDescartarCopia, pendientes }){
+function HomeView({ state, avatar, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, copiaNube, onRestaurarNube, onDescartarCopia, pendientes }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const phase=recommendedPhase(state.startDate);
@@ -6445,12 +6769,13 @@ function HomeView({ state, level, rank, log, useRest, terminarVacaciones, setTab
       })()}
 
       {/* Rango + XP */}
-      <div className="fh-card fh-framed" onClick={()=>setTab("ficha")} style={{ padding:20, display:"flex", alignItems:"center", gap:18, cursor:"pointer" }}>
-        <Ring pct={xpInto/xpNeed} size={116} stroke={9} color={rank.color}>
-          <Sprite id={heroeDe(level, state.profile?.sex)} size={48} className="fh-idle" titulo={rank.name}/>
-          <div className="arcade" style={{ fontSize:12, marginTop:3 }}>LV {level}</div>
-        </Ring>
-        <div style={{ flex:1 }}>
+      <div className="fh-card fh-framed" onClick={()=>setTab("ficha")} style={{ padding:0, cursor:"pointer" }}>
+        <div className="fh-escena" style={{ height:138, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+          <Avatar av={avatar} escala={2} className="fh-idle" style={{ marginBottom:-4 }} titulo={rank.name}/>
+          <div className="arcade" style={{ position:"absolute", top:10, left:10, fontSize:11, color:"#FFF", textShadow:"1px 1px 0 #000" }}>LV {level}</div>
+          <div className="disp" style={{ position:"absolute", top:7, right:10, fontSize:16, color:RAMA[avatar.rama].color, textShadow:"1px 1px 0 #000" }}>{RAMA[avatar.rama].estilo}</div>
+        </div>
+        <div style={{ padding:"12px 16px 14px" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <div className="cinzel" style={{ fontSize:20, fontWeight:700, color:rank.color }}>{rank.name}</div>
             <ScrollText size={15} color="var(--faint)"/>
@@ -6465,8 +6790,9 @@ function HomeView({ state, level, rank, log, useRest, terminarVacaciones, setTab
         <div className="fh-card fh-in" style={{ padding:16, marginTop:12, borderColor:"var(--jade)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:9, fontSize:14, marginBottom:6 }}><Cloud size={16} color="var(--jade)"/> Tienes una copia en la nube</div>
           <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
-            De {copiaNube.dispositivo || "otro dispositivo"}, del {new Date(copiaNube.updated_at).toLocaleDateString("es-ES",{ day:"2-digit", month:"long" })}.
-            Este móvil está vacío, así que puedes recuperarla ahora mismo.
+            De {copiaNube.dispositivo || "otro dispositivo"}, del {new Date(copiaNube.updated_at).toLocaleDateString("es-ES",{ day:"2-digit", month:"long" })}.{" "}
+            {copiaNube.vacio ? "Este móvil está vacío, así que puedes recuperarla ahora mismo."
+              : <>Va por delante de este móvil: {copiaNube.nube.entrenos} entrenos{copiaNube.nube.ultimo ? `, el último el ${fechaCorta(copiaNube.nube.ultimo)}` : ""}, y aquí {copiaNube.aqui.entrenos}{copiaNube.aqui.ultimo ? `, el último el ${fechaCorta(copiaNube.aqui.ultimo)}` : ""}. Restaurar <b style={{ color:"var(--txt)" }}>sustituye</b> lo que hay aquí.</>}
           </p>
           <div style={{ display:"flex", gap:8 }}>
             <button className="fh-btn" onClick={onDescartarCopia}
@@ -7276,7 +7602,7 @@ function SustituirPanel({ ex, onElegir, onCerrar }){
   );
 }
 
-function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStart, bests, sesionConjunta, peso, sexo, misBests, nextWeight, onAbandonar }){
+function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStart, bests, sesionConjunta, peso, sexo, misBests, nextWeight, onAbandonar, avatar }){
   const [howOpen, setHowOpen] = useState(null);
   const [anadiendo, setAnadiendo] = useState(false);        // selector de ejercicios abierto
   const [flotantes, setFlotantes] = useState([]);           // "+5 XP" que suben desde el botón
@@ -7720,7 +8046,7 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
 
       {flotantes.map(f=><div key={f.id} className="fh-flota" style={{ left:f.x, top:f.y, color:f.color }}>{f.texto}</div>)}
 
-      {descanso && <RestTimer hasta={descanso.hasta} total={descanso.total} onDone={cerrarDescanso} onSaltar={saltarDescanso} onMas15={alargarDescanso} isRecomp={isRecomp}/>}
+      {descanso && <RestTimer hasta={descanso.hasta} total={descanso.total} onDone={cerrarDescanso} onSaltar={saltarDescanso} onMas15={alargarDescanso} isRecomp={isRecomp} avatar={avatar}/>}
     </div>
   );
 }
@@ -8655,7 +8981,185 @@ function AmigosView({ perfil, cloudEnabled, setTab, amigos, onRefrescarAmigos, o
    FICHA DE PERSONAJE
    ========================================================================= */
 
-function CharacterView({ state, level, rank, log, customRoutines, setTab, onAbrirInforme }){
+/* =========================================================================
+   HÉROE (tab "heroe"): personalización y equipo
+   Con `arranque` es el creador por pasos que sale al crear el perfil o al actualizar,
+   y solo guarda al terminar. Sin él se guarda cada cambio al momento.
+   ========================================================================= */
+function MuestraColor({ colores, activo, onClick, etiqueta }){
+  return <button onClick={onClick} aria-label={etiqueta} aria-pressed={activo} title={etiqueta}
+    style={{ width:38, height:38, padding:0, cursor:"pointer", background:`linear-gradient(135deg,${colores[0]} 50%,${colores[1]} 50%)`,
+      border:`2px solid ${activo ? "var(--gold)" : "var(--line2)"}`, boxShadow:activo ? "0 0 0 2px var(--gold)" : "none" }}/>;
+}
+function OpcionHeroe({ activo, onClick, children }){
+  return <button className="fh-btn" onClick={onClick} aria-pressed={activo}
+    style={{ padding:"9px 12px", fontSize:15, background:activo ? "var(--gold)" : "var(--card2)", color:activo ? "#1A1020" : "var(--txt)", border:`1px solid ${activo ? "var(--gold)" : "var(--line2)"}` }}>{children}</button>;
+}
+const tituloHeroe = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"16px 2px 8px" };
+const filaHeroe = { display:"flex", flexWrap:"wrap", gap:8 };
+
+/* Cuánto llevas en cada rama y qué es lo siguiente que ganas. */
+function PanelRamas({ puntos, actual }){
+  const dominante = ramaDominante(puntos);
+  return (<>
+    {dominante && dominante.id!==actual && <div style={{ fontSize:12.5, color:"var(--muted)", lineHeight:1.45, marginBottom:10 }}>
+      Tus entrenos te llevan hacia <b style={{ color:dominante.color }}>{dominante.nombre}</b>.
+    </div>}
+    {RAMAS.map(r=>{
+      const n = puntos[r.id]||0, sig = siguientePieza(r.id, puntos);
+      const previa = [...PIEZAS_POR_RAMA[r.id]].reverse().find(p=>p.u<=n)?.u || 0;
+      const pct = sig ? (n-previa)/(sig.u-previa) : 1;
+      return (
+        <div key={r.id} style={{ marginBottom:11 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", gap:8, fontSize:12.5 }}>
+            <span><b style={{ color:r.color }}>{r.nombre}</b> <span style={{ color:"var(--faint)" }}>· {r.estilo}</span></span>
+            <span className="mono" style={{ color:"var(--muted)", fontSize:11.5 }}>{n}</span>
+          </div>
+          <div className="fh-bar" style={{ marginTop:5 }}><i style={{ width:`${Math.min(100,pct*100)}%`, background:r.color }}/></div>
+          <div style={{ fontSize:11, color:"var(--faint)", marginTop:4 }}>{sig ? `${sig.u-n} para ${sig.n}` : "Rama completa"}</div>
+        </div>
+      );
+    })}
+  </>);
+}
+
+function HeroeView({ avatar, puntos, onCambiar, onVolver, arranque, onAhoraNo }){
+  const [av, setAv] = useState(avatar);
+  const secciones = [["senda","Senda"],["aspecto","Aspecto"],["color","Color"], ...(arranque ? [] : [["equipo","Equipo"]])];
+  const [sec, setSec] = useState(arranque ? "senda" : "equipo");
+  const [ranura, setRanura] = useState(null);
+  const cambiar = p=>{ const n = { ...av, ...p }; setAv(n); if(!arranque) onCambiar(n); };
+  const elegirRama = id=>cambiar({ rama:id, equipo:equipoDeRama(id, puntos), ...(arranque ? { armadura:RAMA[id].armadura } : {}) });
+  const equipar = (id, slot)=>{ const equipo = { ...av.equipo }; if(id) equipo[slot] = id; else delete equipo[slot]; cambiar({ equipo }); };
+  const ganadas = Object.values(PIEZAS_POR_RAMA).flat().filter(p=>p.u>0 && p.u<=(puntos[p.rama]||0)).length;
+  const paso = secciones.findIndex(s=>s[0]===sec), ultimo = paso===secciones.length-1;
+
+  return (
+    <div className="fh-in" style={{ paddingBottom:arranque ? 8 : 24 }}>
+      <header style={{ padding:"22px 2px 12px", display:"flex", alignItems:"center", gap:10 }}>
+        {!arranque && <button onClick={onVolver} aria-label="Volver"
+          style={{ background:"var(--card)", border:"1px solid var(--line)", width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>}
+        <div style={{ flex:1, minWidth:0 }}>
+          <h1 style={{ margin:0, fontSize:24 }}>{arranque ? "Crea tu héroe" : "Tu héroe"}</h1>
+          <p style={{ margin:"3px 0 0", fontSize:13, color:"var(--muted)" }}>{RAMA[av.rama].nombre} · {RAMA[av.rama].estilo}</p>
+        </div>
+        {arranque && <button className="fh-btn" onClick={onAhoraNo} style={{ background:"var(--card)", color:"var(--muted)", border:"1px solid var(--line2)", padding:"8px 12px", fontSize:14 }}>Ahora no</button>}
+      </header>
+
+      <div className="fh-card fh-framed" style={{ padding:0, marginBottom:12 }}>
+        <div className="fh-escena" style={{ height:190, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+          <Avatar av={av} escala={3} className="fh-idle" style={{ marginBottom:-10 }} titulo={`Tu héroe: ${RAMA[av.rama].nombre}`}/>
+        </div>
+      </div>
+
+      <div role="tablist" style={{ display:"flex", gap:6, marginBottom:4 }}>
+        {secciones.map(([id,et])=><button key={id} role="tab" aria-selected={sec===id} className="fh-btn" onClick={()=>setSec(id)}
+          style={{ flex:1, padding:"9px 2px", fontSize:15, background:sec===id ? "var(--gold)" : "var(--card)", color:sec===id ? "#1A1020" : "var(--muted)", border:`1px solid ${sec===id ? "var(--gold)" : "var(--line2)"}` }}>{et}</button>)}
+      </div>
+
+      {sec==="senda" && <>
+        <div style={tituloHeroe}>ELIGE TU ESTILO</div>
+        {arranque && ganadas>0 && <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 2px 10px", lineHeight:1.45 }}>Con lo que ya has entrenado llevas <b style={{ color:"var(--gold)" }}>{ganadas} {ganadas===1 ? "pieza ganada" : "piezas ganadas"}</b>.</p>}
+        {RAMAS.map(r=>{
+          const hoy = { ...av, rama:r.id, armadura:arranque ? r.armadura : av.armadura, equipo:equipoDeRama(r.id, puntos) };
+          const final = { ...hoy, equipo:equipoDeRama(r.id, { [r.id]:Infinity }) };
+          return (
+            <button key={r.id} onClick={()=>elegirRama(r.id)} aria-pressed={av.rama===r.id} className="fh-card"
+              style={{ display:"flex", alignItems:"center", gap:4, width:"100%", textAlign:"left", padding:"6px 10px 6px 2px", marginBottom:8, cursor:"pointer", color:"var(--txt)", borderColor:av.rama===r.id ? r.color : undefined }}>
+              <Avatar av={hoy} escala={1}/>
+              <ChevronRight size={13} color="var(--faint)" style={{ flexShrink:0, marginLeft:-8 }}/>
+              <Avatar av={final} escala={1} style={{ marginLeft:-8 }}/>
+              <span style={{ flex:1, minWidth:0, marginLeft:2 }}>
+                <span className="disp" style={{ display:"block", fontSize:19, color:r.color, lineHeight:1.1 }}>{r.nombre}</span>
+                <span style={{ display:"block", fontSize:12, fontWeight:600 }}>{r.estilo}</span>
+                <span style={{ display:"block", fontSize:11.5, color:"var(--muted)", marginTop:2, lineHeight:1.35 }}>{r.resumen} {r.cuenta}</span>
+              </span>
+            </button>
+          );
+        })}
+      </>}
+
+      {sec==="aspecto" && <>
+        <div style={tituloHeroe}>CUERPO</div>
+        <div style={filaHeroe}>
+          <OpcionHeroe activo={av.sexo==="m"} onClick={()=>cambiar({ sexo:"m" })}>Masculino</OpcionHeroe>
+          <OpcionHeroe activo={av.sexo==="f"} onClick={()=>cambiar({ sexo:"f", barba:null })}>Femenino</OpcionHeroe>
+        </div>
+        <div style={tituloHeroe}>PIEL</div>
+        <div style={filaHeroe}>{Object.entries(RAMPAS.piel).map(([id,r])=><MuestraColor key={id} colores={[r[4],r[2]]} activo={av.piel===id} etiqueta={NOMBRES_COLOR[id]} onClick={()=>cambiar({ piel:id })}/>)}</div>
+        <div style={tituloHeroe}>PEINADO</div>
+        <div style={filaHeroe}>
+          <OpcionHeroe activo={!av.pelo} onClick={()=>cambiar({ pelo:null })}>Sin pelo</OpcionHeroe>
+          {Object.entries(AVATAR.pelos).map(([id,p])=><OpcionHeroe key={id} activo={av.pelo===id} onClick={()=>cambiar({ pelo:id })}>{p.n}</OpcionHeroe>)}
+        </div>
+        <div style={tituloHeroe}>COLOR DE PELO</div>
+        <div style={filaHeroe}>{Object.entries(RAMPAS.pelo).map(([id,r])=><MuestraColor key={id} colores={[r[4],r[2]]} activo={av.colorPelo===id} etiqueta={NOMBRES_COLOR[id]} onClick={()=>cambiar({ colorPelo:id })}/>)}</div>
+        {av.sexo==="m" && <>
+          <div style={tituloHeroe}>BARBA</div>
+          <div style={filaHeroe}>
+            <OpcionHeroe activo={!av.barba} onClick={()=>cambiar({ barba:null })}>Sin barba</OpcionHeroe>
+            {Object.entries(AVATAR.barbas).map(([id,b])=><OpcionHeroe key={id} activo={av.barba===id} onClick={()=>cambiar({ barba:id })}>{b.n}</OpcionHeroe>)}
+          </div>
+        </>}
+        <div style={tituloHeroe}>OJOS</div>
+        <div style={filaHeroe}>{Object.entries(OJOS).map(([id,[n,c]])=><MuestraColor key={id} colores={[c,c]} activo={av.ojos===id} etiqueta={n} onClick={()=>cambiar({ ojos:id })}/>)}</div>
+      </>}
+
+      {sec==="color" && <>
+        <div style={tituloHeroe}>COLOR DE LA ARMADURA</div>
+        <div style={filaHeroe}>{Object.entries(RAMPAS.armadura).map(([id,r])=>(
+          <div key={id} style={{ width:62, textAlign:"center" }}>
+            <MuestraColor colores={[r[4],r[2]]} activo={av.armadura===id} etiqueta={NOMBRES_COLOR[id]} onClick={()=>cambiar({ armadura:id })}/>
+            <div style={{ fontSize:11, color:"var(--muted)", marginTop:4 }}>{NOMBRES_COLOR[id]}</div>
+          </div>))}
+        </div>
+      </>}
+
+      {sec==="equipo" && <>
+        <div style={tituloHeroe}>EQUIPO</div>
+        {RANURAS.map(([id,et,opcional])=>{
+          const lista = Object.values(PIEZAS_POR_RAMA).flat().filter(p=>p.ranura===id);
+          if(!lista.length) return null;
+          const puesto = AVATAR.piezas[av.equipo?.[id]], abierta = ranura===id;
+          return (
+            <div key={id} className="fh-card" style={{ marginBottom:8 }}>
+              <button onClick={()=>setRanura(abierta ? null : id)} aria-expanded={abierta}
+                style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, width:"100%", padding:"11px 13px", background:"none", border:"none", cursor:"pointer", color:"var(--txt)", textAlign:"left" }}>
+                <span style={{ fontSize:12, color:"var(--faint)", fontWeight:700, width:66, flexShrink:0 }}>{et}</span>
+                <span style={{ flex:1, minWidth:0, fontSize:13.5 }}>{puesto?.n || <span style={{ color:"var(--faint)" }}>Nada</span>}</span>
+                <ChevronDown size={15} color="var(--faint)" style={{ transform:abierta ? "rotate(180deg)" : "none", flexShrink:0 }}/>
+              </button>
+              {abierta && <div style={{ padding:"0 13px 12px" }}>
+                {opcional && <button className="fh-btn" onClick={()=>equipar(null,id)} style={{ width:"100%", padding:8, marginBottom:6, fontSize:14, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)" }}>Quitar</button>}
+                {lista.map(p=>{
+                  const falta = p.u-(puntos[p.rama]||0), libre = falta<=0, r = RAMA[p.rama], lleva = av.equipo?.[id]===p.id;
+                  return (
+                    <button key={p.id} disabled={!libre} onClick={()=>equipar(p.id,id)} aria-pressed={lleva}
+                      style={{ display:"flex", alignItems:"center", gap:9, width:"100%", textAlign:"left", padding:"8px 9px", marginBottom:4, cursor:libre ? "pointer" : "default", color:"var(--txt)",
+                        background:lleva ? "var(--card2)" : "var(--bg2)", border:`1px solid ${lleva ? r.color : "var(--line)"}`, opacity:libre ? 1 : .62 }}>
+                      {libre ? (lleva ? <Check size={15} color={r.color} style={{ flexShrink:0 }}/> : <i style={{ width:15, height:15, background:r.color, flexShrink:0 }}/>) : <Lock size={15} color="var(--faint)" style={{ flexShrink:0 }}/>}
+                      <span style={{ flex:1, minWidth:0 }}>
+                        <span style={{ display:"block", fontSize:13 }}>{p.n}</span>
+                        <span style={{ display:"block", fontSize:11, color:"var(--faint)" }}>{libre ? r.nombre : `Faltan ${falta} de ${r.estilo}`}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>}
+            </div>
+          );
+        })}
+        <div style={tituloHeroe}>TUS RAMAS</div>
+        <div className="fh-card" style={{ padding:14 }}><PanelRamas puntos={puntos} actual={av.rama}/></div>
+      </>}
+
+      {arranque && <button className="fh-btn" onClick={()=>ultimo ? onCambiar(av) : setSec(secciones[paso+1][0])}
+        style={{ width:"100%", marginTop:16, padding:14, fontSize:19, background:"var(--gold)", color:"#1A1020" }}>{ultimo ? "¡A la aventura!" : "Siguiente"}</button>}
+    </div>
+  );
+}
+
+function CharacterView({ state, avatar, puntos, level, rank, log, customRoutines, setTab, onAbrirInforme }){
   const [openStat, setOpenStat] = useState(null);
   const [openEx, setOpenEx] = useState(null);   // ejercicio recomendado desplegado
   const weekSets=weeklySetsByGroup(log, state.weekStart);
@@ -8702,7 +9206,7 @@ function CharacterView({ state, level, rank, log, customRoutines, setTab, onAbri
 
       <div className="fh-card fh-framed" style={{ padding:20, display:"flex", alignItems:"center", gap:18 }}>
         <Ring pct={xpInto/xpNeed} size={112} stroke={9} color={rank.color}>
-          <Sprite id={heroeDe(level, state.profile?.sex)} size={32} className="fh-idle"/>
+          <AvatarCara av={avatar} size={34}/>
           <div className="cinzel" style={{ fontSize:27, fontWeight:700, lineHeight:1, marginTop:2 }}>{level}</div>
           <div style={{ fontSize:9, color:"var(--muted)", fontWeight:600 }}>NIVEL</div>
         </Ring>
@@ -8711,6 +9215,11 @@ function CharacterView({ state, level, rank, log, customRoutines, setTab, onAbri
           <div style={{ fontSize:12, color:"var(--muted)", marginTop:3 }}>{state.profile?.name||"Atleta"} · {state.totalWorkouts} entrenos</div>
           <div style={{ fontSize:11, color:"var(--faint)", marginTop:7 }}>Faltan {xpNeed-xpInto} XP para nivel {level+1}</div>
         </div>
+      </div>
+
+      <div className="fh-card" style={{ padding:14, marginTop:12 }}>
+        <PanelRamas puntos={puntos} actual={avatar.rama}/>
+        <button className="fh-btn" onClick={()=>setTab("heroe")} style={{ width:"100%", padding:12, marginTop:2, fontSize:17, background:"var(--gold)", color:"#1A1020" }}>Personalizar héroe</button>
       </div>
 
       {/* El informe semanal sale solo el lunes; a partir de ahí se consulta aquí,

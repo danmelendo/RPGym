@@ -1,0 +1,5 @@
+fondo-gym.png y fondo-gym-claro.png
+
+Generados el 2026-11-05 con FLUX.1 [schnell] (Black Forest Labs, Apache 2.0) y
+reducidos a 144x256 con 64 colores con scripts/pixelar-fondo.py. El claro es el
+mismo dibujo con más luz. Se generaron para esta app: no vienen de ningún pack.

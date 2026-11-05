@@ -51,8 +51,22 @@ function stripApkFromBuild() {
 const pushConfigurado = fs.existsSync("android/app/google-services.json");
 if (!pushConfigurado) console.log("[push] sin google-services.json: notificaciones push desactivadas en este build");
 
+/* La versión sale de android/version.properties, igual que la del APK. Es lo que la
+   app compara con app_versions: dos números escritos a mano acabaron desfasados en
+   la 1.0.20 y el aviso de actualización no se iba nunca. */
+const versionProps = fs.readFileSync("android/version.properties", "utf8");
+const leerVersion = k => {
+  const v = versionProps.match(new RegExp(`^${k}=(.+)$`, "m"))?.[1].trim();
+  if (!v) throw new Error(`Falta ${k} en android/version.properties`);
+  return v;
+};
+
 export default defineConfig({
-  define: { __PUSH_CONFIGURADO__: JSON.stringify(pushConfigurado) },
+  define: {
+    __PUSH_CONFIGURADO__: JSON.stringify(pushConfigurado),
+    __VERSION_CODE__: JSON.stringify(Number(leerVersion("versionCode"))),
+    __VERSION_NAME__: JSON.stringify(leerVersion("versionName")),
+  },
   plugins: [react(), serveApk(), stripApkFromBuild()],
   base: "./",
   build: { outDir: "dist", chunkSizeWarningLimit: 1500 },
