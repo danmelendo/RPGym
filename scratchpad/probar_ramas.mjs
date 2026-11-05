@@ -68,4 +68,19 @@ for (const s of capas) {
   const b = fs.readFileSync(`${R}/public/avatar/${s}.png`);
   assert.equal(b.readUInt32BE(16), 576, s); assert.equal(b.readUInt32BE(20), 128, s);
 }
+// Lo que llega de otro móvil no se da por bueno
+const rampas = trozo("const RAMPAS = {", "const NOMBRES_COLOR");
+const amigo = trozo("const NPC_BASE = {", "const NPCS = [") + trozo("/* Lo que llega de otro móvil", "const CARA_INFO");
+const f = new Function("AVATAR", "RAMA", "RAMAS", "equipoDeRama", rampas + amigo + "; return { normalizarAvatar, aliadoDeAmigo };")(AVATAR, m.RAMA, m.RAMAS, m.equipoDeRama);
+assert.equal(f.normalizarAvatar(null), null);
+assert.equal(f.normalizarAvatar({ rama:"astronauta" }), null);
+const raro = f.normalizarAvatar({ rama:"picaro", sexo:"x", piel:"plutonio", pelo:"nada", colorPelo:"?", ojos:"?", armadura:"?", equipo:{ arma:"g_mandoble", torso:"no_existe", cabeza:"g_mandoble" } });
+assert.deepStrictEqual(raro.equipo, { arma:"g_mandoble" }, "una pieza en la ranura equivocada o desconocida se cae");
+assert.equal(raro.sexo, "m"); assert.equal(raro.piel, "clara"); assert.equal(raro.armadura, "acero");
+const sin = f.aliadoDeAmigo({ id:"1", handle:"marta", level:12 });
+assert.equal(sin.nombre, "marta"); assert.equal(sin.level, 12); assert(sin.avatar.equipo.arma, "sin avatar sale como recluta armado");
+assert.deepStrictEqual(f.aliadoDeAmigo({ id:"1", handle:"marta" }).avatar.rama, sin.avatar.rama, "siempre la misma rama");
+const con = f.aliadoDeAmigo({ id:"2", handle:"x", display_name:"Pepe", level:3, avatar:{ rama:"monje", sexo:"f", equipo:{ arma:"m_vara" } } });
+assert.equal(con.avatar.rama, "monje"); assert.equal(con.nombre, "Pepe");
+
 console.log(`Ramas y catálogo: todo correcto (${capas.size} capas, ${Object.keys(AVATAR.piezas).length} piezas)`);

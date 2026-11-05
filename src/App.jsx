@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import * as cloud from "./cloud.js";
 import * as cripto from "./cripto.js";
 import * as push from "./push.js";
 import AVATAR from "./avatar-data.json";
+import * as M from "./mazmorra.js";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
@@ -2651,7 +2652,7 @@ const APP_VERSION_CODE = __VERSION_CODE__;
 const APP_VERSION_NAME = __VERSION_NAME__;
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
-const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet","gym:juego"];
+const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet","gym:mazmorra"];
 /* El entreno en curso. Con el móvil en el bolsillo Android puede matar la app, y
    sin esto se perdían todas las series hasta darle a Terminar. No va en
    BACKUP_KEYS a propósito: es un estado de paso, no progreso. */
@@ -2808,12 +2809,12 @@ const StyleTag = () => (
     .fh-idle { animation:fh-bob 1.1s steps(2) infinite; }
     .fh-andar { animation:fh-andar .8s steps(8) infinite; }
     @keyframes fh-andar { from{background-position-x:calc(var(--s)*-1)} to{background-position-x:calc(var(--s)*-9)} }
-    .fh-embiste { animation:fh-embiste .2s steps(3); }
-    @keyframes fh-embiste { 40%{transform:translateX(38px)} }
+    .fh-caja3d { display:block; width:100%; height:100%; perspective:240px; will-change:transform; }
+    .fh-cubo { display:block; position:relative; width:100%; height:100%; transform-style:preserve-3d; will-change:transform; }
+    .fh-cara3d { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.3),inset 0 -3px 0 rgba(0,0,0,.35); }
     .fh-sacude { animation:fh-sacude .22s steps(4); }
     @keyframes fh-sacude { 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
-    .fh-texto-golpe { position:absolute; left:50%; top:40%; font-size:11px; white-space:nowrap; text-shadow:1px 1px 0 #000; pointer-events:none; animation:fh-texto-golpe .6s steps(6) both; }
-    @keyframes fh-texto-golpe { from{transform:translate(-50%,0);opacity:1} to{transform:translate(-50%,-26px);opacity:0} }
     .fh-flota { position:fixed; z-index:280; pointer-events:none; white-space:nowrap; font-family:'Press Start 2P',monospace;
       font-size:11px; text-shadow:2px 2px 0 #000; animation:fh-sube .95s steps(10) both; }
 
@@ -3174,94 +3175,310 @@ function Toast({ toast }){
   );
 }
 
-/* --- Minijuego del descanso ---------------------------------------------------
-   Un solo toque, con una mano y con las manos sudadas: la aguja va y viene, y hay que
-   parar en la zona verde. El centro dorado es crítico y quita el doble. No da XP ni
-   nada que cuente: es para hacer corto el descanso, no para que salga a cuenta alargarlo.
-   La aguja se mueve escribiendo en el DOM y no con estado: RestTimer repinta cada 100 ms
-   y esto va en cada fotograma. Por eso va en memo. */
-const MONSTRUOS = [108,120,123,122,124,109,110,121];
-const partidaNueva = () => ({ hp:3, max:3, vidas:3, caidos:0, centro:50, golpes:0, texto:null, acierto:false, ko:false });
-const JuegoDescanso = React.memo(function JuegoDescanso({ avatar }){
-  const [j, setJ] = useState(partidaNueva);
-  const [record, setRecord] = useState(0);
-  const aguja = useRef(null), pos = useRef(0), t0 = useRef(0);
-  const periodo = Math.max(560, 1200 - j.caidos*60), zona = Math.max(12, 30 - j.caidos*2), critico = zona/3;
+/* --- La mazmorra ---------------------------------------------------------------
+   Las reglas están en mazmorra.js; esto solo las pinta. Se juega en el descanso y
+   también desde Inicio, y es la misma partida: por turnos y guardada tras cada toque,
+   así que el descanso puede acabarse a media jugada sin perder nada. Nunca da XP,
+   niveles ni equipo: el héroe llega con lo que se ha ganado en el gimnasio. */
+const NPC_BASE = { piel:"clara", pelo:"plain", colorPelo:"castano", barba:null, ojos:"brown" };
+const NPCS = [
+  { id:"npc-bruna",  nombre:"Bruna",  oficio:"La monitora",        avatar:{ ...NPC_BASE, sexo:"f", rama:"monje",      piel:"morena", pelo:"ponytail", colorPelo:"negro", armadura:"hueso" } },
+  { id:"npc-tobias", nombre:"Tobías", oficio:"El del mostrador",   avatar:{ ...NPC_BASE, sexo:"m", rama:"explorador", pelo:"messy1", colorPelo:"rubio", armadura:"esmeralda" } },
+  { id:"npc-nuria",  nombre:"Nuria",  oficio:"La de las pesas",    avatar:{ ...NPC_BASE, sexo:"f", rama:"barbaro",    piel:"tostada", pelo:"bob", colorPelo:"pelirrojo", armadura:"bronce" } },
+  { id:"npc-ramiro", nombre:"Ramiro", oficio:"El de toda la vida", avatar:{ ...NPC_BASE, sexo:"m", rama:"guerrero",   pelo:"buzzcut", colorPelo:"gris", barba:"beards_medium", armadura:"acero" } },
+  { id:"npc-sombra", nombre:"Sombra", oficio:"Va a su bola",       avatar:{ ...NPC_BASE, sexo:"f", rama:"picaro",     piel:"oliva", pelo:"pixie", colorPelo:"morado", armadura:"cuero" } },
+].map(n=>({ ...n, level:4, tipo:"npc", avatar:{ ...n.avatar, equipo:equipoDeRama(n.avatar.rama, {}) } }));
 
-  useEffect(()=>{ loadKey("gym:juego",0).then(v=>setRecord(Number(v)||0)); }, []);
-  useEffect(()=>{
-    if(j.ko) return;
-    let id;
-    const paso = t=>{
-      if(!t0.current) t0.current = t;
-      const k = ((t-t0.current)/periodo) % 2;
-      pos.current = (k<1 ? k : 2-k)*100;
-      if(aguja.current) aguja.current.style.left = `${pos.current}%`;
-      id = requestAnimationFrame(paso);
-    };
-    id = requestAnimationFrame(paso);
-    return ()=>cancelAnimationFrame(id);
-  }, [periodo, j.ko]);
+/* Lo que llega de otro móvil no se da por bueno: puede ser de otra versión. */
+function normalizarAvatar(av){
+  if(!av || typeof av!=="object" || !RAMA[av.rama]) return null;
+  const equipo = {};
+  Object.entries(av.equipo||{}).forEach(([ranura,id])=>{ if(AVATAR.piezas[id]?.ranura===ranura) equipo[ranura] = id; });
+  return { sexo:av.sexo==="f" ? "f" : "m", rama:av.rama, piel:RAMPAS.piel[av.piel] ? av.piel : "clara",
+    pelo:AVATAR.pelos[av.pelo] ? av.pelo : null, colorPelo:RAMPAS.pelo[av.colorPelo] ? av.colorPelo : "castano",
+    barba:AVATAR.barbas[av.barba] ? av.barba : null, ojos:AVATAR.ojos[av.ojos] ? av.ojos : "brown",
+    armadura:RAMPAS.armadura[av.armadura] ? av.armadura : "acero", equipo };
+}
+/* Quien aún no ha abierto una versión con avatar sale como recluta. La rama sale de
+   su nombre para que no cambie de una partida a otra. */
+function aliadoDeAmigo(a){
+  const h = [...String(a.handle||a.id)].reduce((n,c)=>n+c.charCodeAt(0),0), rama = RAMAS[h%RAMAS.length].id;
+  const avatar = normalizarAvatar(a.avatar) || { ...NPC_BASE, sexo:h%2 ? "f" : "m", rama, armadura:RAMA[rama].armadura, equipo:equipoDeRama(rama, {}) };
+  return { id:a.id, nombre:a.display_name || a.handle || "Amigo", oficio:`Nivel ${a.level||1}`, tipo:"amigo", level:a.level||1, avatar };
+}
 
-  function golpear(){
-    if(j.ko){ t0.current = 0; setJ(partidaNueva()); return; }
-    const d = Math.abs(pos.current - j.centro);
-    const dano = d<=critico/2 ? 2 : d<=zona/2 ? 1 : 0;
-    const centro = 22 + Math.random()*56, golpes = j.golpes+1;
-    if(!dano){
-      vibrar(60);
-      const vidas = j.vidas-1;
-      setJ({ ...j, vidas, centro, golpes, texto:"FALLO", acierto:false, ko:vidas<=0 });
-      return;
-    }
-    const hp = j.hp-dano;
-    if(hp>0){
-      sfx("serie",.3); vibrar(15);
-      setJ({ ...j, hp, centro, golpes, texto:dano===2 ? "¡CRÍTICO!" : `-${dano}`, acierto:true });
-      return;
-    }
-    sfx("record",.35); vibrar([20,30,40]);
-    const caidos = j.caidos+1, max = 3 + Math.floor(caidos/2);
-    if(caidos>record){ setRecord(caidos); saveKey("gym:juego", caidos); }
-    setJ({ ...j, hp:max, max, caidos, centro, golpes, texto:dano===2 ? "¡CRÍTICO!" : "¡K.O.!", acierto:true });
+const CARA_INFO = { golpe:["Golpe",104,"#7A2230"], doble:["Doble golpe",103,"#7A3A22"], barrido:["Barrido",118,"#6B2A6E"], escudo:["Escudo",101,"#23507A"], cura:["Cura",115,"#1F6B4A"], vacio:["Vacío",null,"#2A2438"] };
+function CaraPlana({ cara, style }){
+  const [, sprite, fondo] = CARA_INFO[cara.t];
+  return (
+    <span className="fh-cara3d" style={{ background:fondo, ...style }}>
+      {sprite!=null && <Sprite id={sprite} size={32}/>}
+      {cara.t!=="vacio" && <span className="arcade" style={{ position:"absolute", right:2, bottom:2, fontSize:11, color:"#FFF", textShadow:"1px 1px 0 #000" }}>{cara.v}</span>}
+    </span>
+  );
+}
+/* Giro que deja cada cara del cubo mirando de frente, en el orden en que se pintan. */
+const CARAS_CUBO = [[0,0],[0,180],[0,-90],[0,90],[-90,0],[90,0]];
+const POS_CARA = z=>["",`rotateY(180deg)`,`rotateY(90deg)`,`rotateY(-90deg)`,`rotateX(90deg)`,`rotateX(-90deg)`].map(g=>`${g} translateZ(${z}px)`);
+/* Dado de verdad: un cubo con las seis caras de ese héroe, que entra lanzado desde abajo,
+   da vueltas, rebota y cae en la cara que ha salido. Va con la Web Animations API y no con
+   @keyframes porque cada tirada acaba en una orientación distinta. Se usa `fill:backwards`
+   para que espere su turno ya fuera de sitio, y al acabar manda el `transform` en línea,
+   que es la cara real: si la animación no llega a correr, el dado sigue siendo correcto. */
+function Dado3D({ caras, d, tam=50, animar, retraso=0, activo, onClick, etiqueta }){
+  const caja = useRef(null), cubo = useRef(null);
+  const [rx, ry] = CARAS_CUBO[d.i];
+  // Hacia atrás medio lado: si no, la cara de delante se ve más grande que su hueco.
+  const fondo = `translateZ(${-tam/2}px)`;
+  useLayoutEffect(()=>{
+    if(!animar || window.matchMedia?.("(prefers-reduced-motion:reduce)").matches || !cubo.current?.animate) return;
+    const vueltas = ()=>360*(2+Math.floor(Math.random()*2))*(Math.random()<.5 ? -1 : 1), dura = 780;
+    const opts = { duration:dura, delay:retraso, fill:"backwards" };
+    cubo.current.animate([{ transform:`${fondo} rotateX(${rx+vueltas()}deg) rotateY(${ry+vueltas()}deg)` }, { transform:`${fondo} rotateX(${rx}deg) rotateY(${ry}deg)` }],
+      { ...opts, easing:"cubic-bezier(.16,.72,.24,1)" });
+    const lado = Math.round((Math.random()-.5)*70);
+    caja.current.animate([
+      { transform:`translate(${lado}px,190px) scale(1.5)`, opacity:0, easing:"cubic-bezier(.2,.8,.4,1)" },
+      { transform:`translate(${Math.round(lado/3)}px,-26px) scale(1.15)`, opacity:1, offset:.46, easing:"cubic-bezier(.5,0,.8,.6)" },
+      { transform:"translate(0,0) scale(1)", offset:.7, easing:"cubic-bezier(.2,.7,.4,1)" },
+      { transform:"translate(0,-8px) scale(1)", offset:.84, easing:"cubic-bezier(.5,0,.8,.6)" },
+      { transform:"translate(0,0) scale(1)" },
+    ], opts);
+    const t = setTimeout(()=>{ sfx("serie",.16); vibrar(6); }, retraso+dura*.7);
+    return ()=>clearTimeout(t);
+  }, [d.tiro]);
+  const pos = POS_CARA(tam/2);
+  return (
+    <button onClick={onClick} aria-label={etiqueta} aria-pressed={d.fijo || activo || undefined}
+      style={{ width:tam, height:tam, padding:0, background:"none", border:"none", cursor:"pointer", flexShrink:0, opacity:d.usado ? .3 : 1,
+        outline:activo ? "3px solid #FFF" : d.fijo ? "3px solid var(--gold)" : d.superserie ? "3px solid var(--jade)" : "none", outlineOffset:1 }}>
+      <span ref={caja} className="fh-caja3d">
+        <span ref={cubo} className="fh-cubo" style={{ transform:`${fondo} rotateX(${rx}deg) rotateY(${ry}deg)` }}>
+          {caras.map((c,i)=><CaraPlana key={i} cara={i===d.i ? d.cara : c} style={{ transform:pos[i] }}/>)}
+        </span>
+      </span>
+    </button>
+  );
+}
+function BarraVida({ hp, max, color="#3DDC84", escudo=0 }){
+  return (<>
+    <div style={{ position:"relative", height:7, background:"rgba(0,0,0,.6)", border:"1px solid #000", overflow:"hidden" }}>
+      <i style={{ position:"absolute", left:0, top:0, bottom:0, width:`${Math.max(0,hp/max)*100}%`, background:color }}/>
+    </div>
+    <div className="mono" style={{ fontSize:10, lineHeight:1.3, color:"#FFF", textShadow:"1px 1px 0 #000", whiteSpace:"nowrap" }}>{hp}/{max}{escudo>0 && <span style={{ color:"#7FC8F8" }}> +{escudo}</span>}</div>
+  </>);
+}
+function IntentoEnemigo({ e, heroes }){
+  const { t, v, obj } = e.intento||{};
+  if(!t) return null;
+  const texto = t==="golpe" ? `-${v} a ${heroes[obj]?.nombre||"?"}` : t==="todos" ? `-${v} a todos` : t==="bloqueo" ? `se protege ${v}` : `cura ${v}`;
+  return <div style={{ fontSize:10.5, fontWeight:700, lineHeight:1.2, color:t==="golpe"||t==="todos" ? "#FF9A8C" : "#9FD8FF", textShadow:"1px 1px 0 #000" }}>{texto}</div>;
+}
+
+function ReclutarGrupo({ yo, aliados, mz, compacto, onEntrar }){
+  const [grupo, setGrupo] = useState([]);
+  const alterna = a=>setGrupo(g=>g.some(x=>x.id===a.id) ? g.filter(x=>x.id!==a.id) : g.length<3 ? [...g,a] : g);
+  const lider = M.liderazgoDe(yo);
+  return (
+    <div style={{ textAlign:"left" }}>
+      <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.45 }}>
+        Elige hasta 3 compañeros. Tu héroe entra con el nivel y el equipo que te has ganado{lider>0 ? <>, y tu liderazgo le da <b style={{ color:"var(--gold)" }}>+{lider}</b> al grupo</> : ""}.
+      </p>
+      <div style={{ fontSize:12, lineHeight:1.45, margin:"0 0 10px", padding:"8px 10px", background:"var(--bg2)", border:`1px solid ${mz.llaves>0 ? "var(--gold)" : "var(--line2)"}`, color:"var(--muted)" }}>
+        {mz.llaves>0 ? <><b style={{ color:"var(--gold)" }}>{mz.llaves} {mz.llaves===1 ? "llave" : "llaves"}</b>: esta partida da Gloria y cuenta para la clasificación.</>
+          : <><b style={{ color:"var(--txt)" }}>Sin llaves</b>: puedes jugar de práctica, pero no puntúa. Cada día que termines un entreno ganas una.</>}
+      </div>
+      <div style={{ maxHeight:compacto ? 250 : "none", overflowY:compacto ? "auto" : "visible", marginBottom:10 }}>
+        {aliados.map(a=>{
+          const dentro = grupo.some(x=>x.id===a.id), r = RAMA[a.avatar.rama];
+          return (
+            <button key={a.id} onClick={()=>alterna(a)} aria-pressed={dentro}
+              style={{ display:"flex", alignItems:"center", gap:10, width:"100%", textAlign:"left", padding:"6px 10px", marginBottom:5, cursor:"pointer", color:"var(--txt)", background:dentro ? "var(--card2)" : "var(--bg2)", border:`1px solid ${dentro ? r.color : "var(--line)"}` }}>
+              <AvatarCara av={a.avatar} size={34}/>
+              <span style={{ flex:1, minWidth:0 }}>
+                <span style={{ display:"block", fontSize:13.5, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{a.nombre}{a.tipo==="amigo" && <span style={{ color:"var(--gold)", fontSize:10.5, marginLeft:6 }}>AMIGO</span>}</span>
+                <span style={{ display:"block", fontSize:11, color:"var(--faint)" }}><span style={{ color:r.color }}>{r.nombre}</span> · {a.oficio}</span>
+              </span>
+              {dentro && <Check size={16} color={r.color} style={{ flexShrink:0 }}/>}
+            </button>
+          );
+        })}
+      </div>
+      <button className="fh-btn" onClick={()=>onEntrar(grupo)} style={{ width:"100%", padding:12, fontSize:17, background:"var(--gold)", color:"#1A1020" }}>{mz.llaves>0 ? "Entrar (gasta 1 llave)" : "Entrar a practicar"}</button>
+    </div>
+  );
+}
+
+const Mazmorra = React.memo(function Mazmorra({ mz, actualizar, yo, amigos, compacto }){
+  const [sel, setSel] = useState(null);       // { tipo:"dado"|"especial", i }
+  const p = mz.partida;
+  const aliados = useMemo(()=>[...(amigos||[]).map(aliadoDeAmigo), ...NPCS], [amigos]);
+  const pon = (partida, resto={})=>actualizar(m=>({ ...m, partida, ...resto }));
+  // Volver a una partida a medias no relanza nada: solo se anima lo que acaba de tirarse.
+  const vistoTiro = useRef(p?.tiro);
+  useEffect(()=>{ vistoTiro.current = p?.tiro; }, [p?.tiro]);
+
+  useEffect(()=>{ if(p) actualizar(m=>m.partida ? { ...m, partida:M.refrescarHeroe(m.partida, yo) } : m); }, [p?.sala, yo]);
+  useEffect(()=>{ if(p?.fase==="fin") p.victoria ? sfx("levelup",.5) : sfx("gameover",.4); }, [p?.fase]);
+
+  if(!p) return <ReclutarGrupo {...{ yo, aliados, mz, compacto }} onEntrar={grupo=>{
+    const heroes = [yo, ...grupo.map(a=>M.crearHeroe(a, AVATAR.piezas))];
+    actualizar(m=>M.empezar(m, heroes));
+  }}/>;
+
+  if(p.fase==="fin") return (
+    <div style={{ padding:"14px 4px", textAlign:"center" }}>
+      <div className="arcade" style={{ fontSize:14, color:p.victoria ? "var(--gold)" : "var(--crimson)", marginBottom:12 }}>{p.victoria ? "¡VICTORIA!" : "DERROTA"}</div>
+      <p style={{ fontSize:13, color:"var(--muted)", lineHeight:1.5, margin:"0 0 14px" }}>
+        {p.victoria ? "Habéis derrotado al Abandono. Ese no vuelve a por ti hoy." : `Tu grupo ha caído en la sala ${p.sala} de ${M.SALAS}. Aquí no se sube de nivel: lo que te hace más fuerte es entrenar.`}
+      </p>
+      <div className="arcade" style={{ fontSize:11, color:"var(--gold)", margin:"0 0 14px" }}>{p.puntua ? `+${p.gloriaPartida||0} GLORIA` : "PRÁCTICA: NO PUNTÚA"}</div>
+      <button className="fh-btn" onClick={()=>pon(null)} style={{ width:"100%", padding:12, fontSize:17, background:"var(--gold)", color:"#1A1020" }}>Nueva partida</button>
+    </div>
+  );
+
+  if(p.fase==="botin") return (
+    <div style={{ textAlign:"left" }}>
+      <div className="disp" style={{ fontSize:19, marginBottom:3 }}>Sala {p.sala} superada</div>
+      <p style={{ fontSize:12, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.4 }}>Elige uno. Solo dura esta partida.</p>
+      {p.botin.map(b=>(
+        <button key={b.id} className="fh-card" onClick={()=>{ const r = M.elegirBotin(p, b.id); sfx("serie",.3); actualizar(m=>({ ...m, partida:r.partida, impulso:Math.min(M.IMPULSO_MAX, (m.impulso||0)+r.impulso) })); }}
+          style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 12px", marginBottom:7, cursor:"pointer", color:"var(--txt)" }}>
+          <span className="disp" style={{ display:"block", fontSize:17, color:"var(--gold)" }}>{b.nombre}</span>
+          <span style={{ display:"block", fontSize:12, color:"var(--muted)" }}>{b.texto}</span>
+        </button>
+      ))}
+    </div>
+  );
+
+  const usar = p.fase==="usar", impulso = mz.impulso||0;
+  const accion = (i, obj)=>{ const q = M.usarDado(p, i, obj); if(q!==p){ sfx("serie",.3); vibrar(12); } setSel(null); pon(q); };
+  const especial = (h, obj)=>{ const r = M.usarEspecial(p, h, obj, impulso); setSel(null); if(!r.gastado) return; sfx("record",.4); vibrar([20,30,40]); actualizar(m=>({ ...m, partida:r.partida, impulso:(m.impulso||0)-r.gastado })); };
+  function tocarDado(i){
+    if(!usar){ pon(M.fijar(p, i)); return; }
+    const d = p.dados[i];
+    if(!d || d.usado || d.cara.t==="vacio") return;
+    const tipo = M.objetivoDe(d.cara.t);
+    if(!tipo){ accion(i, 0); return; }
+    const lista = (tipo==="enemigo" ? p.enemigos : p.heroes).map((x,n)=>x.hp>0 ? n : -1).filter(n=>n>=0);
+    if(lista.length===1){ accion(i, lista[0]); return; }
+    setSel(sel?.tipo==="dado" && sel.i===i ? null : { tipo:"dado", i });
   }
+  function tocarEspecial(h){
+    const e = M.ESPECIALES[p.heroes[h].rama];
+    if(e.objetivo!=="enemigo"){ especial(h, 0); return; }
+    const lista = p.enemigos.map((x,n)=>x.hp>0 ? n : -1).filter(n=>n>=0);
+    if(lista.length===1){ especial(h, lista[0]); return; }
+    setSel(sel?.tipo==="especial" && sel.i===h ? null : { tipo:"especial", i:h });
+  }
+  const objetivo = !sel ? null : sel.tipo==="especial" ? "enemigo" : M.objetivoDe(p.dados[sel.i].cara.t);
+  const tocarObjetivo = n=>{ if(sel.tipo==="especial") especial(sel.i, n); else accion(sel.i, n); };
+  const pista = !usar ? "Toca los dados que quieras guardar y relanza el resto."
+    : !sel ? "Toca un dado para usarlo." : objetivo==="enemigo" ? "¿A qué enemigo?" : "¿A quién del grupo?";
 
   return (
-    <div role="button" tabIndex={0} aria-label="Minijuego. Toca cuando la aguja pase por la zona verde."
-      onPointerDown={golpear} onKeyDown={e=>{ if(e.key===" "||e.key==="Enter"){ e.preventDefault(); golpear(); } }}
-      style={{ cursor:"pointer", touchAction:"manipulation", userSelect:"none", WebkitUserSelect:"none", marginBottom:14 }}>
-      <div className="fh-escena" style={{ height:132, borderWidth:2, borderStyle:"solid", borderColor:"var(--line2)" }}>
-        <div style={{ position:"absolute", top:7, left:8, right:8, display:"flex", justifyContent:"space-between", alignItems:"center", zIndex:2 }}>
-          <span style={{ display:"flex", gap:3 }}>{[0,1,2].map(i=><CorazonPixel key={i} size={15} style={{ opacity:i<j.vidas ? 1 : .22 }}/>)}</span>
-          <span className="arcade" style={{ fontSize:9, color:"#FFF", textShadow:"1px 1px 0 #000" }}>{j.caidos} · MÁX {record}</span>
-        </div>
-        <span key={`h${j.acierto ? j.golpes : 0}`} className={j.acierto ? "fh-embiste" : ""} style={{ position:"absolute", left:"6%", bottom:-14, display:"inline-flex" }}>
-          <Avatar av={avatar} escala={2} dir="perfil"/>
+    <div style={{ textAlign:"left" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+        <span className="disp" style={{ fontSize:16 }}>Sala {p.sala} de {M.SALAS}{!p.puntua && <span style={{ fontSize:13, color:"var(--faint)" }}> · práctica</span>}</span>
+        <span title="Cada serie real que haces suma 1" style={{ display:"flex", alignItems:"center", gap:5 }}>
+          <span style={{ fontSize:10.5, fontWeight:700, color:"var(--gold)", letterSpacing:".06em" }}>IMPULSO</span>
+          <span style={{ display:"flex", gap:2 }}>{Array.from({ length:M.IMPULSO_MAX }, (_,i)=><i key={i} style={{ width:9, height:9, background:i<impulso ? "var(--gold)" : "var(--bg2)", border:"1px solid var(--line2)" }}/>)}</span>
         </span>
-        <span key={`m${j.caidos}-${j.golpes}`} className={j.golpes ? "fh-sacude" : ""} style={{ position:"absolute", right:"8%", bottom:8, display:"inline-flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-          <span style={{ display:"flex", gap:2 }}>{Array.from({ length:j.max }, (_,i)=><i key={i} style={{ width:7, height:7, background:i<j.hp ? "#E8433F" : "rgba(0,0,0,.55)", boxShadow:"0 0 0 1px #000" }}/>)}</span>
-          <Sprite id={MONSTRUOS[j.caidos%MONSTRUOS.length]} size={64}/>
-        </span>
-        {j.texto && <span key={j.golpes} className="arcade fh-texto-golpe" style={{ color:j.acierto ? "#FFC83D" : "#FF8A80" }}>{j.texto}</span>}
-        {j.ko && <div style={{ position:"absolute", inset:0, background:"rgba(6,8,13,.72)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8, zIndex:3 }}>
-          <span className="arcade" style={{ fontSize:13, color:"#FFF" }}>K.O.</span>
-          <span style={{ fontSize:12, color:"#D9D3E8" }}>{j.caidos} {j.caidos===1 ? "monstruo" : "monstruos"} · toca para repetir</span>
-        </div>}
       </div>
-      <div style={{ position:"relative", height:24, marginTop:6, background:"var(--bg2)", border:"2px solid var(--line2)", overflow:"hidden" }}>
-        <i style={{ position:"absolute", top:0, bottom:0, left:`${j.centro-zona/2}%`, width:`${zona}%`, background:"var(--jade)" }}/>
-        <i style={{ position:"absolute", top:0, bottom:0, left:`${j.centro-critico/2}%`, width:`${critico}%`, background:"var(--gold)" }}/>
-        <i ref={aguja} style={{ position:"absolute", top:-2, bottom:-2, width:4, marginLeft:-2, left:0, background:"#FFF", boxShadow:"0 0 0 1px #000" }}/>
+
+      <div className="fh-escena" style={{ display:"flex", justifyContent:"center", alignItems:"flex-end", gap:6, padding:"6px 4px 8px", minHeight:112, border:"2px solid var(--line2)" }}>
+        {p.enemigos.map((e,n)=>{
+          const vivo = e.hp>0, puede = objetivo==="enemigo" && vivo;
+          return (
+            <button key={n} disabled={!puede} onClick={()=>tocarObjetivo(n)} aria-label={`${e.nombre}, ${e.hp} de vida`}
+              style={{ flex:1, maxWidth:150, minWidth:0, padding:"3px 4px", background:puede ? "rgba(255,200,61,.22)" : "rgba(6,8,13,.5)", border:`2px solid ${puede ? "var(--gold)" : "transparent"}`, cursor:puede ? "pointer" : "default", opacity:vivo ? 1 : .35, color:"#FFF", textAlign:"center" }}>
+              {vivo && <IntentoEnemigo e={e} heroes={p.heroes}/>}
+              <span key={e.hp} className={e.hp<e.hpMax ? "fh-sacude" : ""} style={{ display:"inline-flex", margin:"1px 0" }}><Sprite id={e.sprite} size={e.jefe ? 64 : 48}/></span>
+              <div style={{ fontSize:11, fontWeight:700, lineHeight:1.2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", textShadow:"1px 1px 0 #000" }}>{e.nombre}</div>
+              <BarraVida hp={e.hp} max={e.hpMax} color="#E8433F" escudo={e.escudo}/>
+            </button>
+          );
+        })}
       </div>
-      <div style={{ fontSize:11, color:"var(--faint)", marginTop:6 }}>Toca cuando la aguja pase por el verde. El dorado es crítico.</div>
+
+      <div style={{ display:"flex", gap:5, marginTop:7 }}>
+        {p.heroes.map((h,i)=>{
+          const d = p.dados[i], vivo = h.hp>0, puede = objetivo==="aliado" && vivo, esp = M.ESPECIALES[h.rama];
+          const pagable = usar && vivo && d && !d.usado && impulso>=esp.coste;
+          return (
+            <div key={h.id} style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+              <button disabled={!puede} onClick={()=>tocarObjetivo(i)} aria-label={`${h.nombre}, ${h.hp} de vida`}
+                style={{ width:"100%", padding:"2px 2px 3px", background:puede ? "rgba(61,220,132,.2)" : "var(--bg2)", border:`2px solid ${puede ? "var(--jade)" : "var(--line)"}`, cursor:puede ? "pointer" : "default", opacity:vivo ? 1 : .4, textAlign:"center" }}>
+                <AvatarCara av={h.avatar} size={38}/>
+                <div style={{ fontSize:10.5, fontWeight:700, color:"var(--txt)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", lineHeight:1.3 }}>{h.nombre}</div>
+                <BarraVida hp={h.hp} max={h.hpMax} escudo={h.escudo}/>
+              </button>
+              {d ? <Dado3D caras={h.caras} d={d} animar={p.tiro!==vistoTiro.current && d.tiro===p.tiro} retraso={i*70} etiqueta={`${CARA_INFO[d.cara.t][0]} ${d.cara.v||""}`}
+                  activo={sel?.tipo==="dado" && sel.i===i} onClick={()=>tocarDado(i)}/> : <div style={{ width:50, height:50 }}/>}
+              <button className="fh-btn" disabled={!pagable} onClick={()=>tocarEspecial(i)} aria-label={`${esp.nombre}. ${esp.texto} Cuesta ${esp.coste} de Impulso.`} title={esp.texto}
+                style={{ width:"100%", padding:"3px 1px", fontSize:12, lineHeight:1.1, opacity:pagable ? 1 : .32, background:sel?.tipo==="especial" && sel.i===i ? "#FFF" : "var(--gold)", color:"#1A1020" }}>{esp.nombre}</button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ fontSize:11.5, color:"var(--muted)", minHeight:30, margin:"7px 2px 6px", lineHeight:1.3 }}>{p.log[0] && usar ? <span style={{ color:"var(--txt)" }}>{p.log.slice(0,2).join(" · ")}</span> : pista}</div>
+      {usar
+        ? <button className="fh-btn" onClick={()=>{ setSel(null); pon(M.finTurno(p)); vibrar(25); }} style={{ width:"100%", padding:11, fontSize:17, background:"var(--ember)", color:"#FFF" }}>Fin del turno</button>
+        : <div style={{ display:"flex", gap:7 }}>
+            <button className="fh-btn" disabled={p.tiradas<=0} onClick={()=>pon(M.relanzar(p))} style={{ flex:1, padding:11, fontSize:16, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", opacity:p.tiradas>0 ? 1 : .4 }}>Relanzar ({p.tiradas})</button>
+            <button className="fh-btn" onClick={()=>pon(M.confirmar(p))} style={{ flex:1, padding:11, fontSize:16, background:"var(--gold)", color:"#1A1020" }}>Usar dados</button>
+          </div>}
     </div>
   );
 });
 
+/* Solo el círculo: la gracia es picarse con los tuyos. Sale de los perfiles de tus
+   amigos, sin vistas nuevas en el servidor. */
+function ClasificacionMazmorra({ mz, yo, amigos }){
+  const filas = [{ id:"yo", nombre:yo.nombre, avatar:yo.avatar, gloria:mz.gloria||0, salas:mz.salas||0, mazmorras:mz.mazmorras||0, mejor:mz.mejorSala||0, esYo:true },
+    ...(amigos||[]).map(a=>{ const h = aliadoDeAmigo(a); return { id:a.id, nombre:h.nombre, avatar:h.avatar, gloria:a.gloria||0, salas:a.salas_superadas||0, mazmorras:a.mazmorras||0, mejor:a.mejor_sala||0 }; })]
+    .sort((a,b)=>b.gloria-a.gloria || b.mazmorras-a.mazmorras || b.salas-a.salas);
+  return (<>
+    <div style={{ fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" }}>GLORIA DE LA MAZMORRA</div>
+    <div className="fh-card" style={{ padding:"6px 14px" }}>
+      {filas.map((f,i)=>(
+        <div key={f.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderTop:i ? "1px solid var(--line)" : "none" }}>
+          <span className="mono" style={{ width:18, fontSize:13, fontWeight:700, color:i===0 && f.gloria>0 ? "var(--gold)" : "var(--faint)" }}>{i+1}</span>
+          <AvatarCara av={f.avatar} size={32}/>
+          <span style={{ flex:1, minWidth:0 }}>
+            <span style={{ display:"block", fontSize:13.5, fontWeight:f.esYo ? 700 : 400, color:f.esYo ? "var(--gold)" : "var(--txt)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{f.nombre}</span>
+            <span style={{ display:"block", fontSize:11, color:"var(--faint)" }}>{f.salas} {f.salas===1 ? "sala" : "salas"} · {f.mazmorras} {f.mazmorras===1 ? "mazmorra" : "mazmorras"} · mejor {f.mejor}/{M.SALAS}</span>
+          </span>
+          <span className="mono" style={{ fontSize:15, fontWeight:700, color:"var(--gold)" }}>{f.gloria}</span>
+        </div>
+      ))}
+      {filas.length===1 && <div style={{ fontSize:12, color:"var(--faint)", padding:"2px 0 8px", lineHeight:1.45 }}>Añade amigos para compararte con ellos.</div>}
+    </div>
+    <div style={{ fontSize:11, color:"var(--faint)", margin:"7px 4px 0", lineHeight:1.45 }}>Solo puntúan las partidas con llave. Cada día que terminas un entreno ganas una, hasta {M.LLAVES_MAX}.</div>
+  </>);
+}
+
+function MazmorraView({ mz, actualizar, yo, amigos, onVolver }){
+  return (
+    <div className="fh-in" style={{ paddingBottom:24 }}>
+      <header style={{ padding:"22px 2px 12px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={onVolver} aria-label="Volver" style={{ background:"var(--card)", border:"1px solid var(--line)", width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
+        <div>
+          <h1 style={{ margin:0, fontSize:24 }}>La mazmorra</h1>
+          <p style={{ margin:"3px 0 0", fontSize:13, color:"var(--muted)" }}>Tus malos hábitos te esperan. Cada serie real suma Impulso.</p>
+        </div>
+      </header>
+      <div className="fh-card" style={{ padding:12 }}><Mazmorra {...{ mz, actualizar, yo, amigos }}/></div>
+      <ClasificacionMazmorra {...{ mz, yo, amigos }}/>
+    </div>
+  );
+}
+
 /* Temporizador de descanso: pop-up a pantalla completa que bloquea el avance.
    Solo pinta: la hora de fin vive en la sesión (`session.descanso`), así sobrevive a
    que Android mate la app y al volver sigue donde debe. */
-function RestTimer({ hasta, total, onDone, onSaltar, onMas15, isRecomp, avatar }){
+function RestTimer({ hasta, total, onDone, onSaltar, onMas15, isRecomp, juego }){
   const pool = isRecomp ? RECOMP_TIPS : TIPS;
   const [jugar, setJugar] = useState(true);
   useEffect(()=>{ loadGlobal("gym:descansoJuego", true).then(setJugar); }, []);
@@ -3303,16 +3520,22 @@ function RestTimer({ hasta, total, onDone, onSaltar, onMas15, isRecomp, avatar }
   const overlay = (
     <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(6,8,13,.9)", backdropFilter:"blur(7px)", display:"flex", alignItems:"center", justifyContent:"center", padding:16, overflowY:"auto" }}>
       <div className="fh-card fh-pop" style={{ padding:jugar ? 16 : 26, borderColor:"var(--ember)", background:"linear-gradient(160deg,var(--card),var(--card2))", maxWidth:420, width:"100%", textAlign:"center", margin:"auto" }}>
-        <div style={{ fontSize:11, color:"var(--muted)", fontWeight:700, letterSpacing:".14em", marginBottom:jugar ? 10 : 16 }}>DESCANSO</div>
-        <div style={{ display:"flex", justifyContent:"center", marginBottom:jugar ? 12 : 18 }}>
+        {!jugar && <div style={{ fontSize:11, color:"var(--muted)", fontWeight:700, letterSpacing:".14em", marginBottom:16 }}>DESCANSO</div>}
+        <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:12, marginBottom:jugar ? 8 : 18 }}>
           {/* Sin transición: con la app oculta no se pinta nada y, al volver, la animación
               arrancaba desde lo último pintado y barría el anillo durante medio segundo. */}
-          <Ring pct={pct} size={jugar ? 112 : 168} stroke={jugar ? 8 : 11} color="var(--ember)" transicion="none">
-            <div className="mono" style={{ fontSize:jugar ? 27 : 40, fontWeight:700, lineHeight:1 }}>{mm}:{ss}</div>
-            {!jugar && <div style={{ fontSize:10, color:"var(--muted)", fontWeight:600, marginTop:4 }}>RECUPÉRATE</div>}
-          </Ring>
+          {jugar ? <>
+            <span style={{ fontSize:11, color:"var(--muted)", fontWeight:700, letterSpacing:".14em" }}>DESCANSO</span>
+            <span className="mono" style={{ fontSize:24, fontWeight:700, lineHeight:1 }}>{mm}:{ss}</span>
+            <div className="fh-bar" style={{ flex:1 }}><i style={{ width:`${Math.min(100,pct*100)}%`, background:"var(--ember)", transition:"none" }}/></div>
+          </> : (
+            <Ring pct={pct} size={168} stroke={11} color="var(--ember)" transicion="none">
+              <div className="mono" style={{ fontSize:40, fontWeight:700, lineHeight:1 }}>{mm}:{ss}</div>
+              <div style={{ fontSize:10, color:"var(--muted)", fontWeight:600, marginTop:4 }}>RECUPÉRATE</div>
+            </Ring>
+          )}
         </div>
-        {jugar ? <JuegoDescanso avatar={avatar}/> : (
+        {jugar ? <div style={{ marginBottom:10 }}><Mazmorra compacto {...juego}/></div> : (
           <div className="fh-card" onClick={()=>setTip(pick(pool))} style={{ padding:15, background:"var(--bg2)", textAlign:"left", marginBottom:16, cursor:"pointer" }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, color:"var(--gold)", fontSize:10, fontWeight:700, letterSpacing:".1em", marginBottom:6 }}>
               <Lightbulb size={13}/> CONSEJO
@@ -3325,7 +3548,7 @@ function RestTimer({ hasta, total, onDone, onSaltar, onMas15, isRecomp, avatar }
           <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--muted)", padding:13, border:"1px solid var(--line2)" }} onClick={alternarJuego}>{jugar ? "Consejo" : "Jugar"}</button>
           <button className="fh-btn" style={{ flex:1, background:"var(--ember)", color:"#fff", padding:13, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }} onClick={onSaltar}><SkipForward size={16}/> Saltar</button>
         </div>
-        <div style={{ fontSize:11, color:"var(--faint)", marginTop:12 }}>Termina o salta el descanso para seguir con el siguiente ejercicio.</div>
+        {!jugar && <div style={{ fontSize:11, color:"var(--faint)", marginTop:12 }}>Termina o salta el descanso para seguir con el siguiente ejercicio.</div>}
       </div>
     </div>
   );
@@ -3398,6 +3621,10 @@ export default function App(){
   const puntos = useMemo(()=>puntosDeRama(log), [log]);
   const avatar = useMemo(()=>state.avatar || avatarPorDefecto(state.profile, puntos), [state.avatar, state.profile?.sex, puntos]);
   function guardarAvatar(av){ const ns = { ...state, avatar:av }; setState(ns); persist(ns); }
+  const [mazmorra, setMazmorra] = useState(M.MAZMORRA_VACIA);
+  const actualizarMazmorra = useCallback(f=>setMazmorra(m=>{ const n = M.apuntar(f(m)); saveKey("gym:mazmorra", n); return n; }), []);
+  const sumarImpulso = useCallback(()=>actualizarMazmorra(m=>({ ...m, impulso:Math.min(M.IMPULSO_MAX, (m.impulso||0)+1) })), [actualizarMazmorra]);
+
   const [routineDraft, setRoutineDraft] = useState(null);   // rutina que se está configurando
   /* Informe semanal: qué semana se está mirando y a dónde vuelve el botón de
      salir (sale solo el lunes y también desde la ficha: hay que volver al de antes). */
@@ -3430,6 +3657,8 @@ export default function App(){
   const toastTimer = useRef(null);
 
   const level = levelFromXp(state.xp);
+  const yo = useMemo(()=>M.crearHeroe({ id:"yo", nombre:state.profile?.name||"Tú", tipo:"yo", avatar, level }, AVATAR.piezas), [avatar, level, state.profile?.name]);
+  const juego = useMemo(()=>({ mz:mazmorra, actualizar:actualizarMazmorra, yo, amigos }), [mazmorra, actualizarMazmorra, yo, amigos]);
   const rank = rankFor(level);
 
   const showToast = useCallback((t)=>{ setToast(t); clearTimeout(toastTimer.current); toastTimer.current=setTimeout(()=>setToast(null),3400); },[]);
@@ -3639,6 +3868,7 @@ export default function App(){
     setState(mig.state); setLog(mig.log); setMeasures(m); setMealPlan(mp); setExcludesState(exc);
     setCustomRoutinesState(mig.customRoutines.map(normalizeCustomRoutine));
     setCustomDietState(normalizeCustomDiet(cd));
+    setMazmorra(M.cargarMazmorra(await loadKey("gym:mazmorra", null)));
     setNeedsOnboarding(!mig.state.profile?.onboarded);
     scheduleAllReminders(mig.state.reminders, mig.state.sub, mig.state.vacations);
   }
@@ -3927,6 +4157,7 @@ export default function App(){
     if(finalLevel>prevLevel) fx.push({ tipo:"levelUp", nivel:finalLevel,
       rango: rankFor(finalLevel).name!==rankFor(prevLevel).name ? rankFor(finalLevel).name : null });
     if(goalJustMet) fx.push({ tipo:"vidaExtra" });
+    actualizarMazmorra(m=>M.darLlave(m, todayISO()));
     const botin = piezasNuevas(puntosDeRama(log), puntosDeRama(nlog));
     if(botin.length) fx.push({ tipo:"botin", piezas:botin });
     if(fx.length) lanzarEfecto(...fx);
@@ -3936,7 +4167,7 @@ export default function App(){
     // compararse. El ciclo y las rutinas privadas siguen sin salir del móvil.
     if(cloud.cloudEnabled && perfil){
       cloud.sincronizarPerfil({ level:finalLevel, xp:finalXp, totalWorkouts, bestStreak,
-        displayName:state.profile?.name, appVersion:APP_VERSION_NAME, atributos:ns.muscleXp || {} });
+        displayName:state.profile?.name, appVersion:APP_VERSION_NAME, atributos:ns.muscleXp || {}, avatar:ns.avatar });
       cloud.registrarEntreno({ clientId:`${record.date}-${session.startedAt}`,
         day:record.date, xp:record.xp, prs:prList.length,
         rutina:`${record.routineName} · ${record.dayName}`, detalle:record.exercises });
@@ -4084,6 +4315,14 @@ export default function App(){
     })();
     // eslint-disable-next-line
   },[loading, perfil?.handle]);
+
+  /* La Gloria se sube sola para que tus amigos te vean en la clasificación. Espera a
+     `loading` por lo de siempre: antes el total es cero y machacaría el bueno. */
+  useEffect(()=>{
+    if(loading || !cloud.cloudEnabled || !perfil || !mazmorra.gloria) return;
+    cloud.subirMazmorra(mazmorra);
+    // eslint-disable-next-line
+  },[loading, perfil?.handle, mazmorra.gloria]);
 
   /* Pone al día las rutinas importadas. El dueño manda: si su versión es más
      nueva que la que guardaste, se sustituyen días y nombre. Lo tuyo que no
@@ -4291,7 +4530,7 @@ export default function App(){
       level: levelFromXp(state.xp), xp: state.xp,
       totalWorkouts: state.totalWorkouts, bestStreak: state.bestStreak || 0,
       displayName: state.profile?.name, appVersion: APP_VERSION_NAME,
-      atributos: state.muscleXp || {},
+      atributos: state.muscleXp || {}, avatar: state.avatar,
     });
     if(Object.keys(state.bests || {}).length) cloud.subirRecords(state.bests, sesionesPorEjercicio(log), Object.keys(RENOMBRES));
   }
@@ -4427,13 +4666,14 @@ export default function App(){
       <Toast toast={toast}/>
       {efectos[0] && <EfectoPantalla key={efectos[0].id} efecto={efectos[0]} avatar={avatar} onVerEquipo={()=>setTab("heroe")} onFin={()=>setEfectos(q=>q.slice(1))}/>}
       <div className="fh-shell">
-        {tab==="home" && <HomeView {...{ state, avatar, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines,
+        {tab==="home" && <HomeView {...{ state, avatar, mazmorra, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines,
           cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno, superadoPor,
           copiaNube, onRestaurarNube:restaurarDeNube, onDescartarCopia:()=>{ saveGlobal("gym:copiaDescartada", copiaNube?.updated_at); setCopiaNube(null); },
           pendientes:solicitudes.length + enviosRutina.length }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina, setTab }}/>}
         {tab==="ficha" && <CharacterView {...{ state, avatar, puntos, level, rank, log, customRoutines, setTab,
           onAbrirInforme:lunes=>abrirInforme(lunes, "ficha") }}/>}
+        {tab==="mazmorra" && <MazmorraView {...juego} mz={mazmorra} onVolver={()=>setTab("home")}/>}
         {tab==="heroe" && <HeroeView avatar={avatar} puntos={puntos} onCambiar={guardarAvatar} onVolver={()=>setTab("ficha")}/>}
         {tab==="avisos" && <AvisosView {...{ solicitudes, envios:enviosRutina,
           onResponderSolicitud:responderSolicitud, onResponderRutina:responderRutina,
@@ -4441,7 +4681,7 @@ export default function App(){
         {tab==="amigo" && amigoAbierto && <AmigoView {...{ amigo:amigoAbierto, misBests:state.bests,
           customRoutines, onVolver:cerrarAmigo, onToast:showToast }}/>}
         {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests, sesionConjunta,
-          peso:state.profile?.weightKg, sexo:state.profile?.sex, misBests:state.bests, nextWeight:state.nextWeight, avatar,
+          peso:state.profile?.weightKg, sexo:state.profile?.sex, misBests:state.bests, nextWeight:state.nextWeight, juego, onImpulso:sumarImpulso,
           onAbandonar:()=>lanzarEfecto({ tipo:"gameOver", titulo:"Entreno abandonado", nota:"Las series de hoy no cuentan. Tu racha y tu nivel siguen como estaban." }) }}/>}
         {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank, customRoutines, onGuardarCambios:guardarCambiosRutina }}/>}
         {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines, setTab, quedadas }}/>}
@@ -4450,7 +4690,7 @@ export default function App(){
         {tab==="amigos" && <AmigosView {...{ perfil, cloudEnabled:cloud.cloudEnabled, setTab,
           amigos, onRefrescarAmigos:refrescarAmigos, onQuitarAmigo:quitarAmigo, onAbrirAmigo:abrirAmigo,
           quedadas, onRefrescarQuedadas:refrescarQuedadas, cargandoQuedadas,
-          onCargarTabla:(pe,a)=>cloud.leaderboard(pe, a) }}/>}
+          onCargarTabla:(pe,a)=>cloud.leaderboard(pe, a), mz:mazmorra, yo }}/>}
         {tab==="logros" && <AchievementsView {...{ state, level }}/>}
         {tab==="dieta" && <DietView {...{ state, mealPlan, saveMealPlan, excludes, setExcludes, setTab, customDiet, saveCustomDiet }}/>}
         {tab==="editor" && <RoutineBuilderView {...{ draft:routineDraft, setDraft:setRoutineDraft, onSave:saveRoutineFromEditor, onCancel:closeEditor, isNew:draftIsNew }}/>}
@@ -4461,7 +4701,7 @@ export default function App(){
           onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle, level }}/>}
       </div>
 
-      {tab!=="workout" && tab!=="results" && tab!=="editor" && tab!=="heroe" && (
+      {tab!=="workout" && tab!=="results" && tab!=="editor" && tab!=="heroe" && tab!=="mazmorra" && (
         <nav className="fh-nav"><div className="fh-nav-inner">
           {[{id:"home",spr:SPR.puerta,label:"Inicio"},{id:"rutinas",spr:SPR.espada,label:"Rutinas"},{id:"progreso",cara:true,label:"RPGym"},{id:"logros",spr:SPR.cofre,label:"Logros"},{id:"dieta",spr:SPR.pocion,label:"Dieta"}].map(t=>(
             <button key={t.id} className={tab===t.id?"on":""} onClick={()=>setTab(t.id)} aria-current={tab===t.id?"page":undefined}>{t.cara ? <AvatarCara av={avatar} size={32}/> : <Sprite id={t.spr} size={32}/>}<span>{t.label}</span></button>
@@ -6521,7 +6761,7 @@ function SettingsView({ state, log, updateProfile, setReminders, setSub, setCycl
         </p>
         <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.5 }}>
           Si creas una cuenta (opcional), tus <b style={{ color:"var(--txt)" }}>amigos</b> ven tu progreso: nivel, XP,
-          entrenos con sus ejercicios y pesos, tus marcas por ejercicio y tus rutinas. Es lo que permite compararse
+          entrenos con sus ejercicios y pesos, tus marcas por ejercicio, tus rutinas y el aspecto de tu héroe. Es lo que permite compararse
           y picarse.
         </p>
         <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.5 }}>
@@ -6545,7 +6785,7 @@ function SettingsView({ state, log, updateProfile, setReminders, setSub, setCycl
       <div className="fh-card" style={{ padding:16, fontSize:12, color:"var(--muted)", lineHeight:1.5 }}>
         <p style={{ margin:"0 0 8px" }}>Personajes: <b style={{ color:"var(--txt)" }}>Liberated Pixel Cup</b> (LPC), bajo licencias OGA-BY 3.0, CC-BY-SA 3.0 y CC0. Detalle de cada capa en <span className="mono">avatar/CREDITOS.csv</span> y en opengameart.org/content/lpc-collection.</p>
         <p style={{ margin:"0 0 8px" }}>Autores: {AVATAR.autores.join(", ")}.</p>
-        <p style={{ margin:0 }}>Iconos: Tiny Dungeon de Kenney (CC0). Sonidos: Juhani Junkala (CC0). Fondo: generado con FLUX.1 schnell.</p>
+        <p style={{ margin:0 }}>Iconos y monstruos: Tiny Dungeon de Kenney (CC0). Sonidos: Juhani Junkala (CC0). Fondo: generado con FLUX.1 schnell.</p>
       </div>
 
       </>)}
@@ -6703,7 +6943,7 @@ function CyclePhaseCard({ state, setTab }){
   );
 }
 
-function HomeView({ state, avatar, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, copiaNube, onRestaurarNube, onDescartarCopia, pendientes }){
+function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, copiaNube, onRestaurarNube, onDescartarCopia, pendientes }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const phase=recommendedPhase(state.startDate);
@@ -6785,6 +7025,15 @@ function HomeView({ state, avatar, level, rank, log, useRest, terminarVacaciones
           <div style={{ fontSize:11, color:"var(--faint)", marginTop:8 }}>{state.xp} XP · {state.totalWorkouts} entrenos</div>
         </div>
       </div>
+
+      <button className="fh-card" onClick={()=>setTab("mazmorra")} style={{ display:"flex", alignItems:"center", gap:12, width:"100%", textAlign:"left", padding:"10px 14px", marginTop:12, cursor:"pointer", color:"var(--txt)" }}>
+        <Sprite id={110} size={32}/>
+        <span style={{ flex:1, minWidth:0 }}>
+          <span className="disp" style={{ display:"block", fontSize:18, lineHeight:1.15 }}>La mazmorra</span>
+          <span style={{ display:"block", fontSize:12, color:"var(--muted)" }}>{mazmorra?.partida && mazmorra.partida.fase!=="fin" ? `Sala ${mazmorra.partida.sala} de ${M.SALAS}` : mazmorra?.gloria ? `${mazmorra.gloria} de Gloria` : "Lleva tu héroe a combatir"} · {mazmorra?.llaves||0} {mazmorra?.llaves===1 ? "llave" : "llaves"} · Impulso {mazmorra?.impulso||0}</span>
+        </span>
+        <ChevronRight size={16} color="var(--faint)" style={{ flexShrink:0 }}/>
+      </button>
 
       {copiaNube && (
         <div className="fh-card fh-in" style={{ padding:16, marginTop:12, borderColor:"var(--jade)" }}>
@@ -7602,7 +7851,7 @@ function SustituirPanel({ ex, onElegir, onCerrar }){
   );
 }
 
-function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStart, bests, sesionConjunta, peso, sexo, misBests, nextWeight, onAbandonar, avatar }){
+function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStart, bests, sesionConjunta, peso, sexo, misBests, nextWeight, onAbandonar, juego, onImpulso }){
   const [howOpen, setHowOpen] = useState(null);
   const [anadiendo, setAnadiendo] = useState(false);        // selector de ejercicios abierto
   const [flotantes, setFlotantes] = useState([]);           // "+5 XP" que suben desde el botón
@@ -7677,7 +7926,11 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
     const exercises=session.exercises.map((e,i)=> i!==exI? e : ({ ...e, logs:e.logs.map((l,j)=> j===setI? ({ ...l, done:!wasDone }) : l) }));
     // El cardio continuo va con rest 0: no tiene sentido abrir el cronómetro de descanso.
     const empieza = !wasDone && ex.rest>0;
-    setSession({ ...session, exercises, descanso: empieza ? { hasta:Date.now()+ex.rest*1000, total:ex.rest } : descanso });
+    // Cada serie real carga la mazmorra. Se cuenta el máximo de hechas, no los toques:
+    // marcar y desmarcar no da Impulso gratis.
+    const hechas = exercises.reduce((n,e)=>n+e.logs.filter(l=>l.done).length, 0);
+    if(hechas>(session.impulsoMax||0)) onImpulso?.();
+    setSession({ ...session, exercises, impulsoMax:Math.max(session.impulsoMax||0, hechas), descanso: empieza ? { hasta:Date.now()+ex.rest*1000, total:ex.rest } : descanso });
   }
   /* Funcional: el descanso acaba solo, desde un bucle que no ve la sesión de este render. */
   function cerrarDescanso(){ setSession(s=> s ? { ...s, descanso:null } : s); }
@@ -8046,7 +8299,7 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
 
       {flotantes.map(f=><div key={f.id} className="fh-flota" style={{ left:f.x, top:f.y, color:f.color }}>{f.texto}</div>)}
 
-      {descanso && <RestTimer hasta={descanso.hasta} total={descanso.total} onDone={cerrarDescanso} onSaltar={saltarDescanso} onMas15={alargarDescanso} isRecomp={isRecomp} avatar={avatar}/>}
+      {descanso && <RestTimer hasta={descanso.hasta} total={descanso.total} onDone={cerrarDescanso} onSaltar={saltarDescanso} onMas15={alargarDescanso} isRecomp={isRecomp} juego={juego}/>}
     </div>
   );
 }
@@ -8933,7 +9186,7 @@ function InformeSemanalView({ state, log, measures, lunes, setLunes, cloudEnable
    más). Se entra por el botón de la cabecera de Inicio — el que antes abría la
    cuenta, que ahora vive en Ajustes — y se sale con el botón de volver. */
 function AmigosView({ perfil, cloudEnabled, setTab, amigos, onRefrescarAmigos, onQuitarAmigo, onAbrirAmigo,
-                      quedadas, onRefrescarQuedadas, cargandoQuedadas, onCargarTabla }){
+                      quedadas, onRefrescarQuedadas, cargandoQuedadas, onCargarTabla, mz, yo }){
   return (
     <div className="fh-in">
       <header style={{ padding:"22px 2px 8px", display:"flex", alignItems:"center", gap:10 }}>
@@ -8968,6 +9221,7 @@ function AmigosView({ perfil, cloudEnabled, setTab, amigos, onRefrescarAmigos, o
         <>
           <AmigosPanel amigos={amigos} onRefrescarAmigos={onRefrescarAmigos} onQuitar={onQuitarAmigo} onAbrir={onAbrirAmigo}/>
           <QuedadasPanel modo="todo" quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={cargandoQuedadas}/>
+          <ClasificacionMazmorra mz={mz} yo={yo} amigos={amigos}/>
           <ClasificacionCard perfil={perfil} cargar={onCargarTabla} señal={amigos.length}/>
         </>
       )}

@@ -250,7 +250,14 @@ export async function cambiarHandle(nuevo){
 /* Sube el estado de juego (lo que se ve en el leaderboard). Nada personal. */
 /* `atributos` es el XP EN CRUDO por grupo ({Pecho: 1200, ...}), no el nivel: la
    escala puede cambiar y así cada uno la calcula con su versión de la app. */
-export async function sincronizarPerfil({ level, xp, totalWorkouts, bestStreak, displayName, appVersion, atributos }){
+/* Solo el aspecto y el equipo: es lo que un amigo necesita para llevarte en su grupo. */
+function avatarPublico(av){
+  if (!av?.rama) return null;
+  const { sexo, rama, piel, pelo, colorPelo, barba, ojos, armadura, equipo } = av;
+  return { sexo, rama, piel, pelo, colorPelo, barba, ojos, armadura, equipo };
+}
+
+export async function sincronizarPerfil({ level, xp, totalWorkouts, bestStreak, displayName, appVersion, atributos, avatar }){
   if (!supabase) return sinNube;
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -262,8 +269,23 @@ export async function sincronizarPerfil({ level, xp, totalWorkouts, bestStreak, 
     });
     const { error } = await supabase.from("profiles").update({
       level, xp, total_workouts:totalWorkouts, best_streak:bestStreak,
-      display_name:String(displayName || "").slice(0, 40), atributos:limpio,
+      display_name:String(displayName || "").slice(0, 40), atributos:limpio, avatar:avatarPublico(avatar),
       app_version:String(appVersion || ""), last_seen:new Date().toISOString(),
+    }).eq("id", user.id);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* Los totales de la mazmorra, para la clasificación entre amigos. */
+export async function subirMazmorra({ gloria, salas, mazmorras, mejorSala }){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("profiles").update({
+      gloria:Math.round(gloria)||0, salas_superadas:Math.round(salas)||0,
+      mazmorras:Math.round(mazmorras)||0, mejor_sala:Math.round(mejorSala)||0,
     }).eq("id", user.id);
     if (error) return { ok:false, msg:traducir(error) };
     return { ok:true };
@@ -338,7 +360,7 @@ export async function listarAmigos(){
     const ids = (amistades || []).map(a => a.amigo_id);
     if (!ids.length) return { ok:true, amigos:[] };
     const { data, error: e2 } = await supabase.from("profiles")
-      .select("id, handle, display_name, level, xp, total_workouts").in("id", ids);
+      .select("id, handle, display_name, level, xp, total_workouts, avatar, gloria, salas_superadas, mazmorras, mejor_sala").in("id", ids);
     if (e2) return { ok:false, msg:traducir(e2) };
     return { ok:true, amigos:data || [] };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
