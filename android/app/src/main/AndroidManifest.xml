@@ -24,6 +24,17 @@
 
         </activity>
 
+        <!-- Mantiene vivo el entreno en segundo plano. Tipo "health": Android lo define
+             para las apps de seguimiento de ejercicio. -->
+        <service
+            android:name=".EntrenoService"
+            android:exported="false"
+            android:foregroundServiceType="health" />
+
+        <receiver
+            android:name=".FinDescansoReceiver"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -47,4 +58,10 @@
     <!-- Sin esto no vibra NADA: ni el canal de la notificación ni navigator.vibrate.
          Un aviso de fin de descanso que no se nota en el bolsillo no sirve. -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Entreno en primer plano. El tipo "health" exige además uno de varios permisos de
+         sensores: HIGH_SAMPLING_RATE_SENSORS es el único que no pide nada al usuario.
+         La app no lee ningún sensor. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
+    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
 </manifest>

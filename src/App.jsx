@@ -13,7 +13,7 @@ import {
   ScrollText, Swords, Footprints, Mountain, Heart, ShieldAlert, Info, Ban,
   Settings, Bell, CreditCard, User, Users, ChevronRight, Plus, X,
   Sun, Palette, Scale, Download, Upload, Cloud,
-  Trash2, Search, ArrowUp, ArrowDown, Pencil, Copy, FileText, Eye, Minus, Share2,
+  Trash2, Search, ArrowUp, ArrowDown, Pencil, Copy, FileText, Eye, Minus, Share2, Volume2,
   BedDouble, Palmtree,
 } from "lucide-react";
 
@@ -58,7 +58,7 @@ const ROUTINES = [
         { name:"Elevación de piernas", sets:2, reps:"12-15", rest:45, muscle:"Core" },
       ]},
       { name:"Día C", exercises:[
-        { name:"Peso muerto rumano ligero", sets:2, reps:"12-15", rest:75, muscle:"Femoral" },
+        { name:"Peso muerto rumano", sets:2, reps:"12-15", rest:75, muscle:"Femoral" },
         { name:"Remo en máquina", sets:2, reps:"12-15", rest:60, muscle:"Espalda" },
         { name:"Fondos asistidos", sets:2, reps:"10-12", rest:60, muscle:"Pecho" },
         { name:"Face pull", sets:2, reps:"15-20", rest:45, muscle:"Hombro" },
@@ -82,7 +82,7 @@ const ROUTINES = [
         { name:"Peso muerto", sets:4, reps:"6-8", rest:150, muscle:"Espalda" },
         { name:"Press militar", sets:3, reps:"8-10", rest:90, muscle:"Hombro" },
         { name:"Jalón al pecho", sets:3, reps:"10-12", rest:75, muscle:"Espalda" },
-        { name:"Extensión de tríceps", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
+        { name:"Extensión de tríceps en polea", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
         { name:"Rueda abdominal", sets:3, reps:"10-12", rest:45, muscle:"Core" },
       ]},
       { name:"Día C", exercises:[
@@ -116,13 +116,13 @@ const ROUTINES = [
         { name:"Press inclinado mancuernas", sets:4, reps:"8-10", rest:90, muscle:"Pecho" },
         { name:"Remo con mancuerna", sets:4, reps:"10-12", rest:90, muscle:"Espalda" },
         { name:"Elevaciones laterales", sets:4, reps:"12-15", rest:45, muscle:"Hombro" },
-        { name:"Extensión de tríceps", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
+        { name:"Extensión de tríceps en polea", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
         { name:"Face pull", sets:3, reps:"15-20", rest:45, muscle:"Hombro" },
       ]},
       { name:"Pierna B", exercises:[
         { name:"Peso muerto", sets:4, reps:"5-6", rest:180, muscle:"Espalda" },
         { name:"Zancadas con barra", sets:3, reps:"10-12", rest:90, muscle:"Pierna" },
-        { name:"Curl femoral en máquina", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
+        { name:"Curl femoral tumbado", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
         { name:"Elevación de talones de pie", sets:4, reps:"15-20", rest:45, muscle:"Gemelo" },
         { name:"Rueda abdominal", sets:3, reps:"10-12", rest:45, muscle:"Core" },
       ]},
@@ -148,9 +148,9 @@ const ROUTINES = [
       ]},
       { name:"Día C", exercises:[
         { name:"Sentadilla búlgara", sets:4, reps:"10/pierna", rest:75, muscle:"Pierna" },
-        { name:"Remo invertido o con mancuerna", sets:4, reps:"10-12", rest:60, muscle:"Espalda" },
+        { name:"Remo con mancuerna", sets:4, reps:"10-12", rest:60, muscle:"Espalda" },
         { name:"Flexiones inclinadas", sets:3, reps:"máx", rest:60, muscle:"Pecho" },
-        { name:"Curl de bíceps mancuernas", sets:3, reps:"12-15", rest:45, muscle:"Bíceps" },
+        { name:"Curl de bíceps", sets:3, reps:"12-15", rest:45, muscle:"Bíceps" },
         { name:"Plancha lateral", sets:3, reps:"30 s", rest:45, muscle:"Core" },
       ]},
     ]},
@@ -193,7 +193,7 @@ const ROUTINES = [
         { name:"Remo en máquina", sets:3, reps:"12-15", rest:60, muscle:"Espalda" },
         { name:"Zancadas con barra", sets:3, reps:"12/pierna", rest:60, muscle:"Pierna" },
         { name:"Curl de bíceps", sets:2, reps:"12-15", rest:40, muscle:"Bíceps" },
-        { name:"Extensión de tríceps", sets:2, reps:"12-15", rest:40, muscle:"Tríceps" },
+        { name:"Extensión de tríceps en polea", sets:2, reps:"12-15", rest:40, muscle:"Tríceps" },
         { name:"Plancha", sets:3, reps:"40 s", rest:40, muscle:"Core" },
       ]},
     ]},
@@ -234,7 +234,7 @@ const ROUTINES = [
         { name:"Press militar", sets:3, reps:"8-10", rest:90, muscle:"Hombro" },
         { name:"Press inclinado mancuernas", sets:3, reps:"10-12", rest:75, muscle:"Pecho" },
         { name:"Elevaciones laterales", sets:4, reps:"12-15", rest:45, muscle:"Hombro" },
-        { name:"Extensión de tríceps", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
+        { name:"Extensión de tríceps en polea", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
       ]},
       { name:"Tirón", exercises:[
         { name:"Peso muerto", sets:3, reps:"5-6", rest:180, muscle:"Espalda" },
@@ -280,7 +280,7 @@ const ROUTINES = [
       { name:"Pierna B", exercises:[
         { name:"Peso muerto", sets:4, reps:"4-6", rest:180, muscle:"Espalda" },
         { name:"Zancadas con barra", sets:4, reps:"10-12", rest:90, muscle:"Pierna" },
-        { name:"Curl femoral en máquina", sets:4, reps:"12-15", rest:60, muscle:"Femoral" },
+        { name:"Curl femoral tumbado", sets:4, reps:"12-15", rest:60, muscle:"Femoral" },
         { name:"Extensión de cuádriceps en máquina", sets:3, reps:"12-15", rest:60, muscle:"Pierna" },
         { name:"Rueda abdominal", sets:3, reps:"12", rest:45, muscle:"Core" },
       ]},
@@ -295,7 +295,7 @@ const ROUTINES = [
         { name:"Press militar", sets:3, reps:"8-10", rest:90, muscle:"Hombro" },
         { name:"Aperturas con mancuernas", sets:3, reps:"12-15", rest:45, muscle:"Pecho" },
         { name:"Elevaciones laterales", sets:4, reps:"12-15", rest:45, muscle:"Hombro" },
-        { name:"Extensión de tríceps", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
+        { name:"Extensión de tríceps en polea", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
       ]},
       { name:"Tirón A", exercises:[
         { name:"Dominadas o jalón", sets:4, reps:"6-8", rest:120, muscle:"Espalda" },
@@ -307,7 +307,7 @@ const ROUTINES = [
       { name:"Pierna A", exercises:[
         { name:"Sentadilla", sets:4, reps:"6-8", rest:150, muscle:"Pierna" },
         { name:"Prensa de piernas", sets:4, reps:"10-12", rest:90, muscle:"Pierna" },
-        { name:"Curl femoral en máquina", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
+        { name:"Curl femoral tumbado", sets:3, reps:"12-15", rest:60, muscle:"Femoral" },
         { name:"Elevación de talones de pie", sets:5, reps:"15-20", rest:45, muscle:"Gemelo" },
         { name:"Plancha", sets:3, reps:"60 s", rest:45, muscle:"Core" },
       ]},
@@ -532,7 +532,7 @@ const ROUTINES = [
         { name:"Sentadilla sumo con mancuerna", sets:3, reps:"12-15", rest:75, muscle:"Pierna" },
         { name:"Patada de glúteo en polea", sets:2, reps:"12/pierna", rest:45, muscle:"Pierna" },
         { name:"Aperturas con mancuernas", sets:2, reps:"12-15", rest:45, muscle:"Pecho" },
-        { name:"Curl de bíceps mancuernas", sets:2, reps:"12-15", rest:45, muscle:"Bíceps" },
+        { name:"Curl de bíceps", sets:2, reps:"12-15", rest:45, muscle:"Bíceps" },
         { name:"Plancha", sets:2, reps:"20 s", rest:45, muscle:"Core" },
       ]},
     ]},
@@ -584,7 +584,7 @@ const ROUTINES = [
         { name:"Remo con mancuerna", sets:4, reps:"10-12", rest:75, muscle:"Espalda" },
         { name:"Elevaciones laterales", sets:4, reps:"12-15", rest:45, muscle:"Hombro" },
         { name:"Jalón al pecho", sets:3, reps:"10-12", rest:75, muscle:"Espalda" },
-        { name:"Extensión de tríceps", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
+        { name:"Extensión de tríceps en polea", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
       ]},
       { name:"Pierna B", exercises:[
         { name:"Peso muerto sumo", sets:4, reps:"6-8", rest:150, muscle:"Pierna" },
@@ -684,7 +684,7 @@ const ROUTINES = [
     days:[
       { name:"Full body exprés", exercises:[
         { name:"Sentadilla goblet", sets:3, reps:"12", rest:45, muscle:"Pierna" },
-        { name:"Press banca o flexiones", sets:3, reps:"12", rest:45, muscle:"Pecho" },
+        { name:"Press banca", sets:3, reps:"12", rest:45, muscle:"Pecho" },
         { name:"Remo con mancuerna", sets:3, reps:"12", rest:45, muscle:"Espalda" },
         { name:"Press militar mancuernas", sets:3, reps:"12", rest:45, muscle:"Hombro" },
         { name:"Plancha", sets:3, reps:"40 s", rest:30, muscle:"Core" },
@@ -767,28 +767,57 @@ const RENOMBRES = {
   "Fondos lastrados": "Fondos en paralelas lastrados",
   "Zancadas": "Zancadas con barra",
   "Prensa": "Prensa de piernas",
+  /* Duplicados: el mismo ejercicio con dos nombres. Aquí el nombre viejo cae en uno
+     que ya existía, y migrarNombres junta las marcas de los dos. Los "X o Y" se
+     quedan en X: del "si está ocupado" ya se encarga el botón Cambiar del entreno. */
+  "Curl de bíceps mancuernas": "Curl de bíceps",
+  "Extensión de tríceps": "Extensión de tríceps en polea",
+  "Extensión de tríceps con cuerda": "Extensión de tríceps sobre cabeza con cuerda",
+  "Extensión de tríceps en polea baja": "Press francés en polea",
+  "Curl femoral en máquina": "Curl femoral tumbado",
+  "Sentadilla hack en máquina": "Sentadilla hack",
+  "Pájaros en polea cruzada": "Pájaros en polea",
+  "Crunch en polea con cuerda": "Crunch en polea",
+  "Press declinado guiado": "Press declinado en multipower",
+  "Curl de muñeca sentado en polea": "Curl de muñeca en polea",
+  "Curl sobre la cabeza en polea": "Curl en polea alta",
+  "Elevación lateral en polea baja": "Elevaciones laterales en polea",
+  "Remo a la cara con cuerda": "Face pull",
+  "Peso muerto rumano ligero": "Peso muerto rumano",
+  "Jalón con recorrido completo": "Jalón al pecho",
+  "Press banca o flexiones": "Press banca",
+  "Remo invertido o con mancuerna": "Remo con mancuerna",
 };
+
+/* El nombre de hoy de un ejercicio. Sigue la cadena entera: "Curl femoral" pasó a
+   "Curl femoral en máquina" y ese a "Curl femoral tumbado", y quien venga de una
+   versión muy vieja tiene que llegar al final de un solo salto. */
+function nombreActual(n){
+  let v = n;
+  for(let i=0; i<6 && RENOMBRES[v]; i++) v = RENOMBRES[v];
+  return v;
+}
 
 /* Aplica los renombres a todo lo que guarda nombres de ejercicio. */
 function migrarNombres({ state, log, customRoutines }){
-  const nuevo = n => RENOMBRES[n] || n;
+  const nuevo = nombreActual;
   let tocado = false;
 
-  const mapaClaves = obj => {
+  const mapaClaves = (obj, juntar = Math.max) => {
     if(!obj) return obj;
     const out = {}; let cambio = false;
     for(const [k,v] of Object.entries(obj)){
       const k2 = nuevo(k);
       if(k2 !== k) cambio = true;
-      // Si ya existe la clave nueva (raro), se queda la mejor marca.
-      out[k2] = (k2 in out) ? (typeof v === "number" ? Math.max(out[k2], v) : v) : v;
+      // Dos nombres que caen en el mismo ejercicio: se juntan las marcas.
+      out[k2] = (k2 in out) ? (typeof v === "number" ? juntar(out[k2], v) : v) : v;
     }
     if(cambio) tocado = true;
     return cambio ? out : obj;
   };
 
   const s2 = { ...state,
-    bests: mapaClaves(state.bests), firstBests: mapaClaves(state.firstBests),
+    bests: mapaClaves(state.bests), firstBests: mapaClaves(state.firstBests, Math.min),
     nextWeight: mapaClaves(state.nextWeight), cardioBests: mapaClaves(state.cardioBests),
     muscleXp: state.muscleXp };
 
@@ -799,8 +828,20 @@ function migrarNombres({ state, log, customRoutines }){
   });
 
   const r2 = (customRoutines || []).map(r => {
-    const days = (r.days || []).map(d => ({ ...d,
-      exercises: (d.exercises || []).map(e => e.name !== nuevo(e.name) ? { ...e, name:nuevo(e.name) } : e) }));
+    const days = (r.days || []).map(d => {
+      const lista = d.exercises || [];
+      // Con los dos duplicados en el mismo día, la fusión los dejaría repetidos. Solo cae
+      // el renombrado que choca: repetir un ejercicio a propósito es cosa tuya.
+      const vistos = new Set(lista.filter(e => e.name === nuevo(e.name)).map(e => e.name));
+      const exercises = lista.flatMap(e => {
+        const n = nuevo(e.name);
+        if(n === e.name) return [e];
+        if(vistos.has(n)) return [];
+        vistos.add(n);
+        return [{ ...e, name:n }];
+      });
+      return { ...d, exercises };
+    });
     if(JSON.stringify(days) !== JSON.stringify(r.days)) { tocado = true; return { ...r, days }; }
     return r;
   });
@@ -813,14 +854,14 @@ const EX_BASE = {
   "Sentadilla":40, "Sentadilla goblet":16, "Sentadilla búlgara":12, "Prensa de piernas":80,
   "Press banca":30, "Press inclinado con barra":25, "Press inclinado mancuernas":14,
   "Press militar":25, "Press militar mancuernas":12, "Peso muerto":50, "Peso muerto rumano":40,
-  "Peso muerto rumano ligero":30, "Peso muerto rumano mancuernas":16, "Remo con barra":30,
+  "Peso muerto rumano mancuernas":16, "Remo con barra":30,
   "Remo con mancuerna":16, "Remo en máquina":30, "Jalón al pecho":35, "Jalón agarre cerrado":32,
-  "Dominadas o jalón":35, "Zancadas con barra":12, "Curl femoral en máquina":25, "Extensión de cuádriceps en máquina":25,
+  "Dominadas o jalón":35, "Zancadas con barra":12, "Extensión de cuádriceps en máquina":25,
   "Elevación de talones de pie":40, "Elevaciones laterales":8, "Face pull":15, "Curl de bíceps":10,
-  "Curl de bíceps mancuernas":10, "Curl martillo":10, "Curl predicador":12, "Extensión de tríceps":12,
+  "Curl martillo":10, "Curl predicador":12, 
   "Press francés":15, "Aperturas con mancuernas":10, "Fondos en paralelas":0, "Fondos asistidos":0, "Flexiones":0,
-  "Flexiones diamante":0, "Flexiones inclinadas":0, "Remo invertido o con mancuerna":14,
-  "Press banca o flexiones":25, "Superserie de bíceps y tríceps":10,
+  "Flexiones diamante":0, "Flexiones inclinadas":0, 
+  "Superserie de bíceps y tríceps":10,
   "Jalón agarre neutro":32, "Curl con barra":20, "Curl femoral tumbado":25, "Curl femoral sentado":25,
   "Aperturas en polea":12, "Extensión de tríceps en polea":15, "Sentadilla frontal":30,
   "Press mancuernas sentado":14, "Dominadas lastradas":0, "Fondos en paralelas lastrados":0, "Plancha con lastre":0,
@@ -842,26 +883,26 @@ const EX_BASE = {
   "Zancada inversa":10, "Subida al cajón":10, "Sentadilla en multipower":30, "Sentadilla con mancuernas":14,
   "Gemelo en prensa":60, "Elevación de talones con mancuerna":14,
   "Curl en polea":15, "Curl inverso":15, "Curl araña":10,
-  "Extensión de tríceps con cuerda":15, "Press banca agarre cerrado":25,
+  "Press banca agarre cerrado":25,
   "Crunch en polea":20, "Crunch en máquina":25,
   /* --- Máquinas y poleas (free-exercise-db) --- */
   "Press inclinado en máquina":28, "Press declinado en máquina":30, "Press banca en multipower":30,
   "Press inclinado en multipower":25, "Cruce de poleas bajo":12, "Aperturas inclinadas en polea":12,
   "Press de pecho en polea":20, "Press de pecho en polea sentado":20, "Cruce de poleas alto":12,
   "Press declinado en multipower":30, "Aperturas en banco con poleas":12, "Press inclinado en polea":18,
-  "Press de pecho en máquina de discos":25, "Cruce de poleas a una mano":10, "Press declinado guiado":30,
+  "Press de pecho en máquina de discos":25, "Cruce de poleas a una mano":10, 
   "Remo alto en máquina":30, "Remo en máquina a un brazo":20, "Remo en polea a una mano":20,
   "Jalón a una mano":20, "Remo en multipower":30, "Pullover en polea inclinado":12,
-  "Remo en polea alto":30, "Jalón con recorrido completo":30, "Remo en polea alta de rodillas":25,
+  "Remo en polea alto":30, "Remo en polea alta de rodillas":25,
   "Remo en polea alta a una mano":15,
   "Pájaros en contractora":12, "Elevación frontal en polea":10, "Encogimientos en máquina":40,
   "Encogimientos en polea":35, "Press militar en multipower":25, "Rotación externa en polea":5,
   "Press de hombro en polea alterno":12, "Pájaros en polea a una mano":6, "Rotación interna en polea":5,
-  "Pájaros en polea cruzada":8, "Remo a la cara con cuerda":15, "Press de hombro en polea de pie":15,
+  "Press de hombro en polea de pie":15,
   "Encogimientos en máquina de gemelos":40, "Press de hombro en máquina de discos":20, "Remo al cuello en polea baja":15,
   "Encogimientos tras espalda en multipower":40, "Remo al mentón a una mano en multipower":12, "Remo al mentón en multipower":20,
-  "Elevación lateral en polea baja":6, "Remo al mentón en polea":18,
-  "Sentadilla hack en máquina":45, "Prensa con pies juntos":70, "Extensión de cuádriceps a una pierna en máquina":15,
+  "Remo al mentón en polea":18,
+  "Prensa con pies juntos":70, "Extensión de cuádriceps a una pierna en máquina":15,
   "Zancada en multipower":20, "Pull through en polea":25, "Peso muerto en polea":30,
   "Aductores en polea":10, "Sentadilla en máquina":40, "Peso muerto en máquina":50,
   "Sentadilla tumbada en máquina":50, "Sentadilla hack con pies juntos":40, "Prensa en multipower":40,
@@ -870,16 +911,16 @@ const EX_BASE = {
   "Elevación de talones en multipower":40, "Gemelos en máquina":55, "Elevación de puntas (tibial)":25,
   "Curl de bíceps en máquina":20, "Curl predicador en máquina":18, "Curl martillo en polea":15,
   "Curl predicador en polea":15, "Curl en polea alta":10, "Curl tumbado en polea":12,
-  "Curl tumbado en polea alta":12, "Curl sobre la cabeza en polea":10, "Curl inverso en polea":12,
+  "Curl tumbado en polea alta":12, "Curl inverso en polea":12,
   "Curl en polea a una mano":10,
   "Extensión de tríceps en máquina":20, "Fondos en máquina":25, "Tríceps en polea con cuerda":15,
   "Extensión de tríceps inclinado en polea":12, "Press francés en polea":15, "Tríceps en polea a una mano":8,
-  "Extensión de tríceps de rodillas en polea":12, "Extensión de tríceps en polea baja":12, "Tríceps en polea agarre invertido":12,
+  "Extensión de tríceps de rodillas en polea":12, "Tríceps en polea agarre invertido":12,
   "Press cerrado en multipower":25, "Extensión de tríceps sobre cabeza en polea baja":8, "Extensión de tríceps sobre cabeza con cuerda":15,
-  "Curl de muñeca en polea":10, "Curl de muñeca sentado en polea":10,
+  "Curl de muñeca en polea":10, 
   "Press Pallof":12, "Leñador en polea":15, "Crunch inverso en polea":15,
   "Giro ruso en polea":12, "Crunch en polea sentado":18, "Crunch en polea con giro":15,
-  "Flexión lateral en polea alta":12, "Press Pallof con giro":12, "Crunch en polea con cuerda":18,
+  "Flexión lateral en polea alta":12, "Press Pallof con giro":12, 
   "Elevación de cadera en multipower":20, "Leñador invertido en polea":15, "Crunch en polea de pie":18,
 };
 
@@ -927,7 +968,7 @@ const EX_MUSCLE_EXTRA = {
   "Curl nórdico":"Femoral",
   "Gemelo en prensa":"Gemelo", "Elevación de talones con mancuerna":"Gemelo",
   "Curl en polea":"Bíceps", "Curl inverso":"Bíceps", "Curl araña":"Bíceps",
-  "Fondos en banco":"Tríceps", "Extensión de tríceps con cuerda":"Tríceps", "Press banca agarre cerrado":"Tríceps",
+  "Fondos en banco":"Tríceps", "Press banca agarre cerrado":"Tríceps",
   "Crunch en polea":"Core", "Crunch en máquina":"Core", "Elevación de rodillas":"Core", "Tijeras":"Core",
   "Cinta de correr":"Cardio", "Caminar en cinta":"Cardio", "Bici estática":"Cardio", "Elíptica":"Cardio", "Máquina de remo":"Cardio", "Comba":"Cardio", "Escaladora":"Cardio",
   /* --- Máquinas y poleas --- */
@@ -938,24 +979,23 @@ const EX_MUSCLE_EXTRA = {
   "Cruce de poleas alto":"Pecho", "Press declinado en multipower":"Pecho",
   "Aperturas en banco con poleas":"Pecho", "Press inclinado en polea":"Pecho",
   "Press de pecho en máquina de discos":"Pecho", "Cruce de poleas a una mano":"Pecho",
-  "Press declinado guiado":"Pecho",
   "Remo alto en máquina":"Espalda", "Remo en máquina a un brazo":"Espalda",
   "Remo en polea a una mano":"Espalda", "Jalón a una mano":"Espalda",
   "Remo en multipower":"Espalda", "Hiperextensión inversa":"Espalda",
   "Pullover en polea inclinado":"Espalda", "Remo en polea alto":"Espalda",
-  "Jalón con recorrido completo":"Espalda", "Remo en polea alta de rodillas":"Espalda",
+  "Remo en polea alta de rodillas":"Espalda",
   "Remo en polea alta a una mano":"Espalda",
   "Pájaros en contractora":"Hombro", "Elevación frontal en polea":"Hombro",
   "Encogimientos en máquina":"Hombro", "Encogimientos en polea":"Hombro",
   "Press militar en multipower":"Hombro", "Rotación externa en polea":"Hombro",
   "Press de hombro en polea alterno":"Hombro", "Pájaros en polea a una mano":"Hombro",
-  "Rotación interna en polea":"Hombro", "Pájaros en polea cruzada":"Hombro",
-  "Remo a la cara con cuerda":"Hombro", "Press de hombro en polea de pie":"Hombro",
+  "Rotación interna en polea":"Hombro", 
+  "Press de hombro en polea de pie":"Hombro",
   "Encogimientos en máquina de gemelos":"Hombro", "Press de hombro en máquina de discos":"Hombro",
   "Remo al cuello en polea baja":"Hombro", "Encogimientos tras espalda en multipower":"Hombro",
   "Remo al mentón a una mano en multipower":"Hombro", "Remo al mentón en multipower":"Hombro",
-  "Elevación lateral en polea baja":"Hombro", "Remo al mentón en polea":"Hombro",
-  "Sentadilla hack en máquina":"Pierna", "Prensa con pies juntos":"Pierna",
+  "Remo al mentón en polea":"Hombro",
+  "Prensa con pies juntos":"Pierna",
   "Extensión de cuádriceps a una pierna en máquina":"Pierna", "Zancada en multipower":"Pierna",
   "Pull through en polea":"Pierna", "Peso muerto en polea":"Pierna",
   "Aductores en polea":"Pierna", "Sentadilla en máquina":"Pierna",
@@ -969,20 +1009,20 @@ const EX_MUSCLE_EXTRA = {
   "Curl de bíceps en máquina":"Bíceps", "Curl predicador en máquina":"Bíceps",
   "Curl martillo en polea":"Bíceps", "Curl predicador en polea":"Bíceps",
   "Curl en polea alta":"Bíceps", "Curl tumbado en polea":"Bíceps",
-  "Curl tumbado en polea alta":"Bíceps", "Curl sobre la cabeza en polea":"Bíceps",
+  "Curl tumbado en polea alta":"Bíceps", 
   "Curl inverso en polea":"Bíceps", "Curl en polea a una mano":"Bíceps",
   "Extensión de tríceps en máquina":"Tríceps", "Fondos en máquina":"Tríceps",
   "Tríceps en polea con cuerda":"Tríceps", "Extensión de tríceps inclinado en polea":"Tríceps",
   "Press francés en polea":"Tríceps", "Tríceps en polea a una mano":"Tríceps",
-  "Extensión de tríceps de rodillas en polea":"Tríceps", "Extensión de tríceps en polea baja":"Tríceps",
+  "Extensión de tríceps de rodillas en polea":"Tríceps", 
   "Tríceps en polea agarre invertido":"Tríceps", "Press cerrado en multipower":"Tríceps",
   "Extensión de tríceps sobre cabeza en polea baja":"Tríceps", "Extensión de tríceps sobre cabeza con cuerda":"Tríceps",
-  "Curl de muñeca en polea":"Brazo", "Curl de muñeca sentado en polea":"Brazo",
+  "Curl de muñeca en polea":"Brazo", 
   "Press Pallof":"Core", "Leñador en polea":"Core",
   "Crunch inverso en polea":"Core", "Giro ruso en polea":"Core",
   "Crunch en polea sentado":"Core", "Crunch en polea con giro":"Core",
   "Flexión lateral en polea alta":"Core", "Press Pallof con giro":"Core",
-  "Crunch en polea con cuerda":"Core", "Elevación de cadera en multipower":"Core",
+  "Elevación de cadera en multipower":"Core",
   "Leñador invertido en polea":"Core", "Crunch en polea de pie":"Core",
   "Bici reclinada":"Cardio",
 };
@@ -1155,27 +1195,24 @@ const EX_HOW = {
   "Sentadilla goblet":"Sujeta una mancuerna o pesa rusa contra el pecho con las dos manos. Baja flexionando cadera y rodillas con la espalda recta y el pecho alto hasta que los muslos queden paralelos al suelo; sube empujando con los talones.",
   "Press banca":"Tumbado en el banco, agarra la barra algo más ancha que los hombros. Bájala controlada hasta rozar el pecho con los codos a ~45°, y empuja arriba sin bloquear de golpe. Omóplatos apretados y pies en el suelo.",
   "Remo con mancuerna":"Con una rodilla y una mano en el banco, deja colgar la mancuerna. Tira del codo hacia atrás llevando la mancuerna a la cadera, aprieta la espalda arriba y baja despacio. No gires el tronco.",
-  "Press militar mancuernas":"De pie o sentado con la espalda firme, mancuernas a la altura de los hombros. Empuja arriba hasta casi estirar los brazos sin arquear la lumbar y baja controlado. Aprieta glúteos y abdomen.",
+  "Press militar mancuernas":"De pie con la espalda firme, mancuernas a la altura de los hombros. Empuja arriba hasta casi estirar los brazos sin arquear la lumbar y baja controlado. Aprieta glúteos y abdomen.",
   "Plancha":"Sobre antebrazos y puntas de los pies, cuerpo en línea recta de cabeza a talones. Aprieta abdomen y glúteos, no dejes caer la cadera ni subas el culo. Respira con normalidad.",
   "Prensa de piernas":"Sentado en la máquina, pies a la anchura de los hombros. Baja flexionando las rodillas hacia el pecho sin despegar la lumbar del respaldo y empuja sin bloquear del todo las rodillas.",
   "Jalón al pecho":"Sentado, agarra la barra más ancha que los hombros. Tira hacia la parte alta del pecho llevando los codos abajo y atrás, aprieta la espalda y sube controlando sin encoger los hombros.",
   "Press inclinado mancuernas":"Banco inclinado 30-45°, mancuernas a los lados del pecho. Empuja arriba juntándolas un poco y baja controlado hasta notar estiramiento en el pecho. Omóplatos apretados.",
   "Elevaciones laterales":"De pie con una mancuerna en cada mano y codos algo flexionados, sube los brazos a los lados hasta la altura del hombro liderando con el codo, y baja despacio. Sin impulso del cuerpo.",
   "Elevación de piernas":"Tumbado boca arriba, sube las piernas (rectas o con la rodilla algo flexionada) llevando la pelvis hacia el ombligo, y baja controlado sin arquear la lumbar.",
-  "Peso muerto rumano ligero":"Versión ligera para aprender el patrón: de pie, empuja la cadera hacia atrás bajando el peso pegado a las piernas hasta notar los femorales, espalda recta, y vuelve apretando glúteos.",
   "Remo en máquina":"Sentado con el pecho apoyado, agarra las asas y tira de los codos hacia atrás apretando la espalda; vuelve estirando sin redondear. Hombros abajo.",
   "Fondos asistidos":"En la máquina de fondos con apoyo de rodillas, baja flexionando los codos hasta que el hombro llegue a su altura y empuja arriba. Inclínate algo adelante para más pecho.",
   "Face pull":"Cuerda en polea a la altura de la cara: tira hacia la frente separando las manos con los codos altos y atrás, apretando la parte trasera del hombro. Peso ligero y control.",
-  "Curl de bíceps":"De pie con mancuernas o barra, codos pegados al cuerpo. Sube flexionando solo el codo sin balancear, aprieta arriba y baja controlando la bajada.",
+  "Curl de bíceps":"De pie con una mancuerna en cada mano y codos pegados, sube flexionando el codo sin balancear y baja controlando.",
   "Sentadilla":"Barra sobre la parte alta de la espalda. Baja flexionando cadera y rodillas con el pecho alto y la espalda recta hasta pasar la paralela, y sube empujando con todo el pie. Rodillas hacia la punta de los pies.",
   "Remo con barra":"Inclina el tronco ~45° con la espalda recta y la barra colgando. Tira llevándola al ombligo apretando la espalda y baja controlado. No tirones con la lumbar.",
   "Peso muerto":"Barra sobre el medio del pie. Con espalda recta y pecho alto, levanta empujando el suelo con las piernas y extendiendo la cadera; la barra sube pegada al cuerpo. Nunca redondees la lumbar.",
   "Press militar":"De pie, barra a la altura de las clavículas. Empuja por encima de la cabeza hasta estirar los brazos sin arquear la lumbar (aprieta glúteos y abdomen) y baja controlado.",
-  "Extensión de tríceps":"En polea alta con cuerda o barra, codos pegados al cuerpo. Estira los codos hacia abajo apretando el tríceps y vuelve controlando sin abrir los codos.",
   "Rueda abdominal":"De rodillas, desliza la rueda hacia delante estirando el cuerpo SIN arquear la lumbar (abdomen apretado), hasta donde controles, y vuelve. Empieza con recorrido corto.",
   "Peso muerto rumano":"De pie con barra y piernas casi rectas, lleva la cadera atrás bajando la barra pegada a las piernas hasta notar tensión en los femorales, espalda recta, y sube apretando glúteos.",
   "Zancadas con barra":"Da un paso al frente y baja la rodilla trasera hacia el suelo con el tronco erguido y la rodilla delantera sobre el tobillo. Empuja para volver y alterna piernas.",
-  "Curl femoral en máquina":"En la máquina, engancha los tobillos y flexiona las rodillas llevando el talón hacia el glúteo apretando el femoral; vuelve controlado.",
   "Elevación de talones de pie":"Con las puntas de los pies en un escalón, sube el talón lo máximo poniéndote de puntillas, aprieta arriba y baja estirando bien el gemelo.",
   "Extensión de cuádriceps en máquina":"Sentado en la máquina, engancha los tobillos y estira las rodillas apretando el cuádriceps arriba; baja controlado sin dejar caer el peso.",
   "Dominadas o jalón":"Dominadas: colgado de la barra, tira del pecho hacia ella llevando los codos abajo y atrás, y baja controlado. Si aún no salen, usa el jalón al pecho en polea con la misma técnica.",
@@ -1184,27 +1221,24 @@ const EX_HOW = {
   "Press francés":"Tumbado o sentado, barra o mancuernas sobre la cabeza con los codos apuntando al techo. Baja flexionando solo los codos hacia la frente y estira arriba. Codos quietos.",
   "Fondos en paralelas":"En paralelas, baja flexionando los codos hasta que el hombro llegue a su altura y empuja arriba. Inclínate adelante para pecho, vertical para tríceps. No bajes más de lo que controles.",
   "Curl predicador":"Con el brazo apoyado en el banco predicador, sube la barra o mancuerna flexionando el codo y baja controlando bien la parte final, sin estirar de golpe.",
-  "Jalón agarre cerrado":"Jalón en polea con agarre estrecho (triángulo). Tira hacia el pecho con los codos pegados abajo y atrás, aprieta la espalda y sube controlado.",
+  "Jalón agarre cerrado":"Jalón con barra recta y las manos juntas, palmas hacia delante. Tira hacia el pecho con los codos pegados abajo y atrás, aprieta la espalda y sube controlado.",
   "Sentadilla búlgara":"Pie trasero apoyado en un banco y una mancuerna en cada mano. Baja flexionando la pierna delantera con el tronco algo inclinado y empuja para subir. Una pierna cada vez.",
   "Flexiones":"Manos algo más anchas que los hombros, cuerpo en línea recta. Baja el pecho al suelo con los codos a ~45° y empuja arriba apretando abdomen y glúteos. Si cuesta, apoya rodillas.",
   "Peso muerto rumano mancuernas":"Como el rumano pero con una mancuerna en cada mano: cadera atrás, mancuernas pegadas a las piernas, espalda recta, hasta notar los femorales, y sube apretando glúteos.",
   "Flexiones diamante":"Flexión con las manos juntas formando un triángulo bajo el pecho y los codos pegados al cuerpo. Enfatiza el tríceps. Cuerpo recto y abdomen apretado.",
-  "Remo invertido o con mancuerna":"Remo invertido: bajo una barra fija, cuerpo recto colgando, tira del pecho hacia la barra. Alternativa: remo con mancuerna apoyando rodilla y mano en un banco.",
   "Flexiones inclinadas":"Flexiones con las manos apoyadas en una superficie elevada (banco). Más fáciles que en el suelo: baja el pecho hacia el borde y empuja. Cuerpo recto.",
-  "Curl de bíceps mancuernas":"De pie con una mancuerna en cada mano y codos pegados, sube flexionando el codo sin balancear y baja despacio. Puedes alternar brazos.",
-  "Plancha lateral":"Rueda abdominal (deslizar sin arquear la lumbar) o, como alternativa, plancha lateral: de lado sobre un antebrazo, cuerpo en línea recta y cadera arriba, aguanta.",
+  "Plancha lateral":"De lado sobre un antebrazo, con el codo bajo el hombro, cuerpo en línea recta y cadera arriba. Aguanta sin dejarla caer y cambia de lado.",
   "Calentamiento en cinta o bici":"Trote suave en cinta o pedaleo ligero en bici para subir pulsaciones antes de entrenar. Ritmo cómodo en el que puedas hablar.",
   "Mountain climbers":"En posición de flexión, lleva las rodillas al pecho alternando rápido como si corrieras, con el abdomen apretado y la cadera estable.",
   "Elevación de piernas en barra":"Colgado de la barra, sube las piernas (rectas o rodillas flexionadas) llevando la pelvis hacia arriba sin balancearte. Control en la bajada.",
   "HIIT en bici o cinta":"Intervalos: ~30 s fuerte (casi al máximo) y 30 s suave, repitiendo. Sube pulsaciones para el gasto calórico. Ajusta la intensidad a tu forma física.",
   "Dominadas lastradas":"Dominadas con peso añadido (cinturón de lastre o mancuerna entre los pies). Misma técnica: pecho a la barra, codos abajo y atrás, bajada controlada. Solo si dominas las normales.",
-  "Press banca o flexiones":"Press de banca con barra (bajar al pecho y empujar) o, si no hay banco libre, flexiones con la misma idea de empuje.",
   "Superserie de bíceps y tríceps":"Superserie: una serie de curl de bíceps seguida SIN descanso de una de extensión de tríceps; descansa al terminar ambas.",
-  "Jalón agarre neutro":"Jalón en polea con agarre neutro (palmas enfrentadas). Tira hacia el pecho con los codos pegados abajo, aprieta la espalda y sube controlado.",
+  "Jalón agarre neutro":"Jalón con triángulo (palmas enfrentadas). Tira hacia el pecho con los codos pegados abajo, aprieta la espalda y sube controlado.",
   "Curl con barra":"De pie con barra recta o Z y codos pegados al cuerpo, sube flexionando el codo sin balancear la espalda y baja controlando.",
   "Curl femoral tumbado":"Tumbado boca abajo en la máquina, engancha los tobillos y lleva los talones al glúteo apretando el femoral; baja controlado sin despegar la cadera.",
   "Aperturas en polea":"Entre dos poleas a la altura del pecho con los brazos algo flexionados, junta las manos delante en arco apretando el pecho y abre controlando el estiramiento.",
-  "Extensión de tríceps en polea":"Polea alta con cuerda o barra, codos pegados al cuerpo. Estira hacia abajo apretando el tríceps y sube controlando sin mover los codos.",
+  "Extensión de tríceps en polea":"Polea alta con barra, codos pegados al cuerpo. Estira hacia abajo apretando el tríceps y sube controlando sin mover los codos.",
   "Curl femoral sentado":"Sentado en la máquina, engancha los tobillos y flexiona las rodillas llevando los talones bajo el asiento apretando el femoral; vuelve controlado.",
   "Zancadas con mancuernas":"Zancadas con una mancuerna en cada mano: paso al frente, baja la rodilla trasera con el tronco erguido y empuja para volver. Alterna piernas.",
   "Plancha con lastre":"Plancha sobre antebrazos con un disco en la espalda alta. Cuerpo en línea recta, abdomen y glúteos apretados, sin hundir la cadera.",
@@ -1213,7 +1247,7 @@ const EX_HOW = {
   "Sentadilla frontal":"Barra apoyada delante, sobre hombros y clavículas, codos altos. Baja manteniendo el tronco muy vertical y sube empujando con las piernas. Exige buena movilidad.",
   "Elevaciones laterales en polea":"De pie de lado a una polea baja, sube el brazo al lateral hasta la altura del hombro liderando con el codo y baja controlando. Un brazo cada vez.",
   "Pullover en polea":"De pie frente a la polea alta con barra o cuerda y brazos algo flexionados, lleva el peso hacia los muslos en arco apretando el dorsal, y vuelve controlando.",
-  "Pájaros en polea":"Inclinado o con poleas cruzadas, abre los brazos hacia atrás apretando la parte trasera del hombro (deltoides posterior). Peso ligero y control.",
+  "Pájaros en polea":"De pie entre dos poleas altas con los cables cruzados, abre los brazos hacia atrás y afuera apretando la parte trasera del hombro. Peso ligero y control.",
   "Hip thrust":"Con la espalda alta apoyada en un banco y una barra (almohadillada) sobre la cadera, empuja con los talones subiendo la cadera hasta alinear tronco y muslos, apretando fuerte el glúteo arriba; baja controlado.",
   "Puente de glúteo":"Tumbada boca arriba con las rodillas flexionadas y los pies apoyados, sube la cadera apretando el glúteo hasta alinear tronco y muslos, y baja despacio. Puedes añadir peso sobre la cadera.",
   "Patada de glúteo en polea":"Con una tobillera en la polea baja y el tronco algo inclinado, lleva la pierna hacia atrás con la rodilla algo flexionada apretando el glúteo, y vuelve controlando. Una pierna cada vez.",
@@ -1232,7 +1266,7 @@ const EX_HOW = {
   "Patada de tríceps":"Inclinado con la espalda recta y el codo pegado al cuerpo, estira el brazo hacia atrás hasta dejarlo recto apretando el tríceps, y vuelve controlando sin mover el codo.",
   "Remo en T":"Con el pecho apoyado o inclinado sobre la barra en T, tira del peso hacia el abdomen llevando los codos atrás y juntando las escápulas; baja controlando el estiramiento de la espalda.",
   "Remo al mentón":"De pie con la barra o mancuernas frente a los muslos y agarre estrecho, tira hacia arriba pegado al cuerpo liderando con los codos hasta la altura del pecho; baja controlando. No subas por encima de los hombros si molesta.",
-  "Peso muerto piernas rígidas":"Con las piernas casi rectas (rodillas ligeramente flexionadas), baja la barra pegada a las piernas llevando la cadera atrás hasta notar el estiramiento de los femorales, y sube apretando glúteos. Espalda siempre recta.",
+  "Peso muerto piernas rígidas":"Cada repetición sale del suelo y las rodillas casi no se doblan: eso lo separa del rumano. Con las piernas casi rectas (rodillas ligeramente flexionadas), baja la barra pegada a las piernas llevando la cadera atrás hasta notar el estiramiento de los femorales, y sube apretando glúteos. Espalda siempre recta.",
   "Elevación de talones sentado":"Sentado con el peso sobre las rodillas y las puntas de los pies en un escalón, sube los talones lo máximo posible apretando el gemelo, y baja estirando por completo.",
   "Crunch abdominal":"Tumbado boca arriba con las rodillas flexionadas, despega los hombros del suelo acercando las costillas a la cadera apretando el abdomen; baja despacio sin tirar del cuello.",
   "Russian twist":"Sentado con el tronco algo inclinado y los pies elevados o apoyados, gira el tronco de lado a lado tocando el suelo a cada lado, con el abdomen apretado. Puedes sujetar un peso.",
@@ -1269,7 +1303,6 @@ const EX_HOW = {
   "Curl inverso":"Curl con las palmas hacia abajo (agarre prono). Sube la barra flexionando los codos pegados al cuerpo y baja despacio. Trabaja el braquial y el antebrazo: necesitarás bastante menos peso que en el curl normal.",
   "Curl araña":"Tumbado boca abajo sobre un banco inclinado con los brazos colgando en vertical, sube el peso flexionando solo los codos y baja del todo. Al no poder ayudarte con el cuerpo, el bíceps trabaja aislado de principio a fin.",
   "Fondos en banco":"Sentado al borde de un banco, apoya las manos a los lados de la cadera y desliza el cuerpo hacia delante. Baja flexionando los codos hacia atrás hasta ~90° y sube empujando. No bajes más de la cuenta: fuerza el hombro.",
-  "Extensión de tríceps con cuerda":"De pie de espaldas a la polea alta con la cuerda por detrás de la cabeza y los codos apuntando arriba, estira los brazos separando las manos al final y vuelve despacio. Mantén los codos quietos y cerca de la cabeza.",
   "Press banca agarre cerrado":"Press banca con las manos a la anchura de los hombros. Baja la barra al pecho bajo con los codos pegados al cuerpo y empuja arriba. Carga sobre todo el tríceps: usa menos peso que en el press banca normal.",
   "Crunch en polea":"De rodillas frente a una polea alta con la cuerda a los lados de la cabeza, enrolla la columna llevando los codos hacia los muslos apretando el abdomen, y vuelve despacio. El movimiento es de la espalda, no de la cadera.",
   "Crunch en máquina":"Sentado con el pecho apoyado en el rodillo y los pies fijos, enrolla el tronco hacia delante apretando el abdomen y vuelve controlando sin dejar caer el peso. No tires con los brazos ni con el cuello.",
@@ -1297,16 +1330,14 @@ const EX_HOW = {
   "Press inclinado en polea":"Tumbado en un banco inclinado entre dos poleas bajas, empuja las asas hacia arriba y adentro hasta casi juntarlas, y baja controlando. Carga la parte alta del pecho con tensión constante.",
   "Press de pecho en máquina de discos":"Sentado en la máquina de palancas con las asas a la altura del pecho, empuja hacia delante hasta casi estirar los brazos y vuelve controlando. Cada brazo va por su lado: no puedes tirar más con el fuerte.",
   "Cruce de poleas a una mano":"Con una sola polea, cruza el brazo por delante del pecho hasta pasar la línea media y vuelve despacio. A una mano llegas más lejos en el cruce y notas mucho más la contracción.",
-  "Press declinado guiado":"Banco declinado bajo la barra guiada, bajando a la parte baja del pecho. Insiste en el pectoral inferior; ata bien los pies antes de empezar.",
   "Remo alto en máquina":"Sentado con el pecho apoyado en el respaldo, tira de las asas hacia atrás y algo hacia abajo llevando los codos por detrás del cuerpo, aprieta la espalda y vuelve estirando sin encorvarte. El apoyo en el pecho quita toda la carga de la lumbar.",
   "Remo en máquina a un brazo":"Igual que el remo en máquina pero tirando con un brazo cada vez, lo que te deja llegar un poco más atrás y corregir diferencias entre lados. No gires el tronco para acompañar: el pecho se queda pegado al respaldo.",
   "Remo en polea a una mano":"Sentado en la polea baja, tira del asa con una mano llevando el codo a la cadera y aprieta la espalda; vuelve estirando el brazo del todo para estirar el dorsal. Mantén el tronco quieto, sin rotar.",
   "Jalón a una mano":"Sentado en el jalón con un asa, tira hacia abajo con un brazo llevando el codo al costado, y sube controlando hasta estirar del todo. A una mano notas mejor el dorsal y corriges descompensaciones.",
   "Remo en multipower":"Con la barra guiada a la altura de las espinillas, inclina el tronco hacia delante con la espalda recta y tira de la barra hacia el ombligo. La guía te quita el trabajo de estabilizar: céntrate en apretar la espalda.",
   "Hiperextensión inversa":"Tumbado boca abajo con la cadera al borde del banco y el tronco fijo, sube las piernas juntas hasta alinearlas con el cuerpo apretando los glúteos, y baja despacio. Trabaja glúteo y lumbar sin cargar la columna.",
-  "Pullover en polea inclinado":"De pie frente a la polea alta con los brazos casi estirados, baja la barra en arco hasta los muslos sin flexionar los codos, y vuelve arriba controlando. Aísla el dorsal sin que trabajen los bíceps.",
+  "Pullover en polea inclinado":"Sentado en un banco inclinado mirando a una polea alta, baja la barra desde encima de la cabeza hasta la altura del pecho con los brazos casi estirados, y vuelve arriba controlando.",
   "Remo en polea alto":"Sentado con la polea por encima de la altura del pecho, tira de las asas hacia el pecho llevando los codos atrás y aprieta la espalda. El ángulo alto carga más la espalda alta que el remo normal.",
-  "Jalón con recorrido completo":"Jalón en el que dejas que los hombros suban del todo arriba (estirando el dorsal) antes de tirar abajo. Ese estiramiento extra de arriba es justo lo que se pierde al hacerlo con demasiado peso.",
   "Remo en polea alta de rodillas":"De rodillas frente a la polea alta, tira de la cuerda hacia la cara llevando los codos atrás y abriendo el pecho. Trabaja dorsal y espalda alta con el core sujetando la postura.",
   "Remo en polea alta a una mano":"De rodillas frente a la polea alta, tira con un brazo llevando el codo al costado y girando ligeramente el tronco al final. A una mano llegas a un rango que con barra es imposible.",
   "Pájaros en contractora":"Sentado del revés en la contractora (la máquina de aperturas de pecho, usada al contrario), con el pecho apoyado, abre los brazos hacia atrás hasta la altura de los hombros apretando la parte trasera del hombro, y vuelve despacio. Lidera con los codos, no con las manos.",
@@ -1318,8 +1349,6 @@ const EX_HOW = {
   "Press de hombro en polea alterno":"Sentado o de pie entre dos poleas bajas, empuja una mano hacia arriba mientras la otra espera abajo, y alterna. Al ir alterno el core trabaja para que no te vayas de lado.",
   "Pájaros en polea a una mano":"Inclinado hacia delante con el asa de la polea baja cruzada bajo el cuerpo, abre el brazo hacia el lado hasta la altura del hombro y baja despacio. Lidera con el codo y no gires el tronco para ayudarte.",
   "Rotación interna en polea":"De lado a la polea, con el codo pegado al costado y doblado 90°, gira el antebrazo hacia dentro cruzando el ombligo y vuelve despacio. Complemento de la rotación externa: poco peso y control.",
-  "Pájaros en polea cruzada":"De pie entre dos poleas altas con los cables cruzados, abre los brazos hacia atrás y afuera hasta la altura de los hombros, y vuelve despacio. Perfecto para la parte trasera del hombro, que casi siempre va retrasada.",
-  "Remo a la cara con cuerda":"Con la cuerda en una polea a la altura de la cara, tira hacia ti abriendo las manos y llevando los codos altos y atrás. Postura y hombro sano: mételo al final de los días de empuje.",
   "Press de hombro en polea de pie":"De pie entre dos poleas bajas con las asas a la altura de los hombros, empuja hacia arriba hasta casi estirar y baja controlado. Aprieta abdomen y glúteos para no arquear la lumbar.",
   "Encogimientos en máquina de gemelos":"De pie en la máquina de gemelos con los hombros bajo las almohadillas, sube los hombros hacia las orejas y baja despacio. Aprovecha una máquina que casi nadie usa para esto y permite bastante carga.",
   "Press de hombro en máquina de discos":"Sentado con la espalda apoyada y las asas a la altura de los hombros, empuja arriba hasta casi estirar y baja controlado. Al ser independiente cada brazo, ambos hombros trabajan lo mismo.",
@@ -1327,9 +1356,7 @@ const EX_HOW = {
   "Encogimientos tras espalda en multipower":"De pie con la barra guiada por detrás de los glúteos, sube los hombros hacia las orejas y baja despacio. Por detrás el trapecio trabaja con el pecho abierto, mejor para la postura.",
   "Remo al mentón a una mano en multipower":"Con la barra guiada y una sola mano, tira hacia arriba pegado al cuerpo llevando el codo alto hasta la altura del pecho, y baja despacio. Si notas pinzamiento en el hombro, no subas tanto.",
   "Remo al mentón en multipower":"Con la barra guiada por delante de los muslos, tira hacia arriba pegada al cuerpo con los codos altos hasta la altura del pecho, y baja despacio. No subas por encima de los hombros: el hombro se resiente.",
-  "Elevación lateral en polea baja":"De pie con el asa de la polea baja cruzada por delante del cuerpo, sube el brazo hacia el lado hasta la altura del hombro y baja despacio. La polea da tensión desde abajo, donde la mancuerna no da nada.",
   "Remo al mentón en polea":"De pie frente a la polea baja con la barra, tira hacia arriba pegada al cuerpo con los codos altos hasta la altura del pecho. Sube solo hasta donde no te moleste el hombro.",
-  "Sentadilla hack en máquina":"En la máquina hack, con la espalda apoyada en el respaldo y los pies a media plataforma, baja flexionando las rodillas hasta los muslos paralelos y sube empujando con todo el pie. La máquina sujeta la espalda: aísla el cuádriceps mejor que la sentadilla libre.",
   "Prensa con pies juntos":"Prensa con los pies juntos y centrados en la plataforma. Baja controlado sin despegar la lumbar del respaldo y empuja sin bloquear las rodillas. Al juntar los pies, el cuádriceps externo se lleva más trabajo.",
   "Extensión de cuádriceps a una pierna en máquina":"Extensión de cuádriceps trabajando una pierna cada vez. Sube hasta estirar sin bloquear de golpe, aguanta un instante arriba y baja despacio. Perfecto para igualar diferencias entre piernas.",
   "Zancada en multipower":"Con la barra guiada sobre los hombros, un pie delante y otro atrás (apoyado en un banco si quieres más rango), baja hasta que la rodilla de delante llegue a 90° y sube empujando con ese talón. La guía te quita el equilibrio de la ecuación.",
@@ -1346,7 +1373,7 @@ const EX_HOW = {
   "Peso muerto rumano en multipower":"Con la barra guiada por delante de los muslos, empuja la cadera hacia atrás bajando la barra pegada a las piernas con la espalda recta, hasta notar el femoral, y sube apretando glúteos. La guía te deja centrarte en la bisagra de cadera.",
   "Curl nórdico en máquina":"En el banco de glute-ham, con los tobillos fijos, baja el cuerpo hacia delante frenando con los femorales y vuelve a subir tirando de ellos. Muy exigente: empieza con poco recorrido y ayúdate con las manos.",
   "Elevación de talones en multipower":"Con la barra guiada sobre los hombros y la punta de los pies sobre un step, sube todo lo que puedas sobre las puntas y baja despacio dejando caer el talón para estirar. La guía permite cargar bien sin problemas de equilibrio.",
-  "Gemelos en máquina":"En la máquina de gemelos, con los hombros o las rodillas bajo el soporte y la punta de los pies en la plataforma, empuja hasta arriba y baja despacio buscando el estiramiento completo. El gemelo necesita recorrido y repeticiones: no lo hagas a medias.",
+  "Gemelos en máquina":"Sentado en la máquina de gemelos con las piernas casi estiradas y la punta de los pies en la plataforma, empuja hasta arriba y baja despacio buscando el estiramiento completo.",
   "Elevación de puntas (tibial)":"Con la barra guiada sobre los hombros y los talones apoyados, sube las puntas de los pies hacia ti y baja despacio. Trabaja el tibial anterior, la cara delantera de la espinilla que casi nadie entrena.",
   "Curl de bíceps en máquina":"Sentado con la parte alta de los brazos apoyada en el soporte y las axilas pegadas al borde, flexiona los codos hasta arriba y baja despacio sin despegar los brazos. La máquina te fija la postura: por eso permite apretar el bíceps sin ayudarte con la espalda.",
   "Curl predicador en máquina":"Variante con el brazo apoyado en un banco inclinado dentro de la máquina. Sube hasta contraer del todo y baja controlando hasta casi estirar el codo. Cuidado con soltar de golpe abajo: es donde más se resiente el tendón.",
@@ -1355,7 +1382,6 @@ const EX_HOW = {
   "Curl en polea alta":"De pie entre dos poleas altas con los brazos abiertos en cruz, flexiona los codos llevando las manos hacia las orejas sin bajar los brazos. Contrae mucho el bíceps en su posición más corta.",
   "Curl tumbado en polea":"Tumbado en el suelo con los pies hacia la polea baja, flexiona los codos llevando la barra a la frente sin mover los brazos. Tumbado no puedes balancearte: todo lo hace el bíceps.",
   "Curl tumbado en polea alta":"Tumbado bajo la polea alta con agarre estrecho, flexiona los codos llevando la barra hacia la frente y vuelve despacio. El ángulo trabaja el bíceps con el brazo por encima de la cabeza.",
-  "Curl sobre la cabeza en polea":"De pie entre dos poleas altas con los brazos en cruz, flexiona los codos llevando las manos hacia la cabeza sin bajar los brazos. Es el curl con el bíceps más acortado: se nota muchísimo el pico.",
   "Curl inverso en polea":"De pie frente a la polea baja con las palmas hacia abajo, flexiona los codos pegados al cuerpo y baja despacio. Trabaja braquial y antebrazo: necesitarás bastante menos peso del que crees.",
   "Curl en polea a una mano":"De pie de lado a la polea baja con un asa, flexiona el codo sin mover el brazo del sitio y baja controlando hasta estirar. A una mano puedes girar la muñeca al subir y apurar más la contracción.",
   "Extensión de tríceps en máquina":"Sentado con la espalda apoyada y los codos fijos en el soporte, estira los brazos empujando las asas hacia abajo y vuelve controlando. Al estar guiado, el codo no se va: ideal para apurar el tríceps sin comprometer el hombro.",
@@ -1365,13 +1391,11 @@ const EX_HOW = {
   "Press francés en polea":"Tumbado en un banco con la polea baja detrás de la cabeza, estira los brazos manteniendo los codos fijos apuntando arriba, y vuelve doblando solo el codo. La polea evita el punto muerto de la barra.",
   "Tríceps en polea a una mano":"De pie frente a la polea alta con un asa y la palma hacia arriba, estira el brazo hacia abajo con el codo pegado al costado y vuelve despacio. A una mano corriges diferencias entre brazos.",
   "Extensión de tríceps de rodillas en polea":"De rodillas y de espaldas a la polea alta, con la cuerda tras la nuca y los codos apuntando al frente, estira los brazos y vuelve despacio. De rodillas no puedes compensar con el cuerpo.",
-  "Extensión de tríceps en polea baja":"Tumbado en el suelo o en un banco con la polea baja detrás, estira los brazos hacia arriba manteniendo los codos quietos. La resistencia por abajo cambia dónde más cuesta el ejercicio.",
   "Tríceps en polea agarre invertido":"En la polea alta con las palmas hacia arriba, estira los brazos hacia abajo con los codos pegados al costado. Este agarre insiste en la cabeza interna del tríceps; usa poco peso, resbala más.",
   "Press cerrado en multipower":"Press banca guiado con las manos a la anchura de los hombros y los codos pegados al cuerpo. La guía te deja apurar el tríceps sin miedo a que la barra se descuadre.",
   "Extensión de tríceps sobre cabeza en polea baja":"De pie de espaldas a la polea baja, con el codo arriba junto a la cabeza, estira el brazo hacia el techo y vuelve despacio. Estira bien la porción larga del tríceps.",
   "Extensión de tríceps sobre cabeza con cuerda":"De espaldas a la polea con la cuerda tras la nuca y los codos apuntando arriba, estira los brazos separando las manos al final. Mantén los codos quietos y cerca de la cabeza.",
   "Curl de muñeca en polea":"Sentado con los antebrazos apoyados en los muslos y las palmas hacia arriba, sujeta la barra de la polea baja y flexiona solo las muñecas, subiendo y bajando despacio. Recorrido corto y muchas repeticiones.",
-  "Curl de muñeca sentado en polea":"Sentado con los antebrazos en los muslos y las palmas hacia arriba, flexiona las muñecas subiendo la barra de la polea baja y baja despacio dejando que ruede hasta los dedos. Antebrazo puro.",
   "Press Pallof":"De pie de lado a la polea, con las manos juntas a la altura del pecho, estira los brazos al frente y aguanta sin dejar que el cable te gire el tronco; vuelve despacio. No es un empuje: es aguantar la rotación, y por eso fortalece tanto el core.",
   "Leñador en polea":"Desde la polea alta y con el cuerpo de lado, tira en diagonal hacia la cadera contraria girando el tronco y dejando que el pie de atrás pivote; vuelve controlando. Trabaja los oblicuos con el giro completo del cuerpo.",
   "Crunch inverso en polea":"Tumbado con la cabeza hacia la polea baja y los tobillos enganchados, lleva las rodillas hacia el pecho enrollando la pelvis y baja despacio sin arquear la lumbar. Insiste en la parte baja del abdomen.",
@@ -1380,7 +1404,6 @@ const EX_HOW = {
   "Crunch en polea con giro":"De rodillas frente a la polea alta con la cuerda junto a la cabeza, enrolla el tronco llevando el codo hacia la rodilla contraria, alternando lados. Suma oblicuos al crunch de polea de siempre.",
   "Flexión lateral en polea alta":"De lado a la polea alta con un asa, inclina el tronco hacia el lado contrario venciendo la resistencia y vuelve controlando. Trabaja los oblicuos sin cargar la columna con peso encima.",
   "Press Pallof con giro":"Como el press Pallof, pero al estirar los brazos giras el tronco alejándote de la polea y vuelves al centro. Suma rotación controlada al trabajo antirrotación.",
-  "Crunch en polea con cuerda":"De rodillas frente a la polea alta con la cuerda a los lados de la cabeza, enrolla la columna llevando los codos hacia los muslos y vuelve despacio. El movimiento es de la espalda, no de la cadera.",
   "Elevación de cadera en multipower":"Tumbado bajo la barra guiada apoyada en la cadera, sube la pelvis apretando glúteos hasta alinear rodilla, cadera y hombro, y baja sin apoyar del todo. Pon una almohadilla: la barra molesta en la cadera.",
   "Leñador invertido en polea":"Desde la polea baja y de lado, tira en diagonal hacia arriba y hacia el hombro contrario girando el tronco, y vuelve controlando. Es el leñador al revés: de abajo hacia arriba.",
   "Crunch en polea de pie":"De pie frente a la polea alta con la cuerda junto a la cabeza, enrolla el tronco hacia abajo apretando el abdomen y vuelve despacio. Igual que el de rodillas pero sin castigar las rodillas.",
@@ -1393,8 +1416,6 @@ const EX_IMG = {
   "Aperturas en polea": "exercises/Cable_Crossover/0.jpg",
   "Curl con barra": "exercises/Barbell_Curl/0.jpg",
   "Curl de bíceps": "exercises/Dumbbell_Bicep_Curl/0.jpg",
-  "Curl de bíceps mancuernas": "exercises/Dumbbell_Bicep_Curl/0.jpg",
-  "Curl femoral en máquina": "exercises/Lying_Leg_Curls/0.jpg",
   "Curl femoral sentado": "exercises/Seated_Leg_Curl/0.jpg",
   "Curl femoral tumbado": "exercises/Lying_Leg_Curls/0.jpg",
   "Curl martillo": "exercises/Hammer_Curls/0.jpg",
@@ -1402,12 +1423,11 @@ const EX_IMG = {
   "Dominadas o jalón": "exercises/Pullups/0.jpg",
   "Dominadas lastradas": "exercises/Weighted_Pull_Ups/0.jpg",
   "Elevaciones laterales": "exercises/Side_Lateral_Raise/0.jpg",
-  "Elevaciones laterales en polea": "exercises/Cable_Seated_Lateral_Raise/0.jpg",
+  "Elevaciones laterales en polea": "exercises/Standing_Low-Pulley_Deltoid_Raise/0.jpg",
   "Elevación de talones de pie": "exercises/Standing_Calf_Raises/0.jpg",
   "Elevación de piernas": "exercises/Flat_Bench_Lying_Leg_Raise/0.jpg",
   "Elevación de piernas en barra": "exercises/Hanging_Leg_Raise/0.jpg",
   "Extensión de cuádriceps en máquina": "exercises/Leg_Extensions/0.jpg",
-  "Extensión de tríceps": "exercises/Triceps_Pushdown/0.jpg",
   "Extensión de tríceps en polea": "exercises/Triceps_Pushdown/0.jpg",
   "Face pull": "exercises/Face_Pull/0.jpg",
   "Flexiones": "exercises/Pushups/0.jpg",
@@ -1422,13 +1442,11 @@ const EX_IMG = {
   "Mountain climbers": "exercises/Mountain_Climbers/0.jpg",
   "Peso muerto": "exercises/Barbell_Deadlift/0.jpg",
   "Peso muerto rumano": "exercises/Romanian_Deadlift/0.jpg",
-  "Peso muerto rumano ligero": "exercises/Romanian_Deadlift/0.jpg",
   "Peso muerto rumano mancuernas": "exercises/Stiff-Legged_Dumbbell_Deadlift/0.jpg",
   "Plancha": "exercises/Plank/0.jpg",
   "Plancha con lastre": "exercises/Plank/0.jpg",
   "Prensa de piernas": "exercises/Leg_Press/0.jpg",
   "Press banca": "exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg",
-  "Press banca o flexiones": "exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg",
   "Press francés": "exercises/Lying_Triceps_Press/0.jpg",
   "Press inclinado con barra": "exercises/Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg",
   "Press inclinado mancuernas": "exercises/Incline_Dumbbell_Press/0.jpg",
@@ -1440,7 +1458,6 @@ const EX_IMG = {
   "Remo con barra": "exercises/Bent_Over_Barbell_Row/0.jpg",
   "Remo con mancuerna": "exercises/One-Arm_Dumbbell_Row/0.jpg",
   "Remo en máquina": "exercises/Seated_Cable_Rows/0.jpg",
-  "Remo invertido o con mancuerna": "exercises/Inverted_Row/0.jpg",
   "Plancha lateral": "exercises/Side_Bridge/0.jpg",
   "Rueda abdominal": "exercises/Ab_Roller/0.jpg",
   "Sentadilla": "exercises/Barbell_Squat/0.jpg",
@@ -1471,7 +1488,7 @@ const EX_IMG = {
   "Elevación de talones sentado": "exercises/Seated_Calf_Raise/0.jpg",
   "Crunch abdominal": "exercises/Crunches/0.jpg",
   "Russian twist": "exercises/Russian_Twist/0.jpg",
-  "Sentadilla hack": "exercises/Barbell_Hack_Squat/0.jpg",
+  "Sentadilla hack": "exercises/Hack_Squat/0.jpg",
   "Dominada supina": "exercises/Chin-Up/0.jpg",
   "Bicicleta abdominal": "exercises/Air_Bike/0.jpg",
   /* Cardio de las rutinas de la app: ya tenían nombre pero no demostración. */
@@ -1507,9 +1524,8 @@ const EX_IMG = {
   "Curl inverso": "exercises/Reverse_Barbell_Curl/0.jpg",
   "Curl araña": "exercises/Spider_Curl/0.jpg",
   "Fondos en banco": "exercises/Bench_Dips/0.jpg",
-  "Extensión de tríceps con cuerda": "exercises/Cable_Rope_Overhead_Triceps_Extension/0.jpg",
   "Press banca agarre cerrado": "exercises/Close-Grip_Barbell_Bench_Press/0.jpg",
-  "Crunch en polea": "exercises/Cable_Crunch/0.jpg",
+  "Crunch en polea": "exercises/Rope_Crunch/0.jpg",
   "Crunch en máquina": "exercises/Ab_Crunch_Machine/0.jpg",
   "Elevación de rodillas": "exercises/Bent-Knee_Hip_Raise/0.jpg",
   "Tijeras": "exercises/Flutter_Kicks/0.jpg",
@@ -1535,7 +1551,6 @@ const EX_IMG = {
   "Press inclinado en polea": "exercises/Incline_Cable_Chest_Press/0.jpg",
   "Press de pecho en máquina de discos": "exercises/Leverage_Chest_Press/0.jpg",
   "Cruce de poleas a una mano": "exercises/Single-Arm_Cable_Crossover/0.jpg",
-  "Press declinado guiado": "exercises/Smith_Machine_Decline_Press/0.jpg",
   "Remo alto en máquina": "exercises/Leverage_High_Row/0.jpg",
   "Remo en máquina a un brazo": "exercises/Leverage_Iso_Row/0.jpg",
   "Remo en polea a una mano": "exercises/Seated_One-arm_Cable_Pulley_Rows/0.jpg",
@@ -1544,7 +1559,6 @@ const EX_IMG = {
   "Hiperextensión inversa": "exercises/Reverse_Hyperextension/0.jpg",
   "Pullover en polea inclinado": "exercises/Cable_Incline_Pushdown/0.jpg",
   "Remo en polea alto": "exercises/Elevated_Cable_Rows/0.jpg",
-  "Jalón con recorrido completo": "exercises/Full_Range-Of-Motion_Lat_Pulldown/0.jpg",
   "Remo en polea alta de rodillas": "exercises/Kneeling_High_Pulley_Row/0.jpg",
   "Remo en polea alta a una mano": "exercises/Kneeling_Single-Arm_High_Pulley_Row/0.jpg",
   "Pájaros en contractora": "exercises/Reverse_Machine_Flyes/0.jpg",
@@ -1556,8 +1570,6 @@ const EX_IMG = {
   "Press de hombro en polea alterno": "exercises/Alternating_Cable_Shoulder_Press/0.jpg",
   "Pájaros en polea a una mano": "exercises/Bent_Over_Low-Pulley_Side_Lateral/0.jpg",
   "Rotación interna en polea": "exercises/Cable_Internal_Rotation/0.jpg",
-  "Pájaros en polea cruzada": "exercises/Cable_Rear_Delt_Fly/0.jpg",
-  "Remo a la cara con cuerda": "exercises/Cable_Rope_Rear-Delt_Rows/0.jpg",
   "Press de hombro en polea de pie": "exercises/Cable_Shoulder_Press/0.jpg",
   "Encogimientos en máquina de gemelos": "exercises/Calf-Machine_Shoulder_Shrug/0.jpg",
   "Press de hombro en máquina de discos": "exercises/Leverage_Shoulder_Press/0.jpg",
@@ -1565,9 +1577,7 @@ const EX_IMG = {
   "Encogimientos tras espalda en multipower": "exercises/Smith_Machine_Behind_the_Back_Shrug/0.jpg",
   "Remo al mentón a una mano en multipower": "exercises/Smith_Machine_One-Arm_Upright_Row/0.jpg",
   "Remo al mentón en multipower": "exercises/Smith_Machine_Upright_Row/0.jpg",
-  "Elevación lateral en polea baja": "exercises/Standing_Low-Pulley_Deltoid_Raise/0.jpg",
   "Remo al mentón en polea": "exercises/Upright_Cable_Row/0.jpg",
-  "Sentadilla hack en máquina": "exercises/Hack_Squat/0.jpg",
   "Prensa con pies juntos": "exercises/Narrow_Stance_Leg_Press/0.jpg",
   "Extensión de cuádriceps a una pierna en máquina": "exercises/Single-Leg_Leg_Extension/0.jpg",
   "Zancada en multipower": "exercises/Smith_Single-Leg_Split_Squat/0.jpg",
@@ -1590,10 +1600,9 @@ const EX_IMG = {
   "Curl predicador en máquina": "exercises/Machine_Preacher_Curls/0.jpg",
   "Curl martillo en polea": "exercises/Cable_Hammer_Curls_-_Rope_Attachment/0.jpg",
   "Curl predicador en polea": "exercises/Cable_Preacher_Curl/0.jpg",
-  "Curl en polea alta": "exercises/High_Cable_Curls/0.jpg",
+  "Curl en polea alta": "exercises/Overhead_Cable_Curl/0.jpg",
   "Curl tumbado en polea": "exercises/Lying_Cable_Curl/0.jpg",
   "Curl tumbado en polea alta": "exercises/Lying_Close-Grip_Bar_Curl_On_High_Pulley/0.jpg",
-  "Curl sobre la cabeza en polea": "exercises/Overhead_Cable_Curl/0.jpg",
   "Curl inverso en polea": "exercises/Reverse_Cable_Curl/0.jpg",
   "Curl en polea a una mano": "exercises/Standing_One-Arm_Cable_Curl/0.jpg",
   "Extensión de tríceps en máquina": "exercises/Machine_Triceps_Extension/0.jpg",
@@ -1603,13 +1612,11 @@ const EX_IMG = {
   "Press francés en polea": "exercises/Cable_Lying_Triceps_Extension/0.jpg",
   "Tríceps en polea a una mano": "exercises/Cable_One_Arm_Tricep_Extension/0.jpg",
   "Extensión de tríceps de rodillas en polea": "exercises/Kneeling_Cable_Triceps_Extension/0.jpg",
-  "Extensión de tríceps en polea baja": "exercises/Low_Cable_Triceps_Extension/0.jpg",
   "Tríceps en polea agarre invertido": "exercises/Reverse_Grip_Triceps_Pushdown/0.jpg",
   "Press cerrado en multipower": "exercises/Smith_Machine_Close-Grip_Bench_Press/0.jpg",
   "Extensión de tríceps sobre cabeza en polea baja": "exercises/Standing_Low-Pulley_One-Arm_Triceps_Extension/0.jpg",
-  "Extensión de tríceps sobre cabeza con cuerda": "exercises/Triceps_Overhead_Extension_with_Rope/0.jpg",
+  "Extensión de tríceps sobre cabeza con cuerda": "exercises/Cable_Rope_Overhead_Triceps_Extension/0.jpg",
   "Curl de muñeca en polea": "exercises/Cable_Wrist_Curl/0.jpg",
-  "Curl de muñeca sentado en polea": "exercises/Seated_Two-Arm_Palms-Up_Low-Pulley_Wrist_Curl/0.jpg",
   "Press Pallof": "exercises/Pallof_Press/0.jpg",
   "Leñador en polea": "exercises/Standing_Cable_Wood_Chop/0.jpg",
   "Crunch inverso en polea": "exercises/Cable_Reverse_Crunch/0.jpg",
@@ -1618,7 +1625,6 @@ const EX_IMG = {
   "Crunch en polea con giro": "exercises/Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists/0.jpg",
   "Flexión lateral en polea alta": "exercises/One-Arm_High-Pulley_Cable_Side_Bends/0.jpg",
   "Press Pallof con giro": "exercises/Pallof_Press_With_Rotation/0.jpg",
-  "Crunch en polea con cuerda": "exercises/Rope_Crunch/0.jpg",
   "Elevación de cadera en multipower": "exercises/Smith_Machine_Hip_Raise/0.jpg",
   "Leñador invertido en polea": "exercises/Standing_Cable_Lift/0.jpg",
   "Crunch en polea de pie": "exercises/Standing_Rope_Crunch/0.jpg",
@@ -1709,7 +1715,9 @@ function blankCustomRoutine(){
 function normalizeCustomRoutine(r){
   const days = (Array.isArray(r?.days) ? r.days : []).map((d,i)=>({
     name: String(d?.name || `Día ${i+1}`).slice(0,40),
+    // Una rutina que llega de un amigo con la app sin actualizar trae nombres viejos.
     exercises: (Array.isArray(d?.exercises) ? d.exercises : [])
+      .map(ex=>ex && { ...ex, name:nombreActual(ex.name) })
       .filter(ex=>ex && EX_MUSCLE[ex.name])
       .map(ex=>({ name:ex.name, sets:Math.max(1,Math.min(10,Number(ex.sets)||3)),
         reps:String(ex.reps || defaultReps(ex.name)).slice(0,12),
@@ -1789,7 +1797,8 @@ function decodeRoutine(text, existingNames){
   const days = obj.d.map((day, i) => {
     const [dName, exs] = Array.isArray(day) ? day : ["", []];
     const exercises = (Array.isArray(exs) ? exs : []).map(e => {
-      const [name, sets, reps, rest] = Array.isArray(e) ? e : [];
+      const [nombre, sets, reps, rest] = Array.isArray(e) ? e : [];
+      const name = nombre && nombreActual(nombre);
       if(!name || !EX_MUSCLE[name]){ if(name) desconocidos.push(String(name)); return null; }
       return { name, sets, reps, rest, muscle:EX_MUSCLE[name] };
     }).filter(Boolean);
@@ -2152,7 +2161,7 @@ function resumenSemana(log, plannedDays, lunesISO, opts = {}){
    rompe nada: todavía estás a tiempo de recuperar. */
 function habitStreak(log, plannedDays, opts = {}){
   const trained = new Set((log||[]).map(r=>r.date));
-  let streak = 0, lunes = mondayOf(todayISO());
+  let streak = 0, lunes = opts.desde || mondayOf(todayISO());   // `desde`: la racha tal como estaba esa semana
   for(let semana=0; semana<120; semana++){
     const r = resumenSemana(log, plannedDays, lunes, opts);
     if(!r.enCurso && !r.cumplida) break;          // semana cerrada y fallida: aquí se corta
@@ -2423,33 +2432,12 @@ function nextRenewalDate(day){
 }
 function daysUntil(iso){ return Math.round((parseISO(iso) - parseISO(todayISO())) / 864e5); }
 /* --- Aviso de fin de descanso ------------------------------------------------
-   El cronómetro de pantalla no basta: cuando sales de la app, el WebView congela
-   los temporizadores de JavaScript, así que ni avisa ni cuenta bien al volver.
-   Hay que programar una notificación REAL (solo funciona en el APK instalado).
-   El id va fuera del rango de los recordatorios (1-40) y de la cuota (30). */
-const REST_NOTIF_ID = 55;
-const CANAL_DESCANSO = "descanso";
+   El cronómetro de pantalla no basta: fuera de la app no se pinta nada y el sistema
+   puede congelarla. En el APK lo lleva el plugin nativo `Entreno`
+   (android/.../EntrenoPlugin.java): un servicio en primer plano y una alarma que
+   suena aunque la app haya muerto. Va por el bridge global, como el resto. */
+const EN = () => (typeof window !== "undefined" && window.Capacitor?.Plugins?.Entreno) || null;
 let permisoPedido = false;
-let canalCreado = false;
-
-/* Canal propio con importancia ALTA. Sin él Android usa el canal por defecto,
-   que no siempre suena ni salta encima de lo que estés mirando. Un aviso de
-   descanso que no interrumpe no sirve de nada: para eso ya está la pantalla. */
-async function asegurarCanalDescanso(){
-  const ln = LN(); if (!ln || canalCreado) return;
-  canalCreado = true;
-  try {
-    await ln.createChannel({
-      id: CANAL_DESCANSO,
-      name: "Fin del descanso",
-      description: "Avisa cuando se acaba el descanso entre series.",
-      importance: 5,          // MAX: suena y aparece encima
-      visibility: 1,          // se ve en la pantalla de bloqueo
-      vibration: true,
-      sound: null,            // el sonido de notificación del móvil
-    });
-  } catch {}
-}
 
 /* --- Versión web (sin Capacitor) ---------------------------------------------
    Tu amiga con iPhone usa la app desde el navegador, así que el aviso tiene que
@@ -2461,18 +2449,19 @@ async function swListo(){
   if (typeof navigator === "undefined" || !navigator.serviceWorker) return null;
   try { return await navigator.serviceWorker.ready; } catch { return null; }
 }
-async function programarAvisoDescansoWeb(segundos){
+async function programarAvisoDescansoWeb(hasta){
   if (typeof Notification === "undefined") return;
   const reg = await swListo(); if (!reg) return;
   if (Notification.permission === "default") {
     if (!permisoPedido) { permisoPedido = true; try { await Notification.requestPermission(); } catch {} }
   }
   if (Notification.permission !== "granted") return;
-  reg.active?.postMessage({ tipo:"avisar-en", ms: segundos * 1000, tag:"descanso",
+  reg.active?.postMessage({ tipo:"avisar-en", ms: hasta - Date.now(), tag:"descanso",
     titulo:"Descanso terminado 💪", cuerpo:"A por la siguiente serie." });
 }
 async function cancelarAvisoDescansoWeb(){
   const reg = await swListo(); if (!reg) return;
+  reg.active?.postMessage({ tipo:"cancelar-aviso", tag:"descanso" });
   try { (await reg.getNotifications({ tag:"descanso" })).forEach(n => n.close()); } catch {}
 }
 
@@ -2484,32 +2473,17 @@ async function cancelarAvisoDescansoWeb(){
 let colaAviso = Promise.resolve();
 function enFila(fn){ colaAviso = colaAviso.then(fn, fn); return colaAviso; }
 
-async function programarAvisoDescanso(segundos){
-  const ln = LN();
-  if (!ln) return enFila(()=>programarAvisoDescansoWeb(segundos));   // navegador
-  if (!(segundos > 0)) return;
-  await asegurarCanalDescanso();
-  return enFila(async ()=>{ try {
-    await ln.cancel({ notifications: [{ id: REST_NOTIF_ID }] });
-    await ln.schedule({ notifications: [{
-      id: REST_NOTIF_ID,
-      title: "Descanso terminado 💪",
-      body: "A por la siguiente serie.",
-      channelId: CANAL_DESCANSO,
-      autoCancel: true,
-      /* allowWhileIdle es LO IMPORTANTE. Sin él el plugin usa setExact, que
-         Android aplaza mientras el móvil está en reposo (Doze) — y el móvil
-         entra en reposo justo al guardarlo en el bolsillo durante el descanso.
-         El aviso llegaba minutos tarde, cuando ya habías vuelto a la app.
-         Con esto se usa setExactAndAllowWhileIdle, que sí dispara a su hora. */
-      schedule: { at: new Date(Date.now() + segundos * 1000), allowWhileIdle: true },
-    }] });
-  } catch {} });
+/* Recibe la HORA de fin, no los segundos que faltan: se repite sin desplazarse al
+   volver a la pantalla o al recuperar el entreno. */
+async function programarAvisoDescanso(hasta){
+  const en = EN();
+  if (!en) return enFila(()=>programarAvisoDescansoWeb(hasta));   // navegador
+  return enFila(async ()=>{ try { await en.descanso({ hasta }); } catch {} });
 }
 async function cancelarAvisoDescanso(){
-  const ln = LN();
-  if (!ln) return enFila(cancelarAvisoDescansoWeb);
-  return enFila(async ()=>{ try { await ln.cancel({ notifications: [{ id: REST_NOTIF_ID }] }); } catch {} });
+  const en = EN();
+  if (!en) return enFila(cancelarAvisoDescansoWeb);
+  return enFila(async ()=>{ try { await en.cancelarDescanso(); } catch {} });
 }
 
 const CANAL_RECORDATORIOS = "recordatorios";
@@ -2671,7 +2645,7 @@ const XP_RUTINA_AMIGO = 75;
 const XP_CONJUNTO = 60;
 
 const APP_VERSION_CODE = 20;
-const APP_VERSION_NAME = "1.0.19";
+const APP_VERSION_NAME = "1.0.20";
 
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet"];
@@ -2717,80 +2691,136 @@ const StyleTag = () => (
        @import desde fonts.googleapis.com, lo que suponía una llamada a Google en cada
        arranque: rompía el "100% offline" y obligaba a declararlo en la política de
        privacidad. NO vuelvas a poner el @import remoto. */
-    @font-face{font-family:'Cinzel';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/cinzel-500.woff2') format('woff2');}
-    @font-face{font-family:'Cinzel';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/cinzel-600.woff2') format('woff2');}
-    @font-face{font-family:'Cinzel';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/cinzel-700.woff2') format('woff2');}
-    @font-face{font-family:'Cinzel';font-style:normal;font-weight:800;font-display:swap;src:url('fonts/cinzel-800.woff2') format('woff2');}
-    @font-face{font-family:'Cinzel';font-style:normal;font-weight:900;font-display:swap;src:url('fonts/cinzel-900.woff2') format('woff2');}
-    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/space-grotesk-400.woff2') format('woff2');}
-    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/space-grotesk-500.woff2') format('woff2');}
-    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/space-grotesk-600.woff2') format('woff2');}
-    @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/space-grotesk-700.woff2') format('woff2');}
+    /* Jersey 15 y no otra pixelada: con otras la C parecía una O y el 2 y el 5 un 8, y aquí se leen
+       nombres de ejercicios y kilos de un vistazo. Solo tiene un peso: el rango evita la negrita falsa,
+       y size-adjust la iguala a los tamaños en línea, pensados para una letra de ojo más grande. */
+    @font-face{font-family:'Jersey 15';font-style:normal;font-weight:100 900;font-display:swap;size-adjust:128%;src:url('fonts/jersey-15-400.woff2') format('woff2');}
+    @font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/press-start-2p-400.woff2') format('woff2');}
     @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/inter-400.woff2') format('woff2');}
     @font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/inter-500.woff2') format('woff2');}
     @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/inter-600.woff2') format('woff2');}
     @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/jetbrains-mono-600.woff2') format('woff2');}
     @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/jetbrains-mono-700.woff2') format('woff2');}
     * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    .fh { --bg:#0C0E14; --bg2:#12151E; --card:#181D29; --card2:#212838; --line:#2B3346; --line2:#3B455E;
-      --txt:#ECE6D8; --muted:#9A94A8; --faint:#63607A;
-      --gold:#E8B04B; --amber:#F0A830; --ember:#E5623D; --crimson:#D24B4B; --blood:#9E2B2B;
-      --jade:#3FB984; --emerald:#3FB984; --violet:#B78BFF; --arcane:#B78BFF; --sky:#5BA8C9; --mana:#5BA8C9;
-      font-family:'Inter',system-ui,sans-serif; color:var(--txt); min-height:100vh; background-attachment:fixed;
-      background:radial-gradient(1100px 520px at 50% -8%,rgba(183,139,255,.10),transparent 62%),radial-gradient(900px 520px at 50% 112%,rgba(232,176,75,.06),transparent 60%),#0C0E14; }
-    .fh h1 { font-family:'Cinzel',serif; letter-spacing:.01em; font-weight:700; }
-    .fh .cinzel { font-family:'Cinzel',serif; letter-spacing:.02em; }
-    .fh h2,.fh h3,.fh .disp { font-family:'Space Grotesk',sans-serif; letter-spacing:-.02em; }
+    /* Mazmorra de noche: morados para el fondo y colores saturados de 16 bits para lo que importa.
+       image-rendering se hereda: el fondo va pixelado pero las fotos de ejercicios no. */
+    .fh { --bg:#100D1A; --bg2:#1A1528; --card:#211B33; --card2:#2C2444; --line:#3E3460; --line2:#5A4C86;
+      --txt:#F2EAD8; --muted:#A99FC2; --faint:#7F7499;
+      --gold:#FFC83D; --amber:#FFA726; --ember:#FF6B35; --crimson:#E8433F; --blood:#A32036;
+      --jade:#3DDC84; --emerald:#3DDC84; --violet:#C08BFF; --arcane:#C08BFF; --sky:#4FC3F7; --mana:#4FC3F7;
+      font-family:'Inter',system-ui,sans-serif; color:var(--txt); min-height:100vh;
+      background:url('rpg/muro-oscuro.png') 0 0/64px 64px,#100D1A; image-rendering:pixelated; }
+    .fh * { image-rendering:auto; }
+    .fh *,.fh *::before,.fh *::after { border-radius:0!important; }
+    .fh h1 { font-family:'Jersey 15',monospace; letter-spacing:.01em; font-weight:700; }
+    .fh .cinzel { font-family:'Jersey 15',monospace; letter-spacing:.02em; }
+    .fh h2,.fh h3,.fh .disp { font-family:'Jersey 15',monospace; letter-spacing:.01em; }
     .fh .mono { font-family:'JetBrains Mono',monospace; }
+    .fh .arcade { font-family:'Press Start 2P',monospace; letter-spacing:0; }
     .fh-shell { max-width:480px; margin:0 auto; padding:0 16px 96px; }
-    .fh-card { background:var(--card); border:1px solid var(--line); border-radius:18px; }
-    .fh-btn { font-family:'Space Grotesk',sans-serif; font-weight:600; border:none; cursor:pointer; border-radius:12px;
-      transition:transform .08s,filter .15s; color:#0F131A; }
-    .fh-btn:active { transform:scale(.97); }
+    .fh-card { background:var(--card); border:2px solid var(--line); box-shadow:0 3px 0 rgba(0,0,0,.35); }
+    .fh-btn { font-family:'Jersey 15',monospace; font-weight:600; border:none; cursor:pointer;
+      transition:transform .06s steps(2),filter .15s; color:#0F131A; }
+    .fh-btn:active { transform:translateY(2px); box-shadow:inset 0 2px 0 rgba(0,0,0,.3)!important; }
     .fh-btn:disabled { cursor:default; }
     .fh-btn:focus-visible,.fh input:focus-visible,.fh select:focus-visible,.fh textarea:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
-    .fh-nav { position:fixed; bottom:0; left:0; right:0; z-index:50; background:rgba(15,19,26,.92);
-      backdrop-filter:blur(12px); border-top:1px solid var(--line); display:flex; justify-content:center; }
+    .fh-nav { position:fixed; bottom:0; left:0; right:0; z-index:50; background:var(--bg2);
+      border-top:2px solid var(--line2); box-shadow:0 -3px 0 rgba(0,0,0,.35); display:flex; justify-content:center; }
     .fh-nav-inner { max-width:480px; width:100%; display:flex; padding:8px 4px calc(8px + env(safe-area-inset-bottom)); }
     .fh-nav button { flex:1; background:none; border:none; cursor:pointer; color:var(--faint); display:flex;
       flex-direction:column; align-items:center; gap:3px; font-size:10px; font-weight:600; padding:6px 0;
-      font-family:'Space Grotesk',sans-serif; transition:color .15s; }
+      font-family:'Jersey 15',monospace; font-size:12px; transition:color .15s; }
+    .fh-nav button .fh-sprite { filter:grayscale(1) opacity(.55); }
     .fh-nav button.on { color:var(--gold); }
+    .fh-nav button.on .fh-sprite { filter:none; animation:fh-bob 1s steps(2) infinite; }
     @keyframes fh-slide { from{transform:translateY(12px);opacity:0} to{transform:translateY(0);opacity:1} }
-    @keyframes fh-glow { 0%,100%{box-shadow:0 0 24px -6px var(--gold)} 50%{box-shadow:0 0 40px 0 var(--gold)} }
+    @keyframes fh-glow { 0%,100%{box-shadow:0 0 0 2px var(--gold)} 50%{box-shadow:0 0 0 2px var(--gold),0 0 22px 2px var(--gold)} }
+    @keyframes fh-bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
     @keyframes fh-pop { 0%{transform:scale(.7);opacity:0} 60%{transform:scale(1.06)} 100%{transform:scale(1);opacity:1} }
+    @keyframes fh-sube { 0%{transform:translate(-50%,0);opacity:1} 70%{opacity:1} 100%{transform:translate(-50%,-62px);opacity:0} }
     .fh-in { animation:fh-slide .28s ease both; }
     .fh-pop { animation:fh-pop .4s ease both; }
     .fh input,.fh select,.fh textarea { background:var(--bg2); border:1px solid var(--line); color:var(--txt); border-radius:10px;
       padding:10px 12px; font-family:'JetBrains Mono',monospace; font-size:16px; width:100%; text-align:center; }
     .fh textarea { font-family:'Inter',system-ui,sans-serif; font-size:14px; text-align:left; line-height:1.5;
       resize:vertical; min-height:74px; }
-    .fh select { font-family:'Space Grotesk',sans-serif; text-align:left; -webkit-appearance:none; appearance:none;
+    .fh select { font-family:'Jersey 15',monospace; text-align:left; -webkit-appearance:none; appearance:none;
       background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
       background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%; background-size:5px 5px,5px 5px; background-repeat:no-repeat; padding-right:32px; }
     .fh input:focus,.fh select:focus,.fh textarea:focus { outline:none; border-color:var(--gold); }
     .fh-chip { font-size:11px; padding:3px 9px; border-radius:999px; font-weight:600; }
     .fh-card { position:relative; }
-    .fh-card::before { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; box-shadow:inset 0 1px 0 rgba(255,255,255,.04); }
-    .fh-framed { border-color:var(--gold)!important; box-shadow:0 0 0 1px rgba(232,176,75,.15),0 12px 34px -14px rgba(0,0,0,.75); background:linear-gradient(160deg,var(--card),var(--card2)); }
-    .fh-btn { box-shadow:0 1px 0 rgba(0,0,0,.35); }
+    .fh-card::before { content:""; position:absolute; inset:0; pointer-events:none; box-shadow:inset 0 2px 0 rgba(255,255,255,.05); }
+    /* Remaches en las esquinas. Son un pseudoelemento y no un border-image para que siga
+       funcionando el borderColor en línea, que es como la app marca los estados de cada tarjeta. */
+    .fh-card::after { --r:var(--line2); content:""; position:absolute; inset:-2px; pointer-events:none;
+      background:linear-gradient(var(--r),var(--r)) 0 0/8px 2px no-repeat,linear-gradient(var(--r),var(--r)) 0 0/2px 8px no-repeat,
+        linear-gradient(var(--r),var(--r)) 100% 0/8px 2px no-repeat,linear-gradient(var(--r),var(--r)) 100% 0/2px 8px no-repeat,
+        linear-gradient(var(--r),var(--r)) 0 100%/8px 2px no-repeat,linear-gradient(var(--r),var(--r)) 0 100%/2px 8px no-repeat,
+        linear-gradient(var(--r),var(--r)) 100% 100%/8px 2px no-repeat,linear-gradient(var(--r),var(--r)) 100% 100%/2px 8px no-repeat; }
+    .fh-framed { border-color:var(--gold)!important; box-shadow:0 0 0 2px rgba(0,0,0,.4),0 5px 0 rgba(0,0,0,.4); background:linear-gradient(160deg,var(--card),var(--card2)); }
+    .fh-framed::after { --r:#FFF2C2; }
+    .fh-btn { box-shadow:inset 0 -3px 0 rgba(0,0,0,.26),inset 0 2px 0 rgba(255,255,255,.2),0 2px 0 rgba(0,0,0,.4); }
     .fh-stat { display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--line); }
-    .fh-bar { height:8px; background:var(--bg2); border-radius:99px; overflow:hidden; border:1px solid var(--line); }
-    .fh-bar > i { display:block; height:100%; border-radius:99px; transition:width .6s ease; }
-    @media (prefers-reduced-motion:reduce){ .fh-in,.fh-pop,*{animation:none!important} }
+    .fh-bar { height:10px; background:var(--bg2); overflow:hidden; border:2px solid var(--line); }
+    .fh-bar > i { display:block; height:100%; position:relative; transition:width .6s steps(8); }
+    /* Barras por tramos, como las de vida de un juego de 16 bits. */
+    .fh-bar > i::after,.fh-seg::after { content:""; position:absolute; inset:0; background:repeating-linear-gradient(90deg,transparent 0 8px,rgba(0,0,0,.32) 8px 10px); }
+    .fh-seg { position:relative; }
+
+    .fh-sprite { display:inline-block; flex-shrink:0; background-repeat:no-repeat; }
+    .fh .fh-sprite { image-rendering:pixelated; }
+    .fh-idle { animation:fh-bob 1.1s steps(2) infinite; }
+    .fh-flota { position:fixed; z-index:280; pointer-events:none; white-space:nowrap; font-family:'Press Start 2P',monospace;
+      font-size:11px; text-shadow:2px 2px 0 #000; animation:fh-sube .95s steps(10) both; }
+
+    /* ---- Pantallas de efecto (LEVEL UP, EXTRA LIFE, GAME OVER) ----
+       Son una escena de juego: van siempre sobre oscuro, también en tema claro, y por eso
+       usan colores fijos. Lo que importa se ve sin animación; solo se pierde el movimiento. */
+    .fx { position:fixed; inset:0; z-index:300; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:14px; padding:24px; overflow:hidden; text-align:center; cursor:pointer; color:#fff; background:rgba(8,6,16,.93);
+      animation:fx-entra .18s steps(3) both; }
+    .fx::after { content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 2px,transparent 2px 4px); }
+    .fx > * { position:relative; z-index:1; }
+    .fx .fx-rayos { position:absolute; z-index:0; left:50%; top:50%; width:220vmax; height:220vmax; margin:-110vmax 0 0 -110vmax;
+      background:repeating-conic-gradient(var(--fx) 0 12deg,transparent 12deg 24deg); opacity:.14; animation:fx-gira 14s linear infinite; }
+    .fx-titulo { font-family:'Press Start 2P',monospace; font-size:clamp(18px,calc((100vw - 60px)/11),34px); white-space:nowrap; line-height:1.25; color:var(--fx); text-shadow:3px 3px 0 #000,-1px -1px 0 #000; }
+    .fx-titulo span { display:inline-block; animation:fx-letra .5s steps(5) both; }
+    .fx-sub { font-family:'Jersey 15',monospace; font-size:21px; font-weight:600; }
+    .fx-nota { font-size:13.5px; line-height:1.5; color:#C9C2DC; max-width:320px; }
+    .fx-pista { font-family:'Press Start 2P',monospace; font-size:9px; color:#8F86A8; margin-top:10px; animation:fx-parpadeo 1s steps(2) infinite; }
+    .fx-salto { animation:fx-salto .7s steps(7) both; }
+    .fx-latido { animation:fx-latido .8s steps(4) infinite; }
+    .fx-part { position:absolute; z-index:0; left:50%; top:46%; animation:fx-part 1.25s cubic-bezier(.15,.7,.3,1) both; }
+    .fx-over { background:#0A0408; animation:fx-entra .5s steps(5) both,fx-tiembla .4s steps(6) .1s both; }
+    .fx-over .fx-titulo span { animation-name:fx-cae; animation-duration:.6s; }
+    .fx-fantasma { animation:fx-fantasma 2.6s steps(13) infinite; }
+    .fx-boton { font-family:'Press Start 2P',monospace; font-size:11px; padding:14px 18px; margin-top:12px; background:#FFC83D; color:#1A1020; }
+    @keyframes fx-entra { from{opacity:0} to{opacity:1} }
+    @keyframes fx-gira { to{transform:rotate(360deg)} }
+    @keyframes fx-letra { 0%{transform:translateY(-34px) scale(1.5);opacity:0} 70%{transform:translateY(4px)} 100%{transform:translateY(0);opacity:1} }
+    @keyframes fx-cae { 0%{transform:translateY(-70vh)} 75%{transform:translateY(6px)} 100%{transform:translateY(0)} }
+    @keyframes fx-salto { 0%{transform:translateY(40px) scale(.6);opacity:0} 55%{transform:translateY(-30px) scale(1.1);opacity:1} 100%{transform:translateY(0) scale(1)} }
+    @keyframes fx-latido { 0%,100%{transform:scale(1)} 50%{transform:scale(1.14)} }
+    @keyframes fx-part { 0%{transform:translate(0,0);opacity:1} 80%{opacity:1} 100%{transform:translate(var(--dx),var(--dy));opacity:0} }
+    @keyframes fx-tiembla { 0%,100%{transform:translate(0,0)} 20%{transform:translate(-7px,3px)} 40%{transform:translate(6px,-4px)} 60%{transform:translate(-4px,2px)} 80%{transform:translate(3px,-2px)} }
+    @keyframes fx-fantasma { 0%{transform:translateY(10px);opacity:0} 25%{opacity:.9} 100%{transform:translateY(-34px);opacity:0} }
+    @keyframes fx-parpadeo { 50%{opacity:0} }
+    @media (prefers-reduced-motion:reduce){ .fh-in,.fh-pop,*{animation:none!important} .fx-part,.fx-fantasma,.fh-flota{display:none} }
 
     /* ---- Tema claro (pergamino cálido, conserva los acentos RPG) ---- */
     .fh[data-theme="light"] {
-      --bg:#F3EEE3; --bg2:#FBF9F3; --card:#FFFFFF; --card2:#F5EFE2; --line:#E4DCCB; --line2:#D3C9B3;
-      --txt:#2B2620; --muted:#6E6656; --faint:#A69E8C;
+      --bg:#F3ECDE; --bg2:#FBF7EC; --card:#FFFBF0; --card2:#F3E9D2; --line:#D9C9A6; --line2:#B9A478;
+      --txt:#2B2218; --muted:#655944; --faint:#857960;
       --gold:#B8862B; --amber:#C4881C; --ember:#C7492A; --crimson:#BE3F3F; --blood:#8E2323;
       --jade:#2E8C63; --emerald:#2E8C63; --violet:#7C5BD6; --arcane:#7C5BD6; --sky:#3E86A8; --mana:#3E86A8;
-      background:radial-gradient(1100px 520px at 50% -8%,rgba(124,91,214,.10),transparent 62%),radial-gradient(900px 520px at 50% 112%,rgba(184,134,43,.09),transparent 60%),#F3EEE3;
+      background:url('rpg/arena-claro.png') 0 0/64px 64px,#F3ECDE;
     }
-    .fh[data-theme="light"] .fh-nav { background:rgba(251,249,243,.92); }
-    .fh[data-theme="light"] .fh-card::before { box-shadow:inset 0 1px 0 rgba(0,0,0,.02); }
-    .fh[data-theme="light"] .fh-btn { box-shadow:0 1px 0 rgba(0,0,0,.07); }
-    .fh[data-theme="light"] .fh-framed { box-shadow:0 0 0 1px rgba(184,134,43,.2),0 12px 30px -16px rgba(0,0,0,.28); }
+    .fh[data-theme="light"] .fh-card { box-shadow:0 3px 0 rgba(90,70,30,.2); }
+    .fh[data-theme="light"] .fh-card::before { box-shadow:none; }
+    .fh[data-theme="light"] .fh-btn { box-shadow:inset 0 -3px 0 rgba(0,0,0,.14),inset 0 2px 0 rgba(255,255,255,.4),0 2px 0 rgba(90,70,30,.25); }
+    .fh[data-theme="light"] .fh-framed { box-shadow:0 0 0 2px rgba(90,70,30,.15),0 5px 0 rgba(90,70,30,.2); }
+    .fh[data-theme="light"] .fh-framed::after { --r:#7A5A16; }
   `}</style>
 );
 
@@ -2798,7 +2828,7 @@ const StyleTag = () => (
    PEQUEÑOS COMPONENTES
    ========================================================================= */
 
-function Ring({ pct, size=116, stroke=9, color="var(--gold)", track="var(--line)", children }){
+function Ring({ pct, size=116, stroke=9, color="var(--gold)", track="var(--line)", transicion="stroke-dashoffset .6s ease", children }){
   const r=(size-stroke)/2, c=2*Math.PI*r;
   return (
     <div style={{ position:"relative", width:size, height:size }}>
@@ -2806,11 +2836,141 @@ function Ring({ pct, size=116, stroke=9, color="var(--gold)", track="var(--line)
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={track} strokeWidth={stroke}/>
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
           strokeDasharray={c} strokeDashoffset={c-c*Math.min(pct,1)} strokeLinecap="round"
-          style={{ transition:"stroke-dashoffset .6s ease" }}/>
+          style={{ transition:transicion }}/>
       </svg>
       <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>{children}</div>
     </div>
   );
+}
+
+/* --- Pixel art -------------------------------------------------------------
+   Hoja "Tiny Dungeon" de Kenney (CC0), 12 × 11 casillas de 16 px, en public/rpg.
+   `id` es la casilla leyendo de izquierda a derecha. Tamaños múltiplos de 16, o
+   los píxeles dejan de ser cuadrados. */
+const SPR = { puerta:45, espada:104, cofre:91, cofreAbierto:92, pocion:115, pocionAzul:116, lapida:65, fantasma:121, escudo:101 };
+function Sprite({ id, size=32, className="", style, titulo }){
+  const esc = size/16;
+  return <span className={`fh-sprite ${className}`} role={titulo ? "img" : undefined} aria-label={titulo} aria-hidden={titulo ? undefined : true}
+    style={{ width:size, height:size, backgroundImage:"url('rpg/tiny-dungeon.png')", backgroundSize:`${192*esc}px ${176*esc}px`,
+      backgroundPosition:`-${(id%12)*size}px -${Math.floor(id/12)*size}px`, ...style }}/>;
+}
+/* Un héroe por rango: el personaje mejora contigo. Solo hay dos personajes
+   femeninos sin armadura; de Guerrero para arriba van con casco y valen igual. */
+const HEROES = [85,88,98,97,96,87,84], HEROINAS = [99,100,98,97,96,87,84];
+function heroeDe(level, sexo){
+  const i = RANKS.reduce((a,r,n)=> level>=r.min ? n : a, 0);
+  return (sexo==="mujer" ? HEROINAS : HEROES)[i];
+}
+const CORAZON = ["..XX.XX..",".XOXXXXX.","XOXXXXXXX","XXXXXXXXX",".XXXXXXX.","..XXXXX..","...XXX...","....X...."];
+function CorazonPixel({ size=72, className="" }){
+  return (
+    <svg className={className} width={size} height={size*8/9} viewBox="0 0 9 8" shapeRendering="crispEdges" role="img" aria-label="Vida extra">
+      {CORAZON.flatMap((fila,y)=>[...fila].map((c,x)=> c==="." ? null : <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={c==="O" ? "#FFD2D0" : "#E8433F"}/>))}
+    </svg>
+  );
+}
+
+/* --- Sonido -----------------------------------------------------------------
+   Con Web Audio y NO con <audio>: un <audio> pide el foco de audio a Android y
+   te baja o te para la música que llevas en los cascos, justo en el gimnasio.
+   El navegador no deja sonar nada hasta el primer toque, así que se prepara ahí. */
+let sonidoActivo = true, audioCtx = null;
+const sfxBuf = {};
+function prepararSonido(){
+  if(audioCtx) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if(!AC) return;
+  try{ audioCtx = new AC(); }catch{ return; }
+  ["serie","record","levelup","vida","gameover"].forEach(async n=>{
+    try{
+      const r = await fetch(`sfx/${n}.mp3`);
+      sfxBuf[n] = await audioCtx.decodeAudioData(await r.arrayBuffer());
+    }catch{ /* sin ese sonido se sigue igual */ }
+  });
+}
+function sfx(nombre, volumen=.5){
+  if(!sonidoActivo || !audioCtx || !sfxBuf[nombre]) return;
+  try{
+    audioCtx.resume?.();
+    const f = audioCtx.createBufferSource(), g = audioCtx.createGain();
+    f.buffer = sfxBuf[nombre]; g.gain.value = volumen;
+    f.connect(g); g.connect(audioCtx.destination); f.start();
+  }catch{ /* un efecto no merece romper nada */ }
+}
+function vibrar(p){ try{ navigator.vibrate?.(p); }catch{ /* no todos los navegadores */ } }
+
+/* --- Pantallas de efecto ---------------------------------------------------- */
+function Particulas({ colores, n=34 }){
+  const ps = useMemo(()=>Array.from({ length:n }, (_,i)=>{
+    const a = Math.random()*Math.PI*2, d = 120 + Math.random()*210;
+    return { dx:Math.round(Math.cos(a)*d), dy:Math.round(Math.sin(a)*d), t:4+2*Math.floor(Math.random()*3), c:colores[i%colores.length], r:(Math.random()*.22).toFixed(2) };
+  }), [n]);
+  return ps.map((p,i)=><i key={i} className="fx-part" style={{ width:p.t, height:p.t, background:p.c, "--dx":`${p.dx}px`, "--dy":`${p.dy}px`, animationDelay:`${p.r}s` }}/>);
+}
+function TituloArcade({ texto }){
+  return <div className="fx-titulo" role="heading" aria-level={1} aria-label={texto}>
+    {[...texto].map((c,i)=><span key={i} aria-hidden="true" style={{ animationDelay:`${i*.05}s` }}>{c===" " ? "\u00A0" : c}</span>)}
+  </div>;
+}
+function EfectoPantalla({ efecto, onFin }){
+  const hecho = useRef(false);
+  const cerrar = ()=>{ if(hecho.current) return; hecho.current = true; onFin(); };
+  const espera = efecto.tipo === "gameOver";     // este no se va solo: hay que decidir continuar
+  useEffect(()=>{
+    if(efecto.tipo==="levelUp"){ sfx("levelup",.6); vibrar([50,40,120]); }
+    if(efecto.tipo==="vidaExtra"){ sfx("vida",.6); vibrar([40,30,40,30,90]); }
+    if(efecto.tipo==="gameOver"){ sfx("gameover",.6); vibrar(220); }
+    if(espera) return;
+    const t = setTimeout(cerrar, 3400);
+    return ()=>clearTimeout(t);
+  }, []);
+
+  if(efecto.tipo==="gameOver") return (
+    <div className="fx fx-over" style={{ "--fx":"#E8433F" }} role="dialog" aria-modal="true" aria-label="Game Over">
+      <div style={{ position:"relative", width:96, height:112, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+        <Sprite id={SPR.fantasma} size={48} className="fx-fantasma" style={{ position:"absolute", top:0 }}/>
+        <Sprite id={SPR.lapida} size={80}/>
+      </div>
+      <TituloArcade texto="GAME OVER"/>
+      <div className="fx-sub">{efecto.titulo}</div>
+      <div className="fx-nota">{efecto.nota}</div>
+      <button className="fh-btn fx-boton" onClick={cerrar} autoFocus>CONTINUAR</button>
+    </div>
+  );
+
+  const vida = efecto.tipo==="vidaExtra";
+  const color = vida ? "#FF5A5F" : "#FFC83D";
+  return (
+    <div className="fx" style={{ "--fx":color }} onClick={cerrar} role="dialog" aria-modal="true" aria-label={vida ? "Extra Life" : "Level Up"}>
+      <div className="fx-rayos"/>
+      <Particulas colores={vida ? ["#FF5A5F","#FFD2D0","#FFFFFF"] : ["#FFC83D","#FFFFFF","#3DDC84","#4FC3F7"]}/>
+      {vida
+        ? <CorazonPixel size={90} className="fx-latido"/>
+        : <span className="fx-salto" style={{ display:"inline-flex" }}><Sprite id={efecto.sprite} size={96}/></span>}
+      <TituloArcade texto={vida ? "EXTRA LIFE!" : "LEVEL UP!"}/>
+      {vida ? <>
+        <div className="fx-sub">+1 día de descanso</div>
+        <div className="fx-nota">Objetivo semanal cumplido. Te salva una semana floja sin perder la racha.</div>
+      </> : <>
+        <div className="fx-sub">Nivel {efecto.nivel}</div>
+        {efecto.rango && <div className="fx-nota">Nuevo rango: <b style={{ color }}>{efecto.rango}</b></div>}
+      </>}
+      <div className="fx-pista">TOCA PARA SEGUIR</div>
+    </div>
+  );
+}
+
+/* Sube hasta un número en vez de plantarlo: el XP se gana delante de ti. */
+function useCuenta(objetivo, ms=900){
+  const [v, setV] = useState(0);
+  useEffect(()=>{
+    if(window.matchMedia?.("(prefers-reduced-motion:reduce)").matches){ setV(objetivo); return; }
+    const t0 = performance.now(); let id;
+    const paso = t=>{ const k = Math.min(1,(t-t0)/ms); setV(Math.round(objetivo*k)); if(k<1) id = requestAnimationFrame(paso); };
+    id = requestAnimationFrame(paso);
+    return ()=>cancelAnimationFrame(id);
+  }, [objetivo]);
+  return v;
 }
 
 function Toast({ toast }){
@@ -2829,57 +2989,43 @@ function Toast({ toast }){
   );
 }
 
-/* Temporizador de descanso: pop-up a pantalla completa que bloquea el avance */
-function RestTimer({ seconds, onDone, isRecomp }){
+/* Temporizador de descanso: pop-up a pantalla completa que bloquea el avance.
+   Solo pinta: la hora de fin vive en la sesión (`session.descanso`), así sobrevive a
+   que Android mate la app y al volver sigue donde debe. */
+function RestTimer({ hasta, total, onDone, onSaltar, onMas15, isRecomp }){
   const pool = isRecomp ? RECOMP_TIPS : TIPS;
-  const [endsAt, setEndsAt] = useState(() => Date.now() + seconds * 1000);
-  const [left, setLeft] = useState(seconds);
+  const [queda, setQueda] = useState(() => Math.max(0, hasta - Date.now()));
   const [tip, setTip] = useState(() => pick(pool));
+  const onDoneRef = useRef(onDone); onDoneRef.current = onDone;
 
-  /* Al abrir el descanso: fija la hora de fin y programa el aviso del sistema.
+  /* Saltar cancela el aviso; acabarse solo, no. Por eso aquí no hay cleanup: cancelar
+     al cerrar el pop-up se llevaba la alarma justo cuando iba a sonar. */
+  useEffect(()=>{ programarAvisoDescanso(hasta); },[hasta]);
 
-     Al cerrarlo se cancela SOLO SI LO SALTAS. Cuando se acaba solo, NO: el
-     WebView sigue contando en segundo plano un buen rato, así que llegaba a
-     cero, cerraba este pop-up y el cleanup cancelaba la alarma en el mismo
-     instante en que iba a sonar. Resultado: en segundo plano no avisaba nunca.
-     Comprobado en un emulador con Android 14 — la alarma se programaba bien y
-     se cancelaba sola justo al vencer. */
-  const acabadoRef = useRef(false);
+  /* Contra el RELOJ y en cada fotograma, no con un setInterval: el primer fotograma al
+     volver de segundo plano ya sale con el tiempo real. Con la app oculta no corre, y
+     da igual: ahí avisa la alarma. */
   useEffect(()=>{
-    acabadoRef.current = false;
-    setEndsAt(Date.now() + seconds * 1000); setLeft(seconds); setTip(pick(pool));
-    programarAvisoDescanso(seconds);
-    return ()=>{ if(!acabadoRef.current) cancelarAvisoDescanso(); };
-  },[seconds]);
-
-  // El tiempo se calcula contra el RELOJ, no restando de uno en uno. Así, al volver
-  // de segundo plano —donde el WebView congela los temporizadores— el número es real
-  // en vez de haberse quedado parado donde lo dejaste.
-  useEffect(()=>{
-    const t=setInterval(()=>{
-      const q=Math.max(0, Math.round((endsAt - Date.now())/1000));
-      setLeft(q);
-      if(q<=0){
-        clearInterval(t);
-        acabadoRef.current = true;      // se acabó solo: el aviso debe sonar
-        /* Con la app delante el aviso del sistema se cancela al cerrarse este
-           pop-up, así que sin esto el descanso terminaba en silencio absoluto:
-           si no estabas mirando la pantalla, no te enterabas. */
-        try { navigator.vibrate?.([180, 90, 180]); } catch {}
-        onDone && onDone();
+    let id;
+    const paso = ()=>{
+      const q = hasta - Date.now();
+      if(q <= 0){
+        setQueda(0);
+        // Solo si lo estás viendo acabar: en el móvil ya vibra la alarma.
+        if(!EN() && q > -1500) { try { navigator.vibrate?.([180, 90, 180]); } catch {} }
+        onDoneRef.current();
+        return;
       }
-    }, 250);
-    return ()=>clearInterval(t);
-  },[endsAt]);
+      setQueda(prev => Math.abs(prev - q) >= 100 ? q : prev);
+      id = requestAnimationFrame(paso);
+    };
+    id = requestAnimationFrame(paso);
+    return ()=>cancelAnimationFrame(id);
+  },[hasta]);
 
-  /* +15 s: mueve la hora de fin y reprograma el aviso. */
-  function mas15(){
-    const nuevo = endsAt + 15000;
-    setEndsAt(nuevo);
-    programarAvisoDescanso(Math.round((nuevo - Date.now())/1000));
-  }
+  const left = Math.ceil(queda/1000);
   const mm=String(Math.floor(left/60)).padStart(2,"0"), ss=String(left%60).padStart(2,"0");
-  const pct = seconds? left/seconds : 0;
+  const pct = total ? queda/(total*1000) : 0;
   // Portal al root .fh: evita que un ancestro con transform (animación .fh-in) rompa el position:fixed.
   const target = (typeof document!=="undefined" && document.getElementById("rpgym-root")) || (typeof document!=="undefined" ? document.body : null);
   const overlay = (
@@ -2887,7 +3033,9 @@ function RestTimer({ seconds, onDone, isRecomp }){
       <div className="fh-card fh-pop" style={{ padding:26, borderColor:"var(--ember)", background:"linear-gradient(160deg,var(--card),var(--card2))", maxWidth:420, width:"100%", textAlign:"center" }}>
         <div style={{ fontSize:11, color:"var(--muted)", fontWeight:700, letterSpacing:".14em", marginBottom:16 }}>DESCANSO</div>
         <div style={{ display:"flex", justifyContent:"center", marginBottom:18 }}>
-          <Ring pct={pct} size={168} stroke={11} color="var(--ember)">
+          {/* Sin transición: con la app oculta no se pinta nada y, al volver, la animación
+              arrancaba desde lo último pintado y barría el anillo durante medio segundo. */}
+          <Ring pct={pct} size={168} stroke={11} color="var(--ember)" transicion="none">
             <div className="mono" style={{ fontSize:40, fontWeight:700, lineHeight:1 }}>{mm}:{ss}</div>
             <div style={{ fontSize:10, color:"var(--muted)", fontWeight:600, marginTop:4 }}>RECUPÉRATE</div>
           </Ring>
@@ -2899,9 +3047,9 @@ function RestTimer({ seconds, onDone, isRecomp }){
           <div style={{ fontSize:13.5, lineHeight:1.5, color:"var(--txt)" }}>{tip}</div>
         </div>
         <div style={{ display:"flex", gap:8 }}>
-          <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--txt)", padding:13, border:"1px solid var(--line2)" }} onClick={mas15}>+15 s</button>
+          <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--txt)", padding:"13px 6px", border:"1px solid var(--line2)", whiteSpace:"nowrap" }} onClick={onMas15}>+15 s</button>
           <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--muted)", padding:13, border:"1px solid var(--line2)" }} onClick={()=>setTip(pick(pool))}>Otro consejo</button>
-          <button className="fh-btn" style={{ flex:1, background:"var(--ember)", color:"#fff", padding:13, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }} onClick={onDone}><SkipForward size={16}/> Saltar</button>
+          <button className="fh-btn" style={{ flex:1, background:"var(--ember)", color:"#fff", padding:13, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }} onClick={onSaltar}><SkipForward size={16}/> Saltar</button>
         </div>
         <div style={{ fontSize:11, color:"var(--faint)", marginTop:12 }}>Termina o salta el descanso para seguir con el siguiente ejercicio.</div>
       </div>
@@ -2970,6 +3118,9 @@ export default function App(){
   const [theme, setThemeState] = useState("dark");
   const [session, setSession] = useState(null);
   const [results, setResults] = useState(null);
+  const [efectos, setEfectos] = useState([]);    // cola de pantallas: LEVEL UP, EXTRA LIFE, GAME OVER
+  const [sonido, setSonidoState] = useState(true);
+  const lanzarEfecto = (...nuevos)=>setEfectos(q=>[...q, ...nuevos.map(e=>({ ...e, id:Date.now()+Math.random() }))]);
   const [routineDraft, setRoutineDraft] = useState(null);   // rutina que se está configurando
   /* Informe semanal: qué semana se está mirando y a dónde vuelve el botón de
      salir (sale solo el lunes y también desde la ficha: hay que volver al de antes). */
@@ -3008,6 +3159,8 @@ export default function App(){
 
   useEffect(()=>{ (async()=>{
     const savedTheme = await loadGlobal("gym:theme", "dark");
+    const sonidoGuardado = await loadGlobal("gym:sonido", true);
+    sonidoActivo = sonidoGuardado; setSonidoState(sonidoGuardado);
     setThemeState(savedTheme);
     setStorePrefix("");            // usuario único (sin prefijo, conserva datos previos)
     await loadProfileData();
@@ -3021,9 +3174,16 @@ export default function App(){
   async function recuperarEntreno(){
     const guardado = await loadKey(ENTRENO_KEY, null);
     if(!guardado?.session) return;
+    const s = guardado.session;
     const parado = Date.now() - (guardado.guardadoEn || Date.now());
-    const startedAt = guardado.session.startedAt + (parado > PAUSA_SIN_CONTAR_MS ? parado : 0);
-    setSession({ ...guardado.session, startedAt });
+    /* Con el cronómetro de cardio en marcha el hueco SÍ es entreno: en la cinta nadie
+       toca el móvil y 40 minutos corriendo no pueden restarse de la sesión. */
+    const startedAt = s.startedAt + (parado > PAUSA_SIN_CONTAR_MS && !s.crono ? parado : 0);
+    setSession({ ...s, startedAt,
+      // Un entreno guardado antes de actualizar la app puede traer nombres fusionados.
+      exercises: s.exercises.map(e => ({ ...e, name:nombreActual(e.name) })),
+      // Si el descanso acabó mientras tanto ya sonó la alarma: no hay nada que abrir.
+      descanso: s.descanso?.hasta > Date.now() ? s.descanso : null });
     if(guardado.conjunta) setSesionConjunta(guardado.conjunta);
     setTab("workout");
     showToast({ title:"Entreno recuperado", sub:`${guardado.session.dayName}: sigue donde lo dejaste.`, icon:Dumbbell });
@@ -3033,6 +3193,15 @@ export default function App(){
     if(loading) return;
     saveKey(ENTRENO_KEY, session ? { session, conjunta:sesionConjunta, guardadoEn:Date.now() } : null);
   }, [session, sesionConjunta, loading]);
+
+  /* El servicio nativo sigue a la sesión: hay entreno, hay servicio. Pasar por aquí
+     cubre empezar, recuperar, terminar y salir sin repetirlo en cada sitio. */
+  const sesionViva = !!session, sesionNombre = session ? `${session.routineName} · ${session.dayName}` : null, sesionDesde = session?.startedAt;
+  useEffect(()=>{
+    const en = EN();
+    if(loading || !en) return;
+    (sesionViva ? en.iniciar({ titulo:sesionNombre, desde:sesionDesde }) : en.parar()).catch(()=>{});
+  }, [loading, sesionViva, sesionNombre, sesionDesde]);
 
   /* Todo lo que se trae de la nube en cuanto hay sesión. Se llama desde los DOS
      sitios donde puede aparecer una: al abrir la app con la sesión guardada y al
@@ -3132,6 +3301,16 @@ export default function App(){
     if(session) return;
     (async()=>{
       const lunes = addDaysISO(mondayOf(todayISO()), -7);
+      /* GAME OVER: solo si había racha que perder y la semana cerrada la ha cortado.
+         Sale una vez, y dice lo importante: el nivel y las marcas siguen ahí. */
+      const dias = plannedDaysOf(state), opts = semanaOpts(state);
+      const cerrada = resumenSemana(log, dias, lunes, opts);
+      if(cerrada.previstos > 0 && !cerrada.cumplida && !cerrada.vacaciones && await loadKey("gym:gameOverVisto", null) !== lunes){
+        saveKey("gym:gameOverVisto", lunes);
+        const racha = habitStreak(log, dias, { ...opts, desde:addDaysISO(lunes,-7) });
+        if(racha > 0) lanzarEfecto({ tipo:"gameOver", titulo:`Racha de ${racha} día${racha===1?"":"s"} perdida`,
+          nota:"Tu nivel, tu XP y tus marcas siguen intactos. Esta semana empiezas otra partida." });
+      }
       if(await loadGlobal("gym:informeVisto", null) === lunes) return;
       saveGlobal("gym:informeVisto", lunes);
       const domingo = addDaysISO(lunes, 6);
@@ -3141,11 +3320,20 @@ export default function App(){
   }, [loading, needsOnboarding, sesionResuelta, cloudSession, sinCuenta]);
 
   function setTheme(t){ setThemeState(t); saveGlobal("gym:theme", t); }
+  function setSonido(on){ sonidoActivo = on; setSonidoState(on); saveGlobal("gym:sonido", on); if(on){ prepararSonido(); sfx("serie"); } }
+
+  useEffect(()=>{
+    // Sin esto la fuente se pide al salir el primer LEVEL UP y el título aparece un instante con otra letra.
+    document.fonts?.load("16px 'Press Start 2P'").catch(()=>{});
+    const primerToque = ()=>prepararSonido();
+    window.addEventListener("pointerdown", primerToque, { once:true });
+    return ()=>window.removeEventListener("pointerdown", primerToque);
+  }, []);
 
   // Sincroniza fondo del body, color-scheme y barra de estado (Android) con el tema.
   useEffect(()=>{
     const dark = theme !== "light";
-    const bg = dark ? "#0C0E14" : "#F3EEE3";
+    const bg = dark ? "#100D1A" : "#F3ECDE";
     document.documentElement.style.colorScheme = dark ? "dark" : "light";
     document.body.style.background = bg;
     const meta = document.querySelector('meta[name="theme-color"]');
@@ -3242,7 +3430,7 @@ export default function App(){
     // Ajuste por fase del ciclo (si la usuaria lo activó): energía por defecto según la fase.
     const cph = (state.profile?.sex==="mujer" && state.cycle?.enabled) ? cyclePhaseFor(state.cycle, todayISO()) : null;
     setSession({
-      routineId, routineName:routine.name, dayName:day.name, rpe:routine.rpe, energy: cph?.energy || "normal",
+      routineId, dayIdx, routineName:routine.name, dayName:day.name, rpe:routine.rpe, energy: cph?.energy || "normal",
       isRecomp: routine.cat==="Recomposición",
       cyclePhase: cph ? { label:cph.label, training:cph.training, color:cph.color } : null,
       startedAt:Date.now(),
@@ -3401,8 +3589,8 @@ export default function App(){
 
     const durationMin = Math.max(1, Math.round((Date.now()-session.startedAt)/60000));
     const record={ date:todayISO(), routineName:session.routineName, dayName:session.dayName,
-      volume:Math.round(volume), xp:sessionXp+achXp, series:seriesDone, energy:session.energy,
-      exercises:session.exercises.map(e=>({ name:e.name, muscle:e.muscle, logs:e.logs.filter(l=>l.done).map(l=>{
+      volume:Math.round(volume), xp:sessionXp+achXp, series:seriesDone, energy:session.energy, durationMin,
+      exercises:session.exercises.map(e=>({ name:e.name, muscle:e.muscle, objetivo:e.reps, logs:e.logs.filter(l=>l.done).map(l=>{
         const base={ weight:parseFloat(l.weight)||0, reps:parseInt(l.reps)||0 };
         if(!isCardio(e.name)) return base;
         // El cardio guarda también lo que marcó la máquina (solo lo que se rellenó).
@@ -3461,8 +3649,15 @@ export default function App(){
       prs:prList, seriesDelta, unlocked, restEarned:goalJustMet, levelUp: finalLevel>prevLevel ? finalLevel : null,
       muscleLevelUps, mGains, progressed, missionsDone, newStreak, bestStreak, bestStreakBeat: newStreak>(state.bestStreak||0),
       rankName: rankFor(finalLevel).name,
+      cambios: session.editado ? { routineId:session.routineId, dayIdx:session.dayIdx, dayName:session.dayName,
+        exercises:session.exercises.map(e=>({ name:e.name, sustituyeA:e.sustituyeA, sets:e.logs.length, reps:e.reps, rest:e.rest, muscle:e.muscle })) } : null,
     });
     setSession(null); setTab("results");
+    const fx = [];
+    if(finalLevel>prevLevel) fx.push({ tipo:"levelUp", nivel:finalLevel, sprite:heroeDe(finalLevel, state.profile?.sex),
+      rango: rankFor(finalLevel).name!==rankFor(prevLevel).name ? rankFor(finalLevel).name : null });
+    if(goalJustMet) fx.push({ tipo:"vidaExtra" });
+    if(fx.length) lanzarEfecto(...fx);
 
     // Sube el estado de juego (si hay cuenta). Sin bloquear.
     // Desde la 1.0.x se sube también el detalle y las marcas: es lo que permite
@@ -3707,6 +3902,25 @@ export default function App(){
     }
     return r;
   }
+  /* Lo que has cambiado en pleno entreno pasa a la rutina, si tú quieres. Una rutina
+     de la app no se puede tocar: se guarda una copia tuya y pasa a ser la activa.
+     Lo sustituido vuelve a su nombre original: la máquina estaba ocupada hoy, nada más. */
+  function guardarCambiosRutina(c){
+    const r = findRoutine(c.routineId, customRoutines);
+    const i = r ? (r.days[c.dayIdx]?.name===c.dayName ? c.dayIdx : r.days.findIndex(d=>d.name===c.dayName)) : -1;
+    if(i < 0){ showToast({ title:"No se ha podido guardar", sub:"Esa rutina ya no tiene ese día.", icon:ShieldAlert }); return false; }
+    const antes = r.days[i].exercises;
+    const exercises = c.exercises.map(e=>{
+      const nombre = e.sustituyeA || e.name, o = antes.find(x=>x.name===nombre);
+      return o ? { ...o, sets:e.sets } : { name:nombre, sets:e.sets, reps:e.reps, rest:e.rest, muscle:e.muscle };
+    });
+    const days = r.days.map((d,n)=> n===i ? { ...d, exercises } : d);
+    if(r.custom){ saveCustomRoutine({ ...r, days }); return true; }
+    const copia = saveCustomRoutine({ ...JSON.parse(JSON.stringify(r)), id:newRoutineId(), name:`${r.name} (mía)`, days });
+    setActiveRoutine(copia.id);
+    return true;
+  }
+
   /* --- Cuenta (opcional) ------------------------------------------------- */
   async function entrarCuenta(datos){
     const r = await cloud.entrar(datos);
@@ -3876,7 +4090,7 @@ export default function App(){
   if(loading) return (
     <div className="fh" data-theme={theme} style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh" }}>
       <StyleTag/>
-      <div style={{ textAlign:"center", color:"var(--muted)" }}><Dumbbell size={30} color="var(--gold)"/><div className="disp" style={{ marginTop:10 }}>Cargando tu progreso…</div></div>
+      <div style={{ textAlign:"center", color:"var(--muted)" }}><Sprite id={SPR.espada} size={48} className="fh-idle"/><div className="disp" style={{ marginTop:10 }}>Cargando tu progreso…</div></div>
     </div>
   );
 
@@ -3907,6 +4121,7 @@ export default function App(){
     <div className="fh" id="rpgym-root" data-theme={theme}>
       <StyleTag/>
       <Toast toast={toast}/>
+      {efectos[0] && <EfectoPantalla key={efectos[0].id} efecto={efectos[0]} onFin={()=>setEfectos(q=>q.slice(1))}/>}
       <div className="fh-shell">
         {tab==="home" && <HomeView {...{ state, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines,
           cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno, superadoPor,
@@ -3921,8 +4136,9 @@ export default function App(){
         {tab==="amigo" && amigoAbierto && <AmigoView {...{ amigo:amigoAbierto, misBests:state.bests,
           customRoutines, onVolver:cerrarAmigo, onToast:showToast }}/>}
         {tab==="workout" && <WorkoutView {...{ session, setSession, finishWorkout, setTab, log, weekStart:state.weekStart, bests:state.cardioBests, sesionConjunta,
-          peso:state.profile?.weightKg, sexo:state.profile?.sex, misBests:state.bests }}/>}
-        {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank }}/>}
+          peso:state.profile?.weightKg, sexo:state.profile?.sex, misBests:state.bests, nextWeight:state.nextWeight,
+          onAbandonar:()=>lanzarEfecto({ tipo:"gameOver", titulo:"Entreno abandonado", nota:"Las series de hoy no cuentan. Tu racha y tu nivel siguen como estaban." }) }}/>}
+        {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank, customRoutines, onGuardarCambios:guardarCambiosRutina }}/>}
         {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines, setTab, quedadas }}/>}
         {tab==="informe" && <InformeSemanalView {...{ state, log, measures, lunes:informeLunes, setLunes:setInformeLunes,
           cloudEnabled:cloud.cloudEnabled, perfil, onVolver:()=>setTab(informeVuelve) }}/>}
@@ -3933,7 +4149,7 @@ export default function App(){
         {tab==="logros" && <AchievementsView {...{ state, level }}/>}
         {tab==="dieta" && <DietView {...{ state, mealPlan, saveMealPlan, excludes, setExcludes, setTab, customDiet, saveCustomDiet }}/>}
         {tab==="editor" && <RoutineBuilderView {...{ draft:routineDraft, setDraft:setRoutineDraft, onSave:saveRoutineFromEditor, onCancel:closeEditor, isNew:draftIsNew }}/>}
-        {tab==="ajustes" && <SettingsView {...{ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup,
+        {tab==="ajustes" && <SettingsView {...{ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, sonido, setSonido, resetProgress, exportBackup, importBackup,
           setVacaciones, terminarVacaciones,
           cloudEnabled:cloud.cloudEnabled, perfil, session:cloudSession,
           onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onVerificar:verificarCuenta,
@@ -3942,9 +4158,9 @@ export default function App(){
 
       {tab!=="workout" && tab!=="results" && tab!=="editor" && (
         <nav className="fh-nav"><div className="fh-nav-inner">
-          {[{id:"home",icon:Home,label:"Inicio"},{id:"rutinas",icon:Dumbbell,label:"Rutinas"},{id:"progreso",icon:Swords,label:"RPGym"},{id:"logros",icon:Trophy,label:"Logros"},{id:"dieta",icon:Utensils,label:"Dieta"}].map(t=>{
-            const I=t.icon; return <button key={t.id} className={tab===t.id?"on":""} onClick={()=>setTab(t.id)}><I size={20}/><span>{t.label}</span></button>;
-          })}
+          {[{id:"home",spr:SPR.puerta,label:"Inicio"},{id:"rutinas",spr:SPR.espada,label:"Rutinas"},{id:"progreso",spr:heroeDe(level, state.profile?.sex),label:"RPGym"},{id:"logros",spr:SPR.cofre,label:"Logros"},{id:"dieta",spr:SPR.pocion,label:"Dieta"}].map(t=>(
+            <button key={t.id} className={tab===t.id?"on":""} onClick={()=>setTab(t.id)} aria-current={tab===t.id?"page":undefined}><Sprite id={t.spr} size={32}/><span>{t.label}</span></button>
+          ))}
         </div></nav>
       )}
     </div>
@@ -5599,7 +5815,7 @@ const SETTINGS_TABS = [
   { id:"privacidad", label:"Privacidad", icon:Lock },
 ];
 
-function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, resetProgress, exportBackup, importBackup, setVacaciones, terminarVacaciones, cloudEnabled, perfil, session, level, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle }){
+function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, sonido, setSonido, resetProgress, exportBackup, importBackup, setVacaciones, terminarVacaciones, cloudEnabled, perfil, session, level, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle }){
   const [sec, setSec] = useState("perfil");
   const p = state.profile || {};
   const rem = state.reminders || { enabled:false, hour:19, minute:0, days:[1,3,5] };
@@ -5697,6 +5913,11 @@ function SettingsView({ state, updateProfile, setReminders, setSub, setCycle, se
               </button>
             );
           })}
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:9, fontSize:14, marginTop:14, paddingTop:12, borderTop:"1px solid var(--line)" }}>
+          <Volume2 size={16} color="var(--gold)"/>
+          <div style={{ flex:1 }}>Sonidos del juego<div style={{ fontSize:11.5, color:"var(--muted)", marginTop:2 }}>No cortan la música que lleves puesta.</div></div>
+          <ToggleSwitch on={sonido} onClick={()=>setSonido(!sonido)}/>
         </div>
       </div>
 
@@ -6161,7 +6382,6 @@ function CyclePhaseCard({ state, setTab }){
 function HomeView({ state, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, copiaNube, onRestaurarNube, onDescartarCopia, pendientes }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
-  const RankIcon=rank.icon;
   const phase=recommendedPhase(state.startDate);
   const last=log.slice(-6).map((s,i)=>({ i, v:seriesDe(s) }));
   const week=weeksBetween(state.startDate, todayISO())+1;
@@ -6227,9 +6447,8 @@ function HomeView({ state, level, rank, log, useRest, terminarVacaciones, setTab
       {/* Rango + XP */}
       <div className="fh-card fh-framed" onClick={()=>setTab("ficha")} style={{ padding:20, display:"flex", alignItems:"center", gap:18, cursor:"pointer" }}>
         <Ring pct={xpInto/xpNeed} size={116} stroke={9} color={rank.color}>
-          <RankIcon size={22} color={rank.color}/>
-          <div className="cinzel" style={{ fontSize:27, fontWeight:700, lineHeight:1, marginTop:2 }}>{level}</div>
-          <div style={{ fontSize:9, color:"var(--muted)", fontWeight:600 }}>NIVEL</div>
+          <Sprite id={heroeDe(level, state.profile?.sex)} size={48} className="fh-idle" titulo={rank.name}/>
+          <div className="arcade" style={{ fontSize:12, marginTop:3 }}>LV {level}</div>
         </Ring>
         <div style={{ flex:1 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -6237,9 +6456,7 @@ function HomeView({ state, level, rank, log, useRest, terminarVacaciones, setTab
             <ScrollText size={15} color="var(--faint)"/>
           </div>
           <div style={{ fontSize:12, color:"var(--muted)", marginTop:2 }}>{xpInto} / {xpNeed} XP para nivel {level+1}</div>
-          <div style={{ height:7, background:"var(--line)", borderRadius:99, marginTop:9, overflow:"hidden" }}>
-            <div style={{ height:"100%", width:`${Math.min(100,(xpInto/xpNeed)*100)}%`, background:rank.color, borderRadius:99, transition:"width .6s" }}/>
-          </div>
+          <div className="fh-bar" style={{ marginTop:9 }}><i style={{ width:`${Math.min(100,(xpInto/xpNeed)*100)}%`, background:rank.color }}/></div>
           <div style={{ fontSize:11, color:"var(--faint)", marginTop:8 }}>{state.xp} XP · {state.totalWorkouts} entrenos</div>
         </div>
       </div>
@@ -6821,10 +7038,10 @@ function RoutineBuilderView({ draft, setDraft, onSave, onCancel, isNew }){
       <div className="fh-card" style={{ padding:16 }}>
         <div style={label}>Nombre</div>
         <input value={draft.name} maxLength={40} onChange={e=>setField({ name:e.target.value })} placeholder="Mi rutina de torso"
-          style={{ textAlign:"left", fontFamily:"'Space Grotesk',sans-serif" }}/>
+          style={{ textAlign:"left", fontFamily:"'Jersey 15',monospace" }}/>
         <div style={{ ...label, marginTop:12 }}>Descripción corta <span style={{ color:"var(--faint)", fontWeight:400 }}>(opcional)</span></div>
         <input value={draft.subtitle} maxLength={60} onChange={e=>setField({ subtitle:e.target.value })} placeholder="4 días · fuerza y volumen"
-          style={{ textAlign:"left", fontFamily:"'Space Grotesk',sans-serif" }}/>
+          style={{ textAlign:"left", fontFamily:"'Jersey 15',monospace" }}/>
         <div style={{ ...label, marginTop:12 }}>Intensidad</div>
         <select value={draft.rpe} onChange={e=>setField({ rpe:e.target.value })}>
           <option value="6-7">Suave (RPE 6-7) · técnica y acondicionamiento</option>
@@ -6854,7 +7071,7 @@ function RoutineBuilderView({ draft, setDraft, onSave, onCancel, isNew }){
         <div key={di} className="fh-card" style={{ padding:16, marginBottom:11 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
             <input value={day.name} maxLength={40} onChange={e=>setDay(di, { name:e.target.value })} aria-label={"Nombre del día " + (di+1)}
-              style={{ flex:1, textAlign:"left", fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:15, padding:"8px 11px" }}/>
+              style={{ flex:1, textAlign:"left", fontFamily:"'Jersey 15',monospace", fontWeight:600, fontSize:15, padding:"8px 11px" }}/>
             <button onClick={()=>copyDay(di)} title="Duplicar día" aria-label="Duplicar día" style={miniBtn()}><Copy size={14}/></button>
             <button onClick={()=>draft.days.length>1 && setConfirmDel(confirmDel===di?null:di)} title="Borrar día" aria-label="Borrar día"
               disabled={draft.days.length<=1} style={{ ...miniBtn(draft.days.length<=1?"var(--faint)":"var(--crimson)"), opacity:draft.days.length<=1?.45:1 }}><Trash2 size={14}/></button>
@@ -7059,14 +7276,16 @@ function SustituirPanel({ ex, onElegir, onCerrar }){
   );
 }
 
-function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStart, bests, sesionConjunta, peso, sexo, misBests }){
-  const [rest, setRest] = useState(null);
+function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStart, bests, sesionConjunta, peso, sexo, misBests, nextWeight, onAbandonar }){
   const [howOpen, setHowOpen] = useState(null);
+  const [anadiendo, setAnadiendo] = useState(false);        // selector de ejercicios abierto
+  const [flotantes, setFlotantes] = useState([]);           // "+5 XP" que suben desde el botón
   /* Cronómetro del cardio: { exI, setI, desde }. Cuenta HACIA ARRIBA desde que
      le das a Comenzar; el tiempo real es el que decides tú al parar, no un
      objetivo que hay que teclear al acabar. Va dentro de la sesión para que siga
      contando si Android mata la app: con la cinta en marcha nadie toca el móvil. */
   const crono = session?.crono || null;
+  const descanso = session?.descanso || null;   // { hasta, total }: también en la sesión, por lo mismo
   const [ahora, setAhora] = useState(Date.now());
   const [sustituyendo, setSustituyendo] = useState(null);   // índice del ejercicio a cambiar
   useEffect(()=>{
@@ -7113,12 +7332,31 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
     const exercises=session.exercises.map((e,i)=> i!==exI? e : ({ ...e, logs:e.logs.map((l,j)=> j===setI? ({ ...l,[field]:val }) : l) }));
     setSession({ ...session, exercises });
   }
-  function completeSet(exI,setI){
-    const ex=session.exercises[exI]; const wasDone=ex.logs[setI].done;
-    update(exI,setI,"done",!wasDone);
-    // El cardio continuo va con rest 0: no tiene sentido abrir el cronómetro de descanso.
-    if(!wasDone && ex.rest>0) setRest(ex.rest);
+  /* El XP real lo reparte finishWorkout; esto solo enseña que acaba de caer. */
+  function flotar(e, texto, color, retraso=0){
+    const id = Math.random();
+    const x = Math.min(window.innerWidth-70, Math.max(70, e?.clientX || window.innerWidth/2));
+    const y = (e?.clientY || window.innerHeight/2) - 16 - retraso/12;
+    setTimeout(()=>setFlotantes(f=>[...f, { id, x, y, texto, color }]), retraso);
+    setTimeout(()=>setFlotantes(f=>f.filter(v=>v.id!==id)), retraso+1000);
   }
+  function completeSet(exI,setI,evento){
+    const ex=session.exercises[exI]; const wasDone=ex.logs[setI].done;
+    if(!wasDone){
+      const kg = parseFloat(ex.logs[setI].weight)||0, marca = misBests?.[ex.name];
+      flotar(evento, "+5 XP", "#FFC83D");
+      if(kg>0 && marca!=null && kg>marca){ flotar(evento, "NEW RECORD!", "#3DDC84", 220); sfx("record",.55); vibrar([30,40,60]); }
+      else { sfx("serie",.35); vibrar(18); }
+    }
+    const exercises=session.exercises.map((e,i)=> i!==exI? e : ({ ...e, logs:e.logs.map((l,j)=> j===setI? ({ ...l, done:!wasDone }) : l) }));
+    // El cardio continuo va con rest 0: no tiene sentido abrir el cronómetro de descanso.
+    const empieza = !wasDone && ex.rest>0;
+    setSession({ ...session, exercises, descanso: empieza ? { hasta:Date.now()+ex.rest*1000, total:ex.rest } : descanso });
+  }
+  /* Funcional: el descanso acaba solo, desde un bucle que no ve la sesión de este render. */
+  function cerrarDescanso(){ setSession(s=> s ? { ...s, descanso:null } : s); }
+  function saltarDescanso(){ cancelarAvisoDescanso(); cerrarDescanso(); }
+  function alargarDescanso(){ setSession(s=> s?.descanso ? { ...s, descanso:{ ...s.descanso, hasta:s.descanso.hasta+15000 } } : s); }
 
   /* --- Cronómetro de cardio ---------------------------------------------- */
 
@@ -7154,6 +7392,72 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
     setSession({ ...session, exercises, crono:null });
   }
 
+  /* --- Cambiar la sesión sin salir ---------------------------------------
+     Toca la sesión de hoy, no la rutina. `editado` hace que al terminar se
+     pregunte si guardarlo en la rutina, y ahí se decide. Tope de 10 series: lo
+     mismo que acepta una rutina guardada. */
+  function pesoInicial(nombre){
+    const sinCarga = isBodyweight(nombre) || isCardio(nombre);
+    /* Mismo criterio que al empezar la sesión: progresión, marca conocida o peso
+       base. Sin esto el desplegable de peso salía vacío y había que teclearlo. */
+    const conocida = nextWeight?.[nombre] ?? misBests?.[nombre];
+    const base = sinCarga ? 0
+      : (conocida != null ? conocida : baseFor(nombre, sexo) * startWeightMult(session.rpe) * bodyweightFactor(peso, sexo));
+    return { base, sug: sinCarga ? "" : round25(base) || "" };
+  }
+  function serieVacia(nombre, reps, sug, nivel=""){
+    const objetivo = String(reps).match(/^(\d+)/);
+    return isCardio(nombre)
+      ? { weight:"", reps: objetivo ? objetivo[1] : "", km:"", kcal:"", level:nivel, done:false }
+      : { weight:sug, reps: parseTargetReps(reps), done:false };
+  }
+  function cambiarSerie(exI, fn){
+    setSession(s=>({ ...s, editado:true, exercises:s.exercises.map((e,i)=> i===exI ? fn(e) : e) }));
+  }
+  function anadirSerie(exI){
+    cambiarSerie(exI, e=>{
+      if(e.logs.length>=10) return e;
+      const ultima = e.logs[e.logs.length-1];
+      const nueva = serieVacia(e.name, e.reps, ultima?.weight ?? "", ultima?.level || "");
+      // La nueva parte de lo que acabas de levantar, no del objetivo de la rutina.
+      return { ...e, logs:[...e.logs, isCardio(e.name) ? nueva : { ...nueva, reps:ultima?.reps ?? nueva.reps }] };
+    });
+  }
+  /* Quita la última serie sin hacer. Las hechas no se tocan: son lo que has entrenado. */
+  function quitarSerie(exI){
+    const ex = session.exercises[exI];
+    const i = ex.logs.map(l=>!l.done).lastIndexOf(true);
+    if(i<0 || (crono?.exI===exI && crono?.setI===i)) return;
+    if(ex.logs.length===1){
+      if(session.exercises.length>1 && confirm(`¿Quitar ${ex.name} del entreno de hoy?`)) quitarEjercicio(exI);
+      return;
+    }
+    setSession(s=>({ ...s, editado:true,
+      crono: s.crono?.exI===exI && s.crono.setI>i ? { ...s.crono, setI:s.crono.setI-1 } : s.crono,
+      exercises:s.exercises.map((e,n)=> n===exI ? { ...e, logs:e.logs.filter((_,j)=>j!==i) } : e) }));
+  }
+  function quitarEjercicio(exI){
+    setSustituyendo(null); setHowOpen(null);
+    setSession(s=>{
+      let c = s.crono;
+      if(c?.exI===exI) c = null; else if(c && c.exI>exI) c = { ...c, exI:c.exI-1 };
+      return { ...s, editado:true, crono:c, exercises:s.exercises.filter((_,i)=>i!==exI) };
+    });
+  }
+  function anadirEjercicio(nombre){
+    const { base, sug } = pesoInicial(nombre);
+    const reps = defaultReps(nombre);
+    const peso0 = sug==="" ? "" : round25(base*ENERGY[session.energy].mult) || sug;
+    const nuevo = { name:nombre, muscle:EX_MUSCLE[nombre], base, reps, rest:defaultRest(nombre), anadido:true,
+      logs:Array.from({ length:defaultSets(nombre) }, ()=>serieVacia(nombre, reps, peso0)) };
+    setSession(s=>({ ...s, editado:true, exercises:[...s.exercises, nuevo] }));
+  }
+  /* Desde el selector: quita la última copia que aún no se haya empezado. */
+  function quitarDelSelector(nombre){
+    const i = session.exercises.map(e=>e.name===nombre && !e.logs.some(l=>l.done)).lastIndexOf(true);
+    if(i>=0 && session.exercises.length>1) quitarEjercicio(i);
+  }
+
   /* --- Sustituir un ejercicio -------------------------------------------- */
 
   /* La máquina está ocupada o rota y haces otra cosa. Cambiarlo aquí evita la
@@ -7162,15 +7466,7 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
     const viejo = session.exercises[exI];
     if(!nombreNuevo || nombreNuevo === viejo.name) { setSustituyendo(null); return; }
     const reps = defaultReps(nombreNuevo);
-    const sinCarga = isBodyweight(nombreNuevo) || isCardio(nombreNuevo);
-    /* Mismo criterio que al empezar la sesión: marca conocida si la hay, y si
-       no el peso base ajustado por sexo. Sin esto el desplegable de peso salía
-       vacío y había que teclearlo. */
-    const conocida = misBests?.[nombreNuevo];
-    const base = sinCarga ? 0
-      : (conocida != null ? conocida : baseFor(nombreNuevo, sexo) * startWeightMult(session.rpe));
-    const sug = sinCarga ? "" : round25(base) || "";
-    const objetivo = String(reps).match(/^(\d+)/);
+    const { base, sug } = pesoInicial(nombreNuevo);
     const nuevo = {
       ...viejo,
       name: nombreNuevo,
@@ -7180,9 +7476,7 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
       rest: defaultRest(nombreNuevo),
       sustituyeA: viejo.sustituyeA || viejo.name,
       // Las series ya hechas no se arrastran: eran de otro ejercicio.
-      logs: viejo.logs.map(()=>(isCardio(nombreNuevo)
-        ? { weight:"", reps: objetivo ? objetivo[1] : "", km:"", kcal:"", level:"", done:false }
-        : { weight:sug, reps: parseTargetReps(reps), done:false })),
+      logs: viejo.logs.map(()=>serieVacia(nombreNuevo, reps, sug)),
     };
     const exercises = session.exercises.map((e,i)=> i===exI ? nuevo : e);
     setSession({ ...session, exercises, crono: crono?.exI === exI ? null : crono });
@@ -7195,15 +7489,13 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
   return (
     <div className="fh-in" style={{ paddingBottom:24 }}>
       <header style={{ padding:"20px 2px 10px", display:"flex", alignItems:"center", gap:10 }}>
-        <button onClick={()=>{ if(confirm("¿Salir del entrenamiento? Se perderá lo no guardado.")){ setSession(null); setTab("rutinas"); } }}
+        <button onClick={()=>{ if(confirm("¿Salir del entrenamiento? Se perderá lo no guardado.")){ if(doneSets>0) onAbandonar?.(); setSession(null); setTab("rutinas"); } }}
           style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, padding:8, cursor:"pointer", color:"var(--txt)", display:"flex" }}><ChevronLeft size={18}/></button>
         <div style={{ flex:1 }}><div style={{ fontSize:11, color:"var(--muted)", fontWeight:600 }}>{session.routineName} · RPE {session.rpe}</div><h1 style={{ margin:0, fontSize:19 }}>{session.dayName}</h1></div>
         <div className="mono" style={{ fontSize:13, color:"var(--gold)" }}>{doneSets}/{totalSets}</div>
       </header>
 
-      <div style={{ height:6, background:"var(--line)", borderRadius:99, margin:"0 2px 14px", overflow:"hidden" }}>
-        <div style={{ height:"100%", width:`${(doneSets/totalSets)*100}%`, background:"var(--gold)", transition:"width .3s" }}/>
-      </div>
+      <div className="fh-bar" style={{ margin:"0 2px 14px" }}><i style={{ width:`${(doneSets/totalSets)*100}%`, background:"var(--gold)" }}/></div>
 
       {warns.length>0 && (
         <div style={{ marginBottom:14 }}>
@@ -7256,10 +7548,10 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
               <div style={{ display:"flex", gap:6, flexShrink:0 }}>
                 <button onClick={()=>{ setSustituyendo(sustituyendo===exI?null:exI); setHowOpen(null); }}
                   aria-label={`Sustituir ${ex.name}`} title="La máquina está ocupada o rota"
-                  style={{ background:"var(--bg2)", border:`1px solid ${sustituyendo===exI?"var(--gold)":"var(--line2)"}`, borderRadius:9, padding:"6px 10px", cursor:"pointer", color:sustituyendo===exI?"var(--gold)":"var(--muted)", display:"flex", alignItems:"center", gap:4, fontSize:11, fontFamily:"'Space Grotesk',sans-serif", fontWeight:600 }}>
+                  style={{ background:"var(--bg2)", border:`1px solid ${sustituyendo===exI?"var(--gold)":"var(--line2)"}`, borderRadius:9, padding:"6px 10px", cursor:"pointer", color:sustituyendo===exI?"var(--gold)":"var(--muted)", display:"flex", alignItems:"center", gap:4, fontSize:11, fontFamily:"'Jersey 15',monospace", fontWeight:600 }}>
                   <Shuffle size={13}/> Cambiar
                 </button>
-                <button onClick={()=>{ setHowOpen(howOpen===exI?null:exI); setSustituyendo(null); }} style={{ background:"var(--bg2)", border:`1px solid ${howOpen===exI?"var(--gold)":"var(--line2)"}`, borderRadius:9, padding:"6px 10px", cursor:"pointer", color:howOpen===exI?"var(--gold)":"var(--muted)", display:"flex", alignItems:"center", gap:4, fontSize:11, fontFamily:"'Space Grotesk',sans-serif", fontWeight:600 }}>
+                <button onClick={()=>{ setHowOpen(howOpen===exI?null:exI); setSustituyendo(null); }} style={{ background:"var(--bg2)", border:`1px solid ${howOpen===exI?"var(--gold)":"var(--line2)"}`, borderRadius:9, padding:"6px 10px", cursor:"pointer", color:howOpen===exI?"var(--gold)":"var(--muted)", display:"flex", alignItems:"center", gap:4, fontSize:11, fontFamily:"'Jersey 15',monospace", fontWeight:600 }}>
                   <Info size={13}/> Cómo
                 </button>
               </div>
@@ -7341,8 +7633,8 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
               <div key={setI}>
                 <div style={{ display:"grid", gridTemplateColumns:cols, gap:consola?6:8, alignItems:"center", marginBottom:7 }}>
                   <span className="mono" style={{ fontSize:13, color:"var(--muted)", textAlign:"center" }}>{setI+1}</span>
-                  {!bw && <input inputMode="decimal" placeholder="0" value={l.weight} onChange={e=>update(exI,setI,"weight",e.target.value)} disabled={l.done} style={{ opacity:l.done?.5:1 }}/>}
-                  <input inputMode="numeric" placeholder="0" value={l.reps} onChange={e=>update(exI,setI,"reps",e.target.value)} disabled={l.done} style={{ opacity:l.done?.5:1, padding:consola?"10px 6px":undefined }}/>
+                  {!bw && <input inputMode="decimal" placeholder="0" value={l.weight} onChange={e=>update(exI,setI,"weight",e.target.value)} disabled={l.done} style={{ opacity:l.done?.5:1, padding:"10px 4px" }}/>}
+                  <input inputMode="numeric" placeholder="0" value={l.reps} onChange={e=>update(exI,setI,"reps",e.target.value)} disabled={l.done} style={{ opacity:l.done?.5:1, padding:consola?"10px 6px":"10px 4px" }}/>
                   {consola && <>
                     <input inputMode="decimal" placeholder="—" value={l.km||""}
                       onChange={e=>{ update(exI,setI,"km",e.target.value); update(exI,setI,"kmEstimado",false); }}
@@ -7353,7 +7645,7 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
                       disabled={l.done} aria-label="Calorías quemadas"
                       style={{ opacity:l.done?.5:1, padding:"10px 6px", color:l.kcalEstimado?"var(--sky)":undefined }}/>
                   </>}
-                  <button className="fh-btn" onClick={()=>completeSet(exI,setI)}
+                  <button className="fh-btn" onClick={e=>completeSet(exI,setI,e)}
                     style={{ height:40, background:l.done?"var(--jade)":"var(--card2)", color:l.done?"#0F131A":"var(--muted)", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", gap:4, border:l.done?"none":"1px solid var(--line2)" }}>
                     {l.done ? <><Check size={15}/> Hecho</> : ex.rest>0 ? <><Timer size={13}/> Descanso</> : <><Check size={14}/> Marcar</>}
                   </button>
@@ -7384,9 +7676,33 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
                 )}
               </div>
             );})}
+
+            {/* Más o menos series sin salir a editar la rutina */}
+            {(()=>{
+              const ultimaPendiente = ex.logs.map(l=>!l.done).lastIndexOf(true);
+              const contandoEsa = crono?.exI===exI && crono?.setI===ultimaPendiente;
+              const unica = ex.logs.length===1;
+              const noSePuede = ultimaPendiente<0 || contandoEsa || (unica && session.exercises.length===1);
+              const estilo = off => ({ flex:1, background:"var(--bg2)", color:off?"var(--faint)":"var(--muted)", border:"1px solid var(--line2)", padding:"8px 6px", fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:5 });
+              return (
+                <div style={{ display:"flex", gap:8, marginTop:4 }}>
+                  <button className="fh-btn" onClick={()=>quitarSerie(exI)} disabled={noSePuede} aria-label={unica ? `Quitar ${ex.name}` : `Quitar una serie de ${ex.name}`} style={estilo(noSePuede)}>
+                    {unica ? <><X size={14}/> Quitar ejercicio</> : <><Minus size={14}/> Serie</>}
+                  </button>
+                  <button className="fh-btn" onClick={()=>anadirSerie(exI)} disabled={ex.logs.length>=10} aria-label={`Añadir una serie a ${ex.name}`} style={estilo(ex.logs.length>=10)}>
+                    <Plus size={14}/> Serie
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         );
       })}
+
+      <button className="fh-btn" onClick={()=>setAnadiendo(true)}
+        style={{ width:"100%", background:"var(--card2)", color:"var(--txt)", border:"1px dashed var(--line2)", padding:13, fontSize:14, marginBottom:8, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+        <Plus size={16} color="var(--gold)"/> Añadir ejercicio
+      </button>
 
       <button className="fh-btn" onClick={finishWorkout} disabled={doneSets===0}
         style={{ width:"100%", background:doneSets?"var(--gold)":"var(--card)", color:doneSets?"#0F131A":"var(--faint)", padding:15, fontSize:16, marginTop:6, display:"flex", alignItems:"center", justifyContent:"center", gap:8, animation:doneSets===totalSets?"fh-glow 2s infinite":"none" }}>
@@ -7399,7 +7715,12 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
         </div>
       )}
 
-      {rest!=null && <RestTimer seconds={rest} onDone={()=>setRest(null)} isRecomp={isRecomp}/>}
+      {anadiendo && <ExercisePicker dayName={session.dayName} already={session.exercises.map(e=>e.name)}
+        onPick={anadirEjercicio} onRemove={quitarDelSelector} onClose={()=>setAnadiendo(false)}/>}
+
+      {flotantes.map(f=><div key={f.id} className="fh-flota" style={{ left:f.x, top:f.y, color:f.color }}>{f.texto}</div>)}
+
+      {descanso && <RestTimer hasta={descanso.hasta} total={descanso.total} onDone={cerrarDescanso} onSaltar={saltarDescanso} onMas15={alargarDescanso} isRecomp={isRecomp}/>}
     </div>
   );
 }
@@ -7408,9 +7729,12 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
    FIN DE PARTIDA (resumen de la sesión)
    ========================================================================= */
 
-function ResultsView({ results, setTab, level, rank }){
+function ResultsView({ results, setTab, level, rank, customRoutines, onGuardarCambios }){
+  const xpVisto = useCuenta(results?.sessionXp || 0);
+  const [cambiosHechos, setCambiosHechos] = useState(false);
   if(!results){ setTab("home"); return null; }
   const r=results;
+  const rutinaHoy = r.cambios ? findRoutine(r.cambios.routineId, customRoutines) : null;
   const Row=({label,val,color})=>(
     <div style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderTop:"1px solid var(--line)", fontSize:13 }}>
       <span style={{ color:"var(--muted)" }}>{label}</span><span className="mono" style={{ color:color||"var(--txt)", fontWeight:700 }}>{val}</span>
@@ -7419,8 +7743,8 @@ function ResultsView({ results, setTab, level, rank }){
   return (
     <div className="fh-in" style={{ paddingTop:24 }}>
       <div className="fh-pop" style={{ textAlign:"center", marginBottom:18 }}>
-        <div style={{ display:"inline-flex", padding:14, borderRadius:20, background:"var(--gold)", marginBottom:12 }}><Trophy size={30} color="#0F131A"/></div>
-        <h1 style={{ margin:0, fontSize:24 }}>Sesión completada</h1>
+        <Sprite id={SPR.cofre} size={64} className="fh-idle" style={{ marginBottom:8 }}/>
+        <h1 style={{ margin:0, fontSize:26 }}>¡Misión cumplida!</h1>
         <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>{r.routineName} · {r.dayName}</p>
       </div>
 
@@ -7434,7 +7758,7 @@ function ResultsView({ results, setTab, level, rank }){
 
       {/* Stats principales */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:12 }}>
-        {[["+"+r.sessionXp,"XP","var(--gold)"],[r.seriesDone,"series","var(--jade)"],[r.durationMin+" min","duración","var(--sky)"]].map((s,i)=>(
+        {[["+"+xpVisto,"XP","var(--gold)"],[r.seriesDone,"series","var(--jade)"],[r.durationMin+" min","duración","var(--sky)"]].map((s,i)=>(
           <div key={i} className="fh-card" style={{ padding:14, textAlign:"center" }}>
             <div className="disp" style={{ fontSize:20, fontWeight:700, color:s[2] }}>{s[0]}</div>
             <div style={{ fontSize:10, color:"var(--muted)", marginTop:2 }}>{s[1]}</div>
@@ -7572,6 +7896,23 @@ function ResultsView({ results, setTab, level, rank }){
         </div>
       )}
 
+      {r.cambios && rutinaHoy && !cambiosHechos && (
+        <div className="fh-card" style={{ padding:14, marginBottom:12, borderColor:"var(--sky)" }}>
+          <div className="disp" style={{ fontWeight:600, fontSize:15, marginBottom:4 }}>Hoy has cambiado {r.dayName}</div>
+          <div style={{ fontSize:12, color:"var(--muted)", lineHeight:1.45, marginBottom:10 }}>
+            {rutinaHoy.custom
+              ? (rutinaHoy.origen ? "Si la guardas, pasa a ser tuya y deja de recibir los cambios de su autor." : "¿La próxima vez igual que hoy?")
+              : "Es una rutina de la app: se guardará una copia tuya y pasará a ser tu rutina activa."}
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button className="fh-btn" onClick={()=>setCambiosHechos(true)}
+              style={{ flex:1, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:11, fontSize:13 }}>Solo hoy</button>
+            <button className="fh-btn" onClick={()=>{ if(onGuardarCambios(r.cambios)) setCambiosHechos(true); }}
+              style={{ flex:1.5, background:"var(--sky)", padding:11, fontSize:13 }}>{rutinaHoy.custom ? "Guardar en la rutina" : "Guardar copia"}</button>
+          </div>
+        </div>
+      )}
+
       <button className="fh-btn" onClick={()=>setTab("home")} style={{ width:"100%", background:"var(--gold)", padding:15, fontSize:16, marginTop:4 }}>Continuar</button>
     </div>
   );
@@ -7583,9 +7924,45 @@ function ResultsView({ results, setTab, level, rank }){
 
 const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
+/* Una serie tal como se hizo. El objetivo dice si el número son reps, segundos o
+   minutos; los registros anteriores a la 1.0.20 no lo guardan y se deduce del catálogo. */
+function textoSerie(ej, l){
+  const u = repUnit(ej.objetivo || defaultReps(ej.name));
+  const n = l.reps || 0;
+  const cuanto = u==="MIN" ? `${n} min` : u==="SEG" ? `${n} s` : `${n} reps`;
+  if(isCardio(ej.name)){
+    const extra = [l.km ? `${numES(l.km)} km` : null, l.kcal ? `${l.kcal} kcal` : null, l.level ? `nivel ${numES(l.level)}` : null].filter(Boolean);
+    return [cuanto, ...extra].join(" · ");
+  }
+  if(!l.weight) return cuanto;
+  return u==="REPS" ? `${numES(l.weight)} kg × ${n}` : `${numES(l.weight)} kg · ${cuanto}`;
+}
+function DesgloseEntreno({ rec }){
+  const ejercicios = (rec.exercises||[]).filter(e=>e.logs?.length);
+  const datos = [`${seriesDe(rec)} series`, rec.durationMin ? `${rec.durationMin} min` : null, rec.xp ? `+${rec.xp} XP` : null].filter(Boolean);
+  return (
+    <div className="fh-in" style={{ padding:"4px 0 8px" }}>
+      <div style={{ fontSize:11, color:"var(--muted)", marginBottom:8 }}>{datos.join(" · ")}</div>
+      {!ejercicios.length && <div style={{ fontSize:12, color:"var(--faint)", lineHeight:1.5 }}>Este entreno no guardó el detalle de las series.</div>}
+      {ejercicios.map((e,i)=>(
+        <div key={i} style={{ background:"var(--bg2)", border:"1px solid var(--line)", padding:"9px 11px", marginBottom:6 }}>
+          <div className="disp" style={{ fontWeight:600, fontSize:14, marginBottom:6 }}>{e.name}</div>
+          {e.logs.map((l,j)=>(
+            <div key={j} style={{ display:"flex", gap:9, alignItems:"baseline", padding:"2px 0", fontSize:12.5 }}>
+              <span className="mono" style={{ color:"var(--faint)", fontSize:11, width:14, textAlign:"right", flexShrink:0 }}>{j+1}</span>
+              <span className="mono" style={{ color:"var(--txt)" }}>{textoSerie(e, l)}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function WorkoutCalendar({ log, sub, quedadas }){
   const [month, setMonth] = useState(()=>{ const d=new Date(); return { y:d.getFullYear(), m:d.getMonth() }; });
   const [sel, setSel] = useState(null);
+  const [abierto, setAbierto] = useState(null);     // qué entreno del día está desplegado
 
   // date (YYYY-MM-DD) -> array de entrenos
   const byDate = {};
@@ -7610,7 +7987,7 @@ function WorkoutCalendar({ log, sub, quedadas }){
   });
   const monthCount = Object.keys(byDate).filter(k=>k.startsWith(`${month.y}-${String(month.m+1).padStart(2,"0")}`)).length;
 
-  function shift(n){ let m=month.m+n, y=month.y; if(m<0){ m=11; y--; } if(m>11){ m=0; y++; } setMonth({ y, m }); setSel(null); }
+  function shift(n){ let m=month.m+n, y=month.y; if(m<0){ m=11; y--; } if(m>11){ m=0; y++; } setMonth({ y, m }); setSel(null); setAbierto(null); }
 
   const navBtn = { background:"var(--card2)", border:"1px solid var(--line2)", borderRadius:8, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)" };
   const selWorkouts = sel ? (byDate[sel] || []) : [];
@@ -7640,7 +8017,8 @@ function WorkoutCalendar({ log, sub, quedadas }){
           const isPay = dISO===payISO;
           const isSel = dISO===sel;
           return (
-            <button key={dISO} onClick={()=>abrible ? setSel(isSel?null:dISO) : null}
+            <button key={dISO} onClick={()=>{ if(!abrible) return; setSel(isSel?null:dISO); setAbierto(byDate[dISO]?.length===1 ? 0 : null); }}
+              aria-label={has ? `${d}: ${byDate[dISO].length} entreno${byDate[dISO].length===1?"":"s"}, ver desglose` : undefined}
               style={{ aspectRatio:"1", borderRadius:9, position:"relative", cursor:abrible?"pointer":"default",
                 background: has ? "rgba(232,176,75,.16)" : hasQ ? "rgba(123,180,255,.14)" : "transparent",
                 border: `1px solid ${isSel?"var(--gold)":isToday?"var(--sky)":"transparent"}`,
@@ -7685,9 +8063,16 @@ function WorkoutCalendar({ log, sub, quedadas }){
             );
           })}
           {selWorkouts.map((w,i)=>(
-            <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"6px 0", fontSize:13 }}>
-              <span style={{ display:"flex", alignItems:"center", gap:8 }}><Dumbbell size={14} color="var(--gold)"/> {w.routineName}{w.dayName?` · ${w.dayName}`:""}</span>
-              <span className="disp" style={{ color:"var(--muted)", fontSize:12 }}>{seriesDe(w)} series</span>
+            <div key={i}>
+              <button onClick={()=>setAbierto(abierto===i?null:i)} aria-expanded={abierto===i}
+                style={{ width:"100%", background:"none", border:"none", cursor:"pointer", color:"var(--txt)", textAlign:"left", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, padding:"7px 0", fontSize:13 }}>
+                <span style={{ display:"flex", alignItems:"center", gap:8, minWidth:0 }}><Dumbbell size={14} color="var(--gold)" style={{ flexShrink:0 }}/> {w.routineName}{w.dayName?` · ${w.dayName}`:""}</span>
+                <span style={{ display:"flex", alignItems:"center", gap:5, flexShrink:0 }}>
+                  <span className="disp" style={{ color:"var(--muted)", fontSize:12.5 }}>{seriesDe(w)} series</span>
+                  <ChevronRight size={15} color="var(--muted)" style={{ transform:abierto===i?"rotate(90deg)":"none" }}/>
+                </span>
+              </button>
+              {abierto===i && <DesgloseEntreno rec={w}/>}
             </div>
           ))}
         </div>
@@ -8271,7 +8656,6 @@ function AmigosView({ perfil, cloudEnabled, setTab, amigos, onRefrescarAmigos, o
    ========================================================================= */
 
 function CharacterView({ state, level, rank, log, customRoutines, setTab, onAbrirInforme }){
-  const RankIcon=rank.icon;
   const [openStat, setOpenStat] = useState(null);
   const [openEx, setOpenEx] = useState(null);   // ejercicio recomendado desplegado
   const weekSets=weeklySetsByGroup(log, state.weekStart);
@@ -8318,7 +8702,7 @@ function CharacterView({ state, level, rank, log, customRoutines, setTab, onAbri
 
       <div className="fh-card fh-framed" style={{ padding:20, display:"flex", alignItems:"center", gap:18 }}>
         <Ring pct={xpInto/xpNeed} size={112} stroke={9} color={rank.color}>
-          <RankIcon size={20} color={rank.color}/>
+          <Sprite id={heroeDe(level, state.profile?.sex)} size={32} className="fh-idle"/>
           <div className="cinzel" style={{ fontSize:27, fontWeight:700, lineHeight:1, marginTop:2 }}>{level}</div>
           <div style={{ fontSize:9, color:"var(--muted)", fontWeight:600 }}>NIVEL</div>
         </Ring>
@@ -8711,10 +9095,10 @@ function CustomDietEditor({ diet, onSave, onClose }){
         <div className="fh-card" style={{ padding:16 }}>
           <div style={label}>Nombre de la dieta <span style={{ color:"var(--faint)", fontWeight:400 }}>(opcional)</span></div>
           <input value={d.name} maxLength={60} onChange={e=>setField({ name:e.target.value })} placeholder="Pauta de definición"
-            style={{ textAlign:"left", fontFamily:"'Space Grotesk',sans-serif" }}/>
+            style={{ textAlign:"left", fontFamily:"'Jersey 15',monospace" }}/>
           <div style={{ ...label, marginTop:12 }}>¿Quién te la ha pautado? <span style={{ color:"var(--faint)", fontWeight:400 }}>(opcional)</span></div>
           <input value={d.author} maxLength={60} onChange={e=>setField({ author:e.target.value })} placeholder="Mi dietista-nutricionista"
-            style={{ textAlign:"left", fontFamily:"'Space Grotesk',sans-serif" }}/>
+            style={{ textAlign:"left", fontFamily:"'Jersey 15',monospace" }}/>
           <div style={{ ...label, marginTop:12 }}>Indicaciones generales <span style={{ color:"var(--faint)", fontWeight:400 }}>(opcional)</span></div>
           <textarea value={d.note} maxLength={600} onChange={e=>setField({ note:e.target.value })}
             placeholder="Beber 2 L de agua al día, cocinar a la plancha, verdura libre en comida y cena…"/>

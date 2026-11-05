@@ -133,21 +133,33 @@ self.addEventListener("notificationclick", (e) => {
 /* Aviso local con retraso (fin del descanso). Funciona mientras el navegador
    no mate al service worker: en Android aguanta de sobra, en iOS es a suerte.
    Por eso la app avisa TAMBIÉN con vibración y sonido en la propia página. */
+const avisos = new Map();   // tag -> { temporizador, soltar }
+function quitarAviso(tag) {
+  const a = avisos.get(tag); if (!a) return;
+  clearTimeout(a.temporizador); avisos.delete(tag); a.soltar();
+}
 self.addEventListener("message", (e) => {
   const m = e.data || {};
+  const tag = m.tag || "descanso";
+  /* Saltar el descanso tiene que cancelar lo pendiente, y +15 s sustituirlo: si no,
+     el aviso sonaba igual en mitad de la serie siguiente. */
+  if (m.tipo === "cancelar-aviso") { quitarAviso(tag); return; }
   if (m.tipo !== "avisar-en") return;
+  quitarAviso(tag);
   const espera = Math.max(0, Math.min(60 * 60 * 1000, Number(m.ms) || 0));
   e.waitUntil(new Promise((resolve) => {
-    setTimeout(async () => {
+    const temporizador = setTimeout(async () => {
+      avisos.delete(tag);
       await self.registration.showNotification(m.titulo || "RPGym", {
         body: m.cuerpo || "",
         icon: "pwa/icono-192.png",
         badge: "pwa/icono-192.png",
         vibrate: [180, 90, 180],
-        tag: m.tag || "descanso",
+        tag,
         renotify: true,
       });
       resolve();
     }, espera);
+    avisos.set(tag, { temporizador, soltar: resolve });
   }));
 });
