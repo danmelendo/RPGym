@@ -20,7 +20,10 @@
 export const FORMATO = 1;
 export const SALAS = 10, TIRADAS = 3, IMPULSO_MAX = 6, LLAVES_MAX = 3;
 /* Dificultad. Sale de scratchpad/barrido_mazmorra.mjs: no se toca a ojo. */
-export const AJUSTE = { hp:2.6, dano:1.8, liderazgo:3 };
+export const AJUSTE = { hp:2.6, dano:1.8, liderazgo:3, tramos:[1, 1.4, 1.56] };
+/* Los enemigos suben justo cuando sube el grupo, tras cada ascenso. Con un multiplicador
+   único las evoluciones se comían la dificultad, y compensarlo endurecía el arranque. */
+const tramo = sala => AJUSTE.tramos[sala<=3 ? 0 : sala<=7 ? 1 : 2];
 
 const c = (t, v=0) => ({ t, v });
 /* Dado de partida de cada rama. La cara vacía se quita con piernas y pies. */
@@ -35,14 +38,158 @@ const RELLENO = { guerrero:"golpe", picaro:"doble", barbaro:"golpe", explorador:
 const ES_ATAQUE = t => t==="golpe" || t==="barrido" || t==="doble";
 const ES_APOYO = t => t==="escudo" || t==="cura";
 
-/* Ataques especiales: se pagan con Impulso, que sale de las series reales. */
-export const ESPECIALES = {
-  guerrero:   { nombre:"Golpe de barra",   coste:3, objetivo:"enemigo", texto:"Mucho daño a un enemigo y te cubres." },
-  picaro:     { nombre:"Doble filo",       coste:2, objetivo:"enemigo", texto:"Dos golpes rápidos a un enemigo." },
-  barbaro:    { nombre:"Peso muerto",      coste:3, objetivo:"enemigo", texto:"El golpe más fuerte que hay." },
-  explorador: { nombre:"Lluvia de flechas",coste:3, objetivo:"todos",   texto:"Daño a todos los enemigos." },
-  monje:      { nombre:"Aliento profundo", coste:3, objetivo:"grupo",   texto:"Cura a todo el grupo." },
+/* Ataques especiales. Se pagan con Impulso, que sale de las series reales, gastan el
+   dado de quien los usa y se desbloquean como las piezas: con series de esa rama (`u`).
+   El primero de cada rama es el de serie. `a` y `s` son el ataque y el apoyo del héroe,
+   para que la ayuda enseñe los números de verdad y no una fórmula. */
+const X = (id, rama, u, nombre, coste, objetivo, texto, hacer) => ({ id, rama, u, nombre, coste, objetivo, texto, hacer });
+const LISTA_ESPECIALES = [
+  X("golpe_barra","guerrero",0,"Golpe de barra",3,"enemigo",(a,s)=>`Quita ${6+a} a un enemigo y te da ${3+s} de escudo.`,
+    (q,{h,obj,a,s})=>conHeroe(conEnemigo(q,obj,x=>dana(x,6+a)),h,x=>({ ...x, escudo:x.escudo+3+s }))),
+  X("muro","guerrero",100,"Muro de discos",3,"grupo",(a,s)=>`Da ${2+s} de escudo a todo el grupo.`,
+    (q,{s})=>({ ...q, heroes:q.heroes.map(x=>x.hp>0 ? { ...x, escudo:x.escudo+2+s } : x) })),
+  X("al_fallo","guerrero",320,"Al fallo",4,"enemigo",a=>`Quita ${12+a} a un enemigo.`,
+    (q,{obj,a})=>conEnemigo(q,obj,x=>dana(x,12+a))),
+
+  X("doble_filo","picaro",0,"Doble filo",2,"enemigo",a=>`Dos golpes de ${3+a} a un enemigo.`,
+    (q,{obj,a})=>conEnemigo(conEnemigo(q,obj,x=>dana(x,3+a)),obj,x=>dana(x,3+a))),
+  X("sombra","picaro",100,"Paso de sombra",2,"todos",a=>`Quita ${2+a} a todos los enemigos.`,
+    (q,{a})=>todos(q,2+a)),
+  X("punalada","picaro",320,"Puñalada",3,"enemigo",a=>`Quita ${8+a} a un enemigo, atravesando su escudo.`,
+    (q,{obj,a})=>conEnemigo(q,obj,x=>({ ...x, hp:Math.max(0,x.hp-(8+a)) }))),
+
+  X("peso_muerto","barbaro",0,"Peso muerto",3,"enemigo",a=>`Quita ${10+a} a un enemigo.`,
+    (q,{obj,a})=>conEnemigo(q,obj,x=>dana(x,10+a))),
+  X("sismica","barbaro",100,"Sentadilla sísmica",4,"todos",a=>`Quita ${4+a} a todos los enemigos.`,
+    (q,{a})=>todos(q,4+a)),
+  X("sin_frenos","barbaro",320,"Sin frenos",4,"enemigo",a=>`Quita ${16+a} a un enemigo, pero tú pierdes 3 de vida.`,
+    (q,{h,obj,a})=>conHeroe(conEnemigo(q,obj,x=>dana(x,16+a)),h,x=>({ ...x, hp:Math.max(1,x.hp-3) }))),
+
+  X("lluvia","explorador",0,"Lluvia de flechas",3,"todos",a=>`Quita ${3+a} a todos los enemigos.`,
+    (q,{a})=>todos(q,3+a)),
+  X("certero","explorador",100,"Tiro certero",2,"enemigo",a=>`Quita ${5+a} a un enemigo.`,
+    (q,{obj,a})=>conEnemigo(q,obj,x=>dana(x,5+a))),
+  X("segundo_aire","explorador",320,"Segundo aire",3,"grupo",(a,s)=>`Cura ${2+s} al grupo y quita ${2+a} a todos los enemigos.`,
+    (q,{a,s})=>todos({ ...q, heroes:q.heroes.map(x=>cura(x,2+s)) },2+a)),
+
+  X("aliento","monje",0,"Aliento profundo",3,"grupo",(a,s)=>`Cura ${3+s} a todo el grupo.`,
+    (q,{s})=>({ ...q, heroes:q.heroes.map(x=>cura(x,3+s)) })),
+  X("postura","monje",100,"Postura firme",2,"aliado",(a,s)=>`Da ${5+s} de escudo a un compañero.`,
+    (q,{obj,s})=>conHeroe(q,obj,x=>({ ...x, escudo:x.escudo+5+s }))),
+  X("resurgir","monje",320,"Resurgir",4,"caido",()=>"Devuelve a la lucha a un compañero caído, con media vida. Actúa desde el turno siguiente.",
+    (q,{obj})=>conHeroe(q,obj,x=>({ ...x, hp:Math.ceil(x.hpMax/2) }))),
+];
+export const ESPECIALES = Object.fromEntries(LISTA_ESPECIALES.map(e=>[e.id,e]));
+const DE_SERIE = { guerrero:"golpe_barra", picaro:"doble_filo", barbaro:"peso_muerto", explorador:"lluvia", monje:"aliento" };
+/* Una partida empezada antes de que se pudiera elegir no trae `especial`: va por su rama. */
+export const especialDe = h => ESPECIALES[h?.especial] || ESPECIALES[DE_SERIE[h?.rama]] || ESPECIALES.golpe_barra;
+export const especialDisponible = (e, puntos) => e.u<=(puntos?.[e.rama]||0);
+export function especialesNuevos(antes, despues){
+  return LISTA_ESPECIALES.filter(e=>e.u>0 && !especialDisponible(e, antes) && especialDisponible(e, despues));
+}
+
+/* Evoluciones, con las clases clásicas de fantasía. Todos empiezan en la forma base de su
+   rama y, al superar las salas de ASCENSOS, cada héroe elige entre dos clases. La segunda
+   sale de la primera (`de`). Dura lo que dura la partida: en la siguiente se empieza de
+   nuevo, y lo que hace más fuerte al héroe de verdad es entrenar.
+   `cambia` sustituye caras del dado; `ata` y `apo` suben las que ya tenía; `rasgo` se suma
+   a los que ya tiene; `tipo` cuenta para las sinergias de grupo. */
+export const ASCENSOS = [3, 7];
+
+/* Los rasgos se combinan según el ORDEN en que usas los dados: primero quien marca, luego
+   quien aprovecha la marca. Es lo que hace que importe quién va en el grupo. */
+export const RASGOS = {
+  guardian:{ nombre:"Protector",     texto:"Con escudo puesto, recibe los golpes dirigidos a sus compañeros." },
+  furia:   { nombre:"Furia",         texto:"Con menos de media vida, sus golpes quitan 2 más." },
+  furtivo: { nombre:"Ataque furtivo",texto:"Quita 2 más a los enemigos marcados." },
+  marca:   { nombre:"Marca",         texto:"Sus ataques marcan al enemigo: recibe 1 más de cada golpe hasta fin de turno." },
+  inspira: { nombre:"Inspiración",   texto:"Sus escudos y curas suben +1 el dado sin usar de quien los recibe." },
+  aturde:  { nombre:"Aturdir",       texto:"Golpear a un enemigo marcado lo aturde: ese turno no actúa. Los jefes son inmunes." },
 };
+const RASGO_BASE = { guerrero:"guardian", picaro:"furtivo", barbaro:"furia", explorador:"marca", monje:"inspira" };
+const TIPO_BASE = { guerrero:"marcial", picaro:"sigilo", barbaro:"marcial", explorador:"naturaleza", monje:"espiritu" };
+export const TIPOS = { marcial:"Marcial", sigilo:"Sigilo", espiritu:"Espíritu", arcano:"Arcano", naturaleza:"Naturaleza" };
+
+/* Sinergias de grupo: dos héroes del mismo tipo, y una por tener cuatro tipos distintos. */
+export const SINERGIAS = {
+  marcial:   { nombre:"Formación",  texto:"Dos Marciales: los golpes quitan 1 más." },
+  sigilo:    { nombre:"Emboscada",  texto:"Dos de Sigilo: los dobles golpes marcan al enemigo." },
+  espiritu:  { nombre:"Comunión",   texto:"Dos de Espíritu: las curas dan 1 más." },
+  arcano:    { nombre:"Resonancia", texto:"Dos Arcanos: los barridos quitan 1 más." },
+  naturaleza:{ nombre:"Manada",     texto:"Dos de Naturaleza: todo el grupo cura 1 al acabar el turno." },
+  equilibrio:{ nombre:"Equilibrio", texto:"Cuatro tipos distintos: todos entran en cada sala con 2 de escudo." },
+};
+export const tipoDe = h => CLASES[h?.clase]?.tipo || TIPO_BASE[h?.rama] || "marcial";
+export const rasgosDe = h => h?.rasgos || (RASGO_BASE[h?.rama] ? [RASGO_BASE[h.rama]] : []);
+export function sinergiasDe(heroes){
+  const cuenta = {};
+  heroes.forEach(h=>{ const t = tipoDe(h); cuenta[t] = (cuenta[t]||0)+1; });
+  const activas = Object.keys(cuenta).filter(t=>cuenta[t]>=2);
+  return Object.keys(cuenta).length>=4 ? [...activas, "equilibrio"] : activas;
+}
+
+const CL = (id, rama, nivel, de, nombre, tipo, texto, { ata=0, apo=0, hp=0, cambia=[], rasgo=null }) => ({ id, rama, nivel, de, nombre, tipo, texto, ata, apo, hp, cambia, rasgo });
+const LISTA_CLASES = [
+  CL("cruzado","guerrero",2,null,"Cruzado","espiritu","Más defensa: cambia un golpe por escudo y aprende a curar.",{ apo:2, hp:4, cambia:[[2,"escudo"],[5,"cura"]] }),
+  CL("campeon","guerrero",2,null,"Campeón","marcial","Todo al ataque: cambia el escudo pequeño por otro golpe.",{ ata:2, hp:2, cambia:[[4,"golpe"],[5,"golpe"]], rasgo:"furia" }),
+  CL("paladin","guerrero",3,"cruzado","Paladín","espiritu","Protege, cura e inspira a los suyos.",{ ata:1, apo:1, hp:4, cambia:[[2,"cura"]], rasgo:"inspira" }),
+  CL("vengador","guerrero",3,"cruzado","Vengador","espiritu","Señala a su presa y va a por ella.",{ ata:2, hp:2, cambia:[[3,"golpe"]], rasgo:"marca" }),
+  CL("maestro_batalla","guerrero",3,"campeon","Maestro de batalla","marcial","Dirige la pelea: su mejor golpe alcanza a todos y los marca.",{ ata:2, hp:2, cambia:[[0,"barrido"]], rasgo:"marca" }),
+  CL("caballero_arcano","guerrero",3,"campeon","Caballero arcano","arcano","Espada y magia: aturde a quien esté marcado.",{ ata:1, apo:1, hp:3, cambia:[[3,"barrido"]], rasgo:"aturde" }),
+
+  CL("asesino","picaro",2,null,"Asesino","sigilo","Más golpes dobles, poca vida.",{ ata:2, hp:1, cambia:[[3,"doble"],[5,"doble"]] }),
+  CL("bardo","picaro",2,null,"Bardo","arcano","Cambia el puñal por el laúd: cura e inspira.",{ ata:1, apo:1, hp:2, cambia:[[2,"cura"],[5,"escudo"]], rasgo:"inspira" }),
+  CL("sombra_letal","picaro",3,"asesino","Sombra letal","sigilo","Golpea doble casi siempre.",{ ata:2, hp:2, cambia:[[1,"doble"]] }),
+  CL("embaucador","picaro",3,"asesino","Embaucador arcano","arcano","Trucos de magia: aturde a los marcados.",{ ata:1, apo:1, hp:3, cambia:[[3,"barrido"]], rasgo:"aturde" }),
+  CL("bardo_valor","picaro",3,"bardo","Bardo del valor","marcial","Canta en primera línea y marca al enemigo.",{ ata:2, apo:1, hp:3, cambia:[[3,"golpe"]], rasgo:"marca" }),
+  CL("bardo_saber","picaro",3,"bardo","Bardo del saber","arcano","Conoce todos los trucos: cura y aturde.",{ apo:2, hp:3, cambia:[[4,"cura"]], rasgo:"aturde" }),
+
+  CL("berserker","barbaro",2,null,"Berserker","marcial","Más daño en cada cara de ataque.",{ ata:2, hp:2, cambia:[[5,"golpe"]] }),
+  CL("guerrero_totem","barbaro",2,null,"Guerrero tótem","naturaleza","Mucha más vida, y protege a la manada.",{ apo:1, hp:6, cambia:[[3,"barrido"],[5,"escudo"]], rasgo:"guardian" }),
+  CL("destructor","barbaro",3,"berserker","Destructor","marcial","Ya solo sabe atacar. Muy bien.",{ ata:3, hp:2, cambia:[[4,"golpe"]] }),
+  CL("senor_guerra","barbaro",3,"berserker","Señor de la guerra","marcial","Barre y señala al siguiente.",{ ata:2, apo:1, hp:4, cambia:[[2,"barrido"]], rasgo:"marca" }),
+  CL("espiritu_oso","barbaro",3,"guerrero_totem","Espíritu del oso","naturaleza","Una muralla con garras.",{ ata:1, apo:1, hp:6, cambia:[[2,"escudo"]] }),
+  CL("espiritu_lobo","barbaro",3,"guerrero_totem","Espíritu del lobo","naturaleza","Caza en grupo: marca y barre.",{ ata:2, hp:3, cambia:[[4,"barrido"]], rasgo:"marca" }),
+
+  CL("cazador","explorador",2,null,"Cazador","naturaleza","Mejor puntería y más barridos.",{ ata:2, hp:1, cambia:[[3,"barrido"],[5,"golpe"]] }),
+  CL("druida","explorador",2,null,"Druida","naturaleza","Cuida del grupo: escudos mejores, una cara de cura e inspiración.",{ apo:2, hp:3, cambia:[[5,"cura"]], rasgo:"inspira" }),
+  CL("matamonstruos","explorador",3,"cazador","Matamonstruos","naturaleza","Remata lo que él mismo marca.",{ ata:2, hp:2, cambia:[[4,"golpe"]], rasgo:"furtivo" }),
+  CL("arquero_arcano","explorador",3,"cazador","Arquero arcano","arcano","Sus flechas aturden a los marcados.",{ ata:1, apo:1, hp:3, cambia:[[2,"barrido"]], rasgo:"aturde" }),
+  CL("circulo_luna","explorador",3,"druida","Círculo de la luna","naturaleza","Se transforma: ataca más y se enfurece.",{ ata:2, apo:1, hp:4, cambia:[[3,"golpe"]], rasgo:"furia" }),
+  CL("circulo_tierra","explorador",3,"druida","Círculo de la tierra","espiritu","Cura y ataca a la vez.",{ ata:1, apo:2, hp:3, cambia:[[3,"cura"]] }),
+
+  CL("clerigo","monje",2,null,"Clérigo","espiritu","Mejores curas y escudos.",{ apo:2, hp:3, cambia:[[5,"cura"]] }),
+  CL("mago","monje",2,null,"Mago","arcano","Cambia los puños por conjuros: barridos, y aturde a los marcados.",{ ata:2, apo:1, hp:2, cambia:[[3,"barrido"],[5,"barrido"]], rasgo:"aturde" }),
+  CL("clerigo_vida","monje",3,"clerigo","Clérigo de la vida","espiritu","El mejor sanador que vas a ver.",{ apo:2, hp:4, cambia:[[4,"cura"]] }),
+  CL("clerigo_guerra","monje",3,"clerigo","Clérigo de la guerra","marcial","Reza y pega: marca al enemigo.",{ ata:2, apo:1, hp:3, cambia:[[2,"golpe"]], rasgo:"marca" }),
+  CL("evocador","monje",3,"mago","Evocador","arcano","Cada conjuro quema a todos.",{ ata:2, hp:3, cambia:[[2,"barrido"]] }),
+  CL("brujo","monje",3,"mago","Brujo","arcano","Pacto oscuro: rematar a los marcados.",{ ata:1, apo:2, hp:3, cambia:[[4,"doble"]], rasgo:"furtivo" }),
+];
+export const CLASES = Object.fromEntries(LISTA_CLASES.map(x=>[x.id,x]));
+export const opcionesClase = h => LISTA_CLASES.filter(x=>x.rama===h.rama && x.nivel===(h.nivelClase||1)+1 && x.de===(h.clase||null));
+/* Solo dado y atributos: la vida se suma aparte, para poder rehacer el dado si cae equipo. */
+function aplicaClase(h, cl){
+  const ataque = h.ataque+cl.ata, apoyo = h.apoyo+cl.apo;
+  const caras = h.caras.map((f,i)=>{
+    const n = cl.cambia.find(x=>x[0]===i);
+    if(n) return c(n[1], (n[1]==="doble" ? 1 : 2) + (ES_ATAQUE(n[1]) ? ataque : apoyo));
+    if(f.t==="vacio") return f;
+    return { ...f, v:f.v + (ES_ATAQUE(f.t) ? cl.ata : cl.apo) };
+  });
+  return { ...h, caras, ataque, apoyo };
+}
+/* El héroe tal como quedaría: lo usa la pantalla de elegir para enseñar el dado nuevo. */
+export function conClase(h, id){
+  const cl = CLASES[id];
+  const rasgos = cl.rasgo && !rasgosDe(h).includes(cl.rasgo) ? [...rasgosDe(h), cl.rasgo] : rasgosDe(h);
+  return { ...aplicaClase(h, cl), hpMax:h.hpMax+cl.hp, hp:h.hp+cl.hp, clase:id, nivelClase:cl.nivel, rasgos, evoluciones:[...(h.evoluciones||[]), id] };
+}
+export function elegirClase(p, id){
+  const i = p.evoCola?.[0], cl = CLASES[id];
+  if(p.fase!=="evolucion" || i==null || !cl || !opcionesClase(p.heroes[i]).includes(cl)) return p;
+  const evoCola = p.evoCola.slice(1);
+  return { ...conHeroe(p, i, h=>conClase(h, id)), evoCola, fase:evoCola.length ? "evolucion" : "botin" };
+}
 
 /* Cuánto vale una pieza: sale de lo que cuesta ganarla en series reales. */
 export function rangoPieza(umbral){ return umbral<=0 ? 0 : umbral<=100 ? 1 : umbral<=320 ? 2 : 3; }
@@ -65,13 +212,14 @@ export function crearHeroe({ id, nombre, tipo="npc", avatar, level=1 }, piezas){
   });
   const hpMax = 8 + Math.floor(level/4) + 2*r("torso") + 2*r("cabeza") + r("piernas") + r("hombros") + r("espalda") + (tiene("escudo") ? 2 : 0);
   const rangos = Object.keys(avatar?.equipo||{}).reduce((a,k)=>a+r(k),0);
-  return { id, nombre, tipo, rama, avatar, caras, hpMax, hp:hpMax, escudo:0, ataque, apoyo, rangos };
+  const especial = ESPECIALES[avatar?.especial] ? avatar.especial : DE_SERIE[rama];
+  return { id, nombre, tipo, rama, avatar, caras, hpMax, hp:hpMax, escudo:0, ataque, apoyo, rangos, especial, rasgos:[RASGO_BASE[rama]] };
 }
 
 /* Liderazgo: tu equipo real también tira del grupo. Sin esto solo mejoraba uno de cada
    cuatro héroes y entrenar apenas se notaba (medido en scratchpad/barrido_mazmorra.mjs). */
 export const liderazgoDe = heroe => Math.floor((heroe?.rangos||0)/AJUSTE.liderazgo);
-function conLiderazgo(h, l){
+export function conLiderazgo(h, l){
   if(!l) return h;
   return { ...h, ataque:h.ataque+l, apoyo:h.apoyo+l, hpMax:h.hpMax+2*l, hp:h.hp+2*l,
     caras:h.caras.map(f=>f.t==="vacio" ? f : { ...f, v:f.v+l }) };
@@ -105,7 +253,7 @@ function intenciones(p, rng){
   const enemigos = p.enemigos.map(e=>{
     if(e.hp<=0) return e;
     const m = ENEMIGOS[e.id].mov[(e.turno + (e.desfase||0)) % ENEMIGOS[e.id].mov.length];
-    const v = m.t==="bloqueo" || m.t==="cura" ? Math.round(m.v*AJUSTE.hp) : Math.round(m.v*AJUSTE.dano);
+    const v = Math.round(m.v * (m.t==="bloqueo" || m.t==="cura" ? AJUSTE.hp : AJUSTE.dano) * tramo(p.sala));
     return { ...e, intento:{ ...m, v, obj:m.t==="golpe" ? elegir(hv, rng) : null } };
   });
   return { ...p, enemigos };
@@ -117,13 +265,14 @@ function tiraDado(h, tiro, rng){
   return { i, tiro, cara:{ ...h.caras[i] }, fijo:false, usado:false };
 }
 function tirada(p, rng){
-  const tiro = (p.tiro||0)+1;
-  return { ...p, tiro, tiradas:TIRADAS-1, fase:"lanzar", dados:p.heroes.map(h=>h.hp>0 ? tiraDado(h, tiro, rng) : null) };
+  const tiro = (p.tiro||0)+1, base = p.ronda===1 && sinergiasDe(p.heroes).includes("equilibrio") ? 2 : 0;
+  return { ...p, tiro, tiradas:TIRADAS-1, fase:"lanzar", heroes:p.heroes.map(h=>h.hp>0 ? { ...h, escudo:h.escudo+base } : h),
+    dados:p.heroes.map(h=>h.hp>0 ? tiraDado(h, tiro, rng) : null) };
 }
 function empiezaSala(p, rng){
   const vivosN = p.heroes.length;
   const enemigos = OLEADAS[p.sala-1].map((id,i)=>{
-    const hp = Math.max(1, Math.round(ENEMIGOS[id].hp * escala(vivosN) * AJUSTE.hp));
+    const hp = Math.max(1, Math.round(ENEMIGOS[id].hp * escala(vivosN) * AJUSTE.hp * tramo(p.sala)));
     return { id, nombre:ENEMIGOS[id].nombre, sprite:ENEMIGOS[id].sprite, jefe:!!ENEMIGOS[id].jefe, hp, hpMax:hp, escudo:0, turno:0, desfase:i, intento:null };
   });
   return tirada(intenciones({ ...p, enemigos, ronda:1 }, rng), rng);
@@ -142,7 +291,8 @@ export function refrescarHeroe(p, heroe){
     if(JSON.stringify(heroe.caras)===JSON.stringify(h.base.caras) && heroe.hpMax===h.base.hpMax) return h;
     const extra = Math.max(0, heroe.hpMax-h.base.hpMax), a = h.extraA||0, s = h.extraS||0;
     const caras = heroe.caras.map(f=>({ ...f, v:f.v + (ES_ATAQUE(f.t) ? a : ES_APOYO(f.t) ? s : 0) }));
-    return { ...h, caras, avatar:heroe.avatar, ataque:heroe.ataque+a, apoyo:heroe.apoyo+s, hpMax:h.hpMax+extra, hp:h.hp+extra, base:{ hpMax:heroe.hpMax, caras:heroe.caras } };
+    const rehecho = (h.evoluciones||[]).reduce((x,id)=>aplicaClase(x, CLASES[id]), { ...heroe, caras, ataque:heroe.ataque+a, apoyo:heroe.apoyo+s });
+    return { ...h, caras:rehecho.caras, avatar:heroe.avatar, ataque:rehecho.ataque, apoyo:rehecho.apoyo, hpMax:h.hpMax+extra, hp:h.hp+extra, base:{ hpMax:heroe.hpMax, caras:heroe.caras } };
   });
   return { ...p, heroes };
 }
@@ -183,17 +333,32 @@ function dana(e, n){
 const conEnemigo = (p, i, f) => ({ ...p, enemigos:p.enemigos.map((e,n)=>n===i ? f(e) : e) });
 const conHeroe = (p, i, f) => ({ ...p, heroes:p.heroes.map((h,n)=>n===i ? f(h) : h) });
 const cura = (h, n) => h.hp>0 ? { ...h, hp:Math.min(h.hpMax, h.hp+n) } : h;
+const todos = (p, n) => ({ ...p, enemigos:p.enemigos.map(e=>e.hp>0 ? dana(e, n) : e) });
 
 /* ¿Necesita objetivo? "enemigo", "aliado" o null si ya se sabe a quién va. */
 export function objetivoDe(t){ return t==="golpe"||t==="doble" ? "enemigo" : ES_APOYO(t) ? "aliado" : null; }
 
-function aplicar(p, cara, obj){
-  const v = cara.v;
-  if(cara.t==="golpe") return conEnemigo(p, obj, e=>dana(e, v));
-  if(cara.t==="doble") return conEnemigo(conEnemigo(p, obj, e=>dana(e, v)), obj, e=>dana(e, v));
-  if(cara.t==="barrido") return { ...p, enemigos:p.enemigos.map(e=>e.hp>0 ? dana(e, v) : e) };
-  if(cara.t==="escudo") return conHeroe(p, obj, h=>({ ...h, escudo:h.escudo+v }));
-  if(cara.t==="cura") return conHeroe(p, obj, h=>cura(h, v));
+/* Un golpe de un héroe a un enemigo: aquí se juntan marcas, rasgos y sinergias. */
+function golpea(p, hi, ei, v, tipo, sin){
+  const h = p.heroes[hi], e = p.enemigos[ei];
+  if(!e || e.hp<=0) return p;
+  const r = rasgosDe(h), marcado = (e.marca||0)>0;
+  const n = v + (e.marca||0) + (marcado && r.includes("furtivo") ? 2 : 0) + (r.includes("furia") && h.hp*2<h.hpMax ? 2 : 0)
+    + (tipo==="golpe" && sin.includes("marcial") ? 1 : 0) + (tipo==="barrido" && sin.includes("arcano") ? 1 : 0);
+  const marca = r.includes("marca") || (tipo==="doble" && sin.includes("sigilo")) ? 1 : e.marca||0;
+  return conEnemigo(p, ei, x=>({ ...dana(x, n), marca, aturdido:x.aturdido || (marcado && !x.jefe && r.includes("aturde")) }));
+}
+function inspirar(p, autor, obj){
+  if(autor===obj || !rasgosDe(p.heroes[autor]).includes("inspira")) return p;
+  return { ...p, dados:p.dados.map((d,i)=>i===obj && d && !d.usado && d.cara.t!=="vacio" ? { ...d, cara:{ ...d.cara, v:d.cara.v+1 } } : d) };
+}
+function aplicar(p, cara, obj, autor){
+  const v = cara.v, sin = sinergiasDe(p.heroes);
+  if(cara.t==="golpe") return golpea(p, autor, obj, v, "golpe", sin);
+  if(cara.t==="doble") return golpea(golpea(p, autor, obj, v, "doble", sin), autor, obj, v, "doble", sin);
+  if(cara.t==="barrido") return p.enemigos.reduce((q,e,i)=>e.hp>0 ? golpea(q, autor, i, v, "barrido", sin) : q, p);
+  if(cara.t==="escudo") return inspirar(conHeroe(p, obj, h=>({ ...h, escudo:h.escudo+v })), autor, obj);
+  if(cara.t==="cura") return inspirar(conHeroe(p, obj, h=>cura(h, v + (sin.includes("espiritu") ? 1 : 0))), autor, obj);
   return p;
 }
 function objetivoValido(p, t, obj){
@@ -202,24 +367,50 @@ function objetivoValido(p, t, obj){
   if(tipo==="aliado") return p.heroes[obj]?.hp>0;
   return true;
 }
+/* Lo que acaba de pasar, para que la interfaz lo cuente paso a paso. Las reglas ya han
+   resuelto todo: la partida guardada es la final y esto solo sirve para enseñarlo, así que
+   si la app muere a media animación no se pierde ni se repite nada. */
+function evento(antes, despues, autor, tipo, extra={}){
+  const dif = (lado, a, b) => a.map((x,i)=>({ lado, i, hp:b[i].hp-x.hp, escudo:b[i].escudo-x.escudo })).filter(x=>x.hp || x.escudo);
+  return { autor, tipo, ...extra, cambios:[...dif("e", antes.enemigos, despues.enemigos), ...dif("h", antes.heroes, despues.heroes)] };
+}
+/* Aplica un evento a lo que se está enseñando. */
+export function verEvento(v, ev){
+  const toca = (lado, l) => l.map((x,i)=>{
+    const c = ev.cambios.find(k=>k.lado===lado && k.i===i);
+    return c ? { ...x, hp:x.hp+c.hp, escudo:x.escudo+c.escudo } : x;
+  });
+  return { ...v, enemigos:toca("e", v.enemigos), heroes:toca("h", v.heroes),
+    dados:ev.dado==null ? v.dados : v.dados.map((d,n)=>n===ev.dado && d ? { ...d, usado:true } : d) };
+}
 export function usarDado(p, i, obj, rng=Math.random){
   const d = p.dados[i];
   if(p.fase!=="usar" || !d || d.usado || !objetivoValido(p, d.cara.t, obj)) return p;
-  const q = aplicar(p, d.cara, obj);
-  return tras({ ...q, n:q.n+1, dados:q.dados.map((x,n)=>n===i ? { ...x, usado:true } : x) }, rng);
+  const q = aplicar(p, d.cara, obj, i);
+  const ev = [evento(p, q, { lado:"h", i }, d.cara.t, { dado:i, obj })];
+  return tras({ ...q, n:q.n+1, ev, dados:q.dados.map((x,n)=>n===i ? { ...x, usado:true } : x) }, rng);
+}
+/* Por qué no se puede usar ahora, o null si se puede. La interfaz lo enseña tal cual:
+   un botón apagado sin explicación no le dice a nadie cuándo se activa. */
+export function motivoEspecial(p, h, impulso){
+  const heroe = p.heroes[h], e = especialDe(heroe), d = p.dados[h];
+  if(heroe.hp<=0) return `${heroe.nombre} está fuera de combate.`;
+  if(p.fase!=="usar") return "Primero pulsa Usar dados.";
+  if(!d || d.usado) return "Gasta el dado de este héroe, y ya lo ha usado.";
+  if(impulso<e.coste) return `Cuesta ${e.coste} de Impulso y tienes ${impulso}. Cada serie real suma 1.`;
+  if(e.objetivo==="caido" && !p.heroes.some(x=>x.hp<=0)) return "No hay ningún compañero caído.";
+  return null;
 }
 export function usarEspecial(p, h, obj, impulso, rng=Math.random){
-  const heroe = p.heroes[h], e = ESPECIALES[heroe?.rama];
-  if(p.fase!=="usar" || !e || heroe.hp<=0 || impulso<e.coste || p.dados[h]?.usado) return { partida:p, gastado:0 };
-  if(e.objetivo==="enemigo" && !(p.enemigos[obj]?.hp>0)) return { partida:p, gastado:0 };
-  const a = heroe.ataque, s = heroe.apoyo;
-  let q = p;
-  if(heroe.rama==="guerrero") q = conHeroe(conEnemigo(q, obj, x=>dana(x, 6+a)), h, x=>({ ...x, escudo:x.escudo+3+s }));
-  if(heroe.rama==="picaro") q = conEnemigo(conEnemigo(q, obj, x=>dana(x, 3+a)), obj, x=>dana(x, 3+a));
-  if(heroe.rama==="barbaro") q = conEnemigo(q, obj, x=>dana(x, 10+a));
-  if(heroe.rama==="explorador") q = { ...q, enemigos:q.enemigos.map(x=>x.hp>0 ? dana(x, 3+a) : x) };
-  if(heroe.rama==="monje") q = { ...q, heroes:q.heroes.map(x=>cura(x, 3+s)) };
-  q = { ...q, n:q.n+1, dados:q.dados.map((x,n)=>n===h && x ? { ...x, usado:true } : x) };
+  const nada = { partida:p, gastado:0 };
+  if(motivoEspecial(p, h, impulso)) return nada;
+  const heroe = p.heroes[h], e = especialDe(heroe);
+  if(e.objetivo==="enemigo" && !(p.enemigos[obj]?.hp>0)) return nada;
+  if(e.objetivo==="aliado" && !(p.heroes[obj]?.hp>0)) return nada;
+  if(e.objetivo==="caido" && !(p.heroes[obj] && p.heroes[obj].hp<=0)) return nada;
+  let q = e.hacer(p, { h, obj, a:heroe.ataque, s:heroe.apoyo });
+  const ev = [evento(p, q, { lado:"h", i:h }, "especial", { dado:h, obj, nombre:e.nombre })];
+  q = { ...q, n:q.n+1, ev, dados:q.dados.map((x,n)=>n===h && x ? { ...x, usado:true } : x) };
   return { partida:tras(anota(q, `${heroe.nombre}: ${e.nombre}`), rng), gastado:e.coste };
 }
 
@@ -232,6 +423,7 @@ function tras(p, rng){
     const base = h.hp>0 ? { ...h, hp:Math.min(h.hpMax, h.hp+3) } : { ...h, hp:Math.ceil(h.hpMax/3) };
     return { ...base, escudo:0 };
   });
+  if(ASCENSOS.includes(p.sala)) return { ...p, heroes, fase:"evolucion", evoCola:heroes.map((_,i)=>i), botin:sacaBotin(rng) };
   return { ...p, heroes, fase:"botin", botin:sacaBotin(rng) };
 }
 
@@ -263,22 +455,28 @@ export function elegirBotin(p, id, rng=Math.random){
 /* Acaba el turno: los enemigos que sigan en pie cumplen lo que anunciaban. */
 export function finTurno(p, rng=Math.random){
   if(p.fase!=="usar") return p;
-  let q = { ...p, log:[] }; const textos = [];
+  let q = { ...p, log:[] }; const textos = [], ev = [];
   q.enemigos.forEach((e,i)=>{
     if(e.hp<=0 || !e.intento) return;
-    const { t, v, obj } = e.intento;
+    const { t, v, obj } = e.intento, antes = q;
+    if(vivos(q.heroes).length===0) return;
+    if(e.aturdido){ textos.push(`${e.nombre} está aturdido`); return; }
     if(t==="golpe"){
-      const destino = q.heroes[obj]?.hp>0 ? obj : vivos(q.heroes)[0];
-      if(destino==null) return;
+      const previsto = q.heroes[obj]?.hp>0 ? obj : vivos(q.heroes)[0];
+      if(previsto==null) return;
+      const escolta = q.heroes.findIndex(h=>h.hp>0 && h.escudo>0 && rasgosDe(h).includes("guardian"));
+      const destino = escolta>=0 ? escolta : previsto;
       q = conHeroe(q, destino, h=>dana(h, v));
       textos.push(`${e.nombre}: -${v} a ${q.heroes[destino].nombre}`);
     }
     if(t==="todos"){ q = { ...q, heroes:q.heroes.map(h=>h.hp>0 ? dana(h, v) : h) }; textos.push(`${e.nombre}: -${v} a todos`); }
     if(t==="bloqueo"){ q = conEnemigo(q, i, x=>({ ...x, escudo:x.escudo+v })); textos.push(`${e.nombre} se protege`); }
     if(t==="cura"){ q = conEnemigo(q, i, x=>({ ...x, hp:Math.min(x.hpMax, x.hp+v) })); textos.push(`${e.nombre} se recupera`); }
+    ev.push(evento(antes, q, { lado:"e", i }, t));
   });
-  q = { ...q, n:q.n+1, heroes:q.heroes.map(h=>({ ...h, escudo:0 })),
-    enemigos:q.enemigos.map(e=>e.hp>0 ? { ...e, turno:e.turno+1, escudo:e.intento?.t==="bloqueo" ? e.escudo : 0 } : e) };
+  const manada = sinergiasDe(q.heroes).includes("naturaleza") ? 1 : 0;
+  q = { ...q, ev, n:q.n+1, heroes:q.heroes.map(h=>({ ...cura(h, manada), escudo:0 })),
+    enemigos:q.enemigos.map(e=>e.hp>0 ? { ...e, turno:e.turno+1, marca:0, aturdido:false, escudo:e.intento?.t==="bloqueo" ? e.escudo : 0 } : e) };
   q = anota(q, ...textos.slice(0,3));
   if(!vivos(q.heroes).length) return { ...q, fase:"fin", victoria:false };
   return tirada(intenciones({ ...q, ronda:q.ronda+1 }, rng), rng);

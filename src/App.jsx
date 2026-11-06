@@ -2740,11 +2740,16 @@ const StyleTag = () => (
       --gold:#FFC83D; --amber:#FFA726; --ember:#FF6B35; --crimson:#E8433F; --blood:#A32036;
       --jade:#3DDC84; --emerald:#3DDC84; --violet:#C08BFF; --arcane:#C08BFF; --sky:#4FC3F7; --mana:#4FC3F7;
       --gym:url('rpg/fondo-gym.png'); --velo:linear-gradient(rgba(16,13,26,.28),rgba(16,13,26,.74));
+      --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
       font-family:'Inter',system-ui,sans-serif; color:var(--txt); min-height:100vh;
       background:var(--bg); position:relative; isolation:isolate; }
     /* El gimnasio se queda quieto detrás y las tarjetas pasan por encima. Va en un fixed y
        no con background-attachment, que en el WebView de Android da tirones al desplazar. */
     .fh::before { content:""; position:fixed; inset:0; z-index:-1; background:var(--velo),var(--gym) center bottom/cover no-repeat; image-rendering:pixelated; }
+    /* Con viewport-fit=cover la página llega hasta debajo de las barras del sistema. Esta
+       franja tapa lo que pase por detrás del reloj al desplazar; es oscura también en tema
+       claro porque en iOS las letras de esa barra son siempre blancas. */
+    .fh::after { content:""; position:fixed; top:0; left:0; right:0; height:var(--st); z-index:45; background:#100D1A; pointer-events:none; }
     .fh * { image-rendering:auto; }
     .fh .fh-escena { position:relative; overflow:hidden; background:var(--gym) center 62%/cover no-repeat; image-rendering:pixelated; }
     .fh *,.fh *::before,.fh *::after { border-radius:0!important; }
@@ -2753,7 +2758,7 @@ const StyleTag = () => (
     .fh h2,.fh h3,.fh .disp { font-family:'Jersey 15',monospace; letter-spacing:.01em; }
     .fh .mono { font-family:'JetBrains Mono',monospace; }
     .fh .arcade { font-family:'Press Start 2P',monospace; letter-spacing:0; }
-    .fh-shell { max-width:480px; margin:0 auto; padding:0 16px 96px; }
+    .fh-shell { max-width:480px; margin:0 auto; padding:var(--st) 16px calc(104px + var(--sb)); }
     .fh-card { background:var(--card); border:2px solid var(--line); box-shadow:0 3px 0 rgba(0,0,0,.35); }
     .fh-btn { font-family:'Jersey 15',monospace; font-weight:600; border:none; cursor:pointer;
       transition:transform .06s steps(2),filter .15s; color:#0F131A; }
@@ -2762,7 +2767,7 @@ const StyleTag = () => (
     .fh-btn:focus-visible,.fh input:focus-visible,.fh select:focus-visible,.fh textarea:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
     .fh-nav { position:fixed; bottom:0; left:0; right:0; z-index:50; background:var(--bg2);
       border-top:2px solid var(--line2); box-shadow:0 -3px 0 rgba(0,0,0,.35); display:flex; justify-content:center; }
-    .fh-nav-inner { max-width:480px; width:100%; display:flex; padding:8px 4px calc(8px + env(safe-area-inset-bottom)); }
+    .fh-nav-inner { max-width:480px; width:100%; display:flex; padding:8px 4px calc(8px + var(--sb)); }
     .fh-nav button { flex:1; background:none; border:none; cursor:pointer; color:var(--faint); display:flex;
       flex-direction:column; align-items:center; gap:3px; font-size:10px; font-weight:600; padding:6px 0;
       font-family:'Jersey 15',monospace; font-size:12px; transition:color .15s; }
@@ -2809,6 +2814,27 @@ const StyleTag = () => (
     .fh-idle { animation:fh-bob 1.1s steps(2) infinite; }
     .fh-andar { animation:fh-andar .8s steps(8) infinite; }
     @keyframes fh-andar { from{background-position-x:calc(var(--s)*-1)} to{background-position-x:calc(var(--s)*-9)} }
+    .fh-sube { animation:fh-ea .3s ease-out; }
+    @keyframes fh-ea { 35%{transform:translateY(-20px) scale(1.07)} }
+    .fh-baja { animation:fh-eb .32s ease-out; }
+    @keyframes fh-eb { 35%{transform:translateY(30px) scale(1.14)} }
+    .fh-impacto { animation:fh-imp .3s steps(6); }
+    @keyframes fh-imp { 0%{filter:brightness(4) saturate(0)} 30%{transform:translate(-6px,2px)} 60%{transform:translate(6px,-2px);filter:brightness(1.7)} 100%{filter:none} }
+    .fh-temblor { animation:fh-tem .28s steps(6); }
+    @keyframes fh-tem { 20%{transform:translate(-4px,2px)} 40%{transform:translate(4px,-3px)} 60%{transform:translate(-3px,-2px)} 80%{transform:translate(3px,2px)} }
+    .fh-num { position:absolute; left:50%; top:18%; z-index:6; font-size:15px; white-space:nowrap; pointer-events:none; text-shadow:2px 2px 0 #000; animation:fh-num .7s ease-out both; }
+    @keyframes fh-num { 0%{transform:translate(-50%,8px) scale(.5);opacity:0} 25%{transform:translate(-50%,-8px) scale(1.35);opacity:1} 100%{transform:translate(-50%,-34px) scale(1);opacity:0} }
+    .fh-chispa { position:absolute; left:50%; top:46%; z-index:5; width:5px; height:5px; pointer-events:none; animation:fh-chispa .4s ease-out both; }
+    @keyframes fh-chispa { from{transform:translate(-50%,-50%);opacity:1} to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy)));opacity:0} }
+    .fh-zarpazo { position:absolute; inset:6px; z-index:5; pointer-events:none; animation:fh-zar .28s steps(4) both;
+      background:linear-gradient(120deg,transparent 30%,#fff 30%,#fff 34%,transparent 34%,transparent 48%,#fff 48%,#fff 52%,transparent 52%,transparent 66%,#fff 66%,#fff 70%,transparent 70%); }
+    @keyframes fh-zar { from{opacity:1;transform:translate(-8px,-8px)} to{opacity:0;transform:translate(8px,8px)} }
+    .fh-muere { animation:fh-muere .5s steps(6) both; }
+    @keyframes fh-muere { 0%,30%,60%{opacity:1;filter:brightness(3)} 15%,45%{opacity:.2} 100%{opacity:.12;filter:grayscale(1);transform:translateY(8px)} }
+    .fh-entra { animation:fh-entra .42s cubic-bezier(.2,.9,.3,1.25) both; }
+    @keyframes fh-entra { from{transform:translateY(-34px) scale(.7);opacity:0} }
+    .fh-rotulo { position:absolute; left:0; right:0; top:42%; z-index:7; text-align:center; font-size:14px; color:#FFF; text-shadow:2px 2px 0 #000; pointer-events:none; animation:fh-rot 1.05s ease both; }
+    @keyframes fh-rot { 0%{transform:translateX(-110%)} 22%,76%{transform:none} 100%{transform:translateX(110%);opacity:0} }
     .fh-caja3d { display:block; width:100%; height:100%; perspective:240px; will-change:transform; }
     .fh-cubo { display:block; position:relative; width:100%; height:100%; transform-style:preserve-3d; will-change:transform; }
     .fh-cara3d { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; backface-visibility:hidden; -webkit-backface-visibility:hidden;
@@ -2891,7 +2917,29 @@ function Ring({ pct, size=116, stroke=9, color="var(--gold)", track="var(--line)
    Hoja "Tiny Dungeon" de Kenney (CC0), 12 × 11 casillas de 16 px, en public/rpg.
    `id` es la casilla leyendo de izquierda a derecha. Tamaños múltiplos de 16, o
    los píxeles dejan de ser cuadrados. */
-const SPR = { puerta:45, espada:104, cofre:91, cofreAbierto:92, pocion:115, pocionAzul:116, lapida:65, fantasma:121, escudo:101 };
+const SPR = { puerta:45, espada:104, cofre:91, cofreAbierto:92, pocion:115, pocionAzul:116, lapida:65, fantasma:121, escudo:101, amigo:98, amiga:99 };
+/* El círculo rojo de "tienes algo pendiente". Su padre tiene que ir con position:relative. */
+function Contador({ n }){
+  if(!n) return null;
+  return <span className="mono" style={{ position:"absolute", top:-5, right:-5, minWidth:17, height:17, padding:"0 4px", background:"var(--crimson)", color:"#fff", fontSize:10, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid var(--bg)" }}>{n > 9 ? "9+" : n}</span>;
+}
+/* Fila de pestañas internas que se desliza en horizontal (Ajustes y Amigos). */
+function FilaPestanas({ tabs, activa, onCambia }){
+  return (
+    <div style={{ display:"flex", gap:7, overflowX:"auto", padding:"10px 2px 4px", scrollbarWidth:"none" }}>
+      {tabs.map(t=>{
+        const on = activa === t.id; const I = t.icon;
+        return (
+          <button key={t.id} onClick={()=>onCambia(t.id)} className="fh-btn" aria-pressed={on}
+            style={{ flexShrink:0, position:"relative", padding:"9px 13px", fontSize:12.5, whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:6,
+                     background:on?"var(--gold)":"var(--card)", color:on?"#0F131A":"var(--muted)", border:on?"none":"1px solid var(--line)" }}>
+            {I && <I size={14}/>} {t.label}{t.aviso>0 && <b style={{ color:on?"#0F131A":"var(--crimson)" }}> {t.aviso}</b>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 function Sprite({ id, size=32, className="", style, titulo }){
   const esc = size/16;
   return <span className={`fh-sprite ${className}`} role={titulo ? "img" : undefined} aria-label={titulo} aria-hidden={titulo ? undefined : true}
@@ -3070,6 +3118,18 @@ function sfx(nombre, volumen=.5){
   }catch{ /* un efecto no merece romper nada */ }
 }
 function vibrar(p){ try{ navigator.vibrate?.(p); }catch{ /* no todos los navegadores */ } }
+/* Golpes de combate: cortos y muchos, así que se sintetizan en vez de bajar ficheros. */
+const TONOS = { golpe:["square",240,60,.09,.1], enemigo:["sawtooth",130,38,.14,.12], cura:["sine",480,920,.14,.1], escudo:["triangle",320,300,.08,.1] };
+function tono(nombre){
+  if(!sonidoActivo || !audioCtx) return;
+  try{
+    const [forma, de, a, dura, vol] = TONOS[nombre], o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime;
+    audioCtx.resume?.();
+    o.type = forma; o.frequency.setValueAtTime(de, t); o.frequency.exponentialRampToValueAtTime(a, t+dura);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t+dura);
+    o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t+dura);
+  }catch{ /* un efecto no merece romper nada */ }
+}
 
 /* --- Pantallas de efecto ---------------------------------------------------- */
 function Particulas({ colores, n=34 }){
@@ -3163,7 +3223,7 @@ function Toast({ toast }){
   if(!toast) return null;
   const C = toast.icon || Sparkles;
   return (
-    <div style={{ position:"fixed", top:16, left:0, right:0, zIndex:100, display:"flex", justifyContent:"center", padding:"0 16px", pointerEvents:"none" }}>
+    <div style={{ position:"fixed", top:"calc(16px + var(--st))", left:0, right:0, zIndex:100, display:"flex", justifyContent:"center", padding:"0 16px", pointerEvents:"none" }}>
       <div className="fh-card fh-in" style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", borderColor:"var(--gold)", maxWidth:440, width:"100%", background:"var(--card2)" }}>
         <div style={{ background:"var(--gold)", borderRadius:10, padding:7, display:"flex" }}><C size={18} color="#0F131A"/></div>
         <div>
@@ -3197,7 +3257,7 @@ function normalizarAvatar(av){
   return { sexo:av.sexo==="f" ? "f" : "m", rama:av.rama, piel:RAMPAS.piel[av.piel] ? av.piel : "clara",
     pelo:AVATAR.pelos[av.pelo] ? av.pelo : null, colorPelo:RAMPAS.pelo[av.colorPelo] ? av.colorPelo : "castano",
     barba:AVATAR.barbas[av.barba] ? av.barba : null, ojos:AVATAR.ojos[av.ojos] ? av.ojos : "brown",
-    armadura:RAMPAS.armadura[av.armadura] ? av.armadura : "acero", equipo };
+    armadura:RAMPAS.armadura[av.armadura] ? av.armadura : "acero", equipo, especial:M.ESPECIALES[av.especial] ? av.especial : null };
 }
 /* Quien aún no ha abierto una versión con avatar sale como recluta. La rama sale de
    su nombre para que no cambie de una partida a otra. */
@@ -3263,7 +3323,7 @@ function Dado3D({ caras, d, tam=50, animar, retraso=0, activo, onClick, etiqueta
 function BarraVida({ hp, max, color="#3DDC84", escudo=0 }){
   return (<>
     <div style={{ position:"relative", height:7, background:"rgba(0,0,0,.6)", border:"1px solid #000", overflow:"hidden" }}>
-      <i style={{ position:"absolute", left:0, top:0, bottom:0, width:`${Math.max(0,hp/max)*100}%`, background:color }}/>
+      <i style={{ position:"absolute", left:0, top:0, bottom:0, width:`${Math.max(0,hp/max)*100}%`, background:color, transition:"width .24s steps(5)" }}/>
     </div>
     <div className="mono" style={{ fontSize:10, lineHeight:1.3, color:"#FFF", textShadow:"1px 1px 0 #000", whiteSpace:"nowrap" }}>{hp}/{max}{escudo>0 && <span style={{ color:"#7FC8F8" }}> +{escudo}</span>}</div>
   </>);
@@ -3275,43 +3335,245 @@ function IntentoEnemigo({ e, heroes }){
   return <div style={{ fontSize:10.5, fontWeight:700, lineHeight:1.2, color:t==="golpe"||t==="todos" ? "#FF9A8C" : "#9FD8FF", textShadow:"1px 1px 0 #000" }}>{texto}</div>;
 }
 
-function ReclutarGrupo({ yo, aliados, mz, compacto, onEntrar }){
+function CaraMini({ cara }){
+  const [nombre, sprite, fondo] = CARA_INFO[cara.t];
+  return (
+    <span title={`${nombre} ${cara.v||""}`} style={{ position:"relative", width:30, height:30, flexShrink:0, background:fondo, display:"inline-flex", alignItems:"center", justifyContent:"center", boxShadow:"inset 0 0 0 1px rgba(255,255,255,.3)" }}>
+      {sprite!=null && <Sprite id={sprite} size={16}/>}
+      {cara.t!=="vacio" && <span className="arcade" style={{ position:"absolute", right:1, bottom:1, fontSize:7, color:"#FFF", textShadow:"1px 1px 0 #000" }}>{cara.v}</span>}
+    </span>
+  );
+}
+/* Las seis caras, la vida y el especial: lo que hace falta para montar un grupo con cabeza. */
+function FichaDado({ h }){
+  const e = M.especialDe(h);
+  return (<>
+    <span style={{ display:"flex", gap:3, marginTop:5 }}>{h.caras.map((c,i)=><CaraMini key={i} cara={c}/>)}</span>
+    <span style={{ display:"block", fontSize:11.5, color:"var(--muted)", marginTop:4, lineHeight:1.35 }}>
+      <b style={{ color:"var(--gold)" }}>{e.nombre}</b> ({e.coste} de Impulso): {e.texto(h.ataque, h.apoyo)}
+    </span>
+    {M.rasgosDe(h).map(id=><span key={id} style={{ display:"block", fontSize:11.5, color:"var(--muted)", marginTop:2, lineHeight:1.35 }}>
+      <b style={{ color:"#9FD8FF" }}>{M.RASGOS[id].nombre}</b> · {M.TIPOS[M.tipoDe(h)]}: {M.RASGOS[id].texto}
+    </span>)}
+  </>);
+}
+function ChipsSinergia({ heroes }){
+  const activas = M.sinergiasDe(heroes);
+  if(!activas.length) return null;
+  return <span style={{ display:"flex", flexWrap:"wrap", gap:4 }}>{activas.map(id=><span key={id} title={M.SINERGIAS[id].texto} style={{ fontSize:10.5, fontWeight:700, lineHeight:1.2, padding:"2px 6px", color:"#1A1020", background:"var(--jade)" }}>{M.SINERGIAS[id].nombre}</span>)}</span>;
+}
+const sumaCaras = (grupo, f) => grupo.reduce((n,h)=>n+h.caras.filter(c=>f(c.t)).length, 0);
+
+function ReclutarGrupo({ yo, aliados, mz, compacto, puntos, onEntrar, onEspecial, onAyuda }){
   const [grupo, setGrupo] = useState([]);
+  const [elegir, setElegir] = useState(false);
+  const lider = M.liderazgoDe(yo), r0 = RAMA[yo.rama];
+  /* Se enseñan como van a entrar de verdad, con tu liderazgo ya sumado. */
+  const fichas = useMemo(()=>aliados.map(a=>({ a, h:M.conLiderazgo(M.crearHeroe(a, AVATAR.piezas), lider) })), [aliados, lider]);
   const alterna = a=>setGrupo(g=>g.some(x=>x.id===a.id) ? g.filter(x=>x.id!==a.id) : g.length<3 ? [...g,a] : g);
-  const lider = M.liderazgoDe(yo);
+  const dentro = [yo, ...fichas.filter(f=>grupo.some(x=>x.id===f.a.id)).map(f=>f.h)];
+  const disponibles = Object.values(M.ESPECIALES).filter(e=>M.especialDisponible(e, puntos));
   return (
     <div style={{ textAlign:"left" }}>
-      <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.45 }}>
-        Elige hasta 3 compañeros. Tu héroe entra con el nivel y el equipo que te has ganado{lider>0 ? <>, y tu liderazgo le da <b style={{ color:"var(--gold)" }}>+{lider}</b> al grupo</> : ""}.
-      </p>
-      <div style={{ fontSize:12, lineHeight:1.45, margin:"0 0 10px", padding:"8px 10px", background:"var(--bg2)", border:`1px solid ${mz.llaves>0 ? "var(--gold)" : "var(--line2)"}`, color:"var(--muted)" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+        <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.45 }}>
+          Elige hasta 3 compañeros mirando sus dados{lider>0 ? <>. Tu liderazgo les da <b style={{ color:"var(--gold)" }}>+{lider}</b>, y ya está sumado</> : ""}.
+        </p>
+        <BotonAyuda onClick={onAyuda}/>
+      </div>
+      <div style={{ fontSize:12, lineHeight:1.45, margin:"0 0 8px", padding:"8px 10px", background:"var(--bg2)", border:`1px solid ${mz.llaves>0 ? "var(--gold)" : "var(--line2)"}`, color:"var(--muted)" }}>
         {mz.llaves>0 ? <><b style={{ color:"var(--gold)" }}>{mz.llaves} {mz.llaves===1 ? "llave" : "llaves"}</b>: esta partida da Gloria y cuenta para la clasificación.</>
           : <><b style={{ color:"var(--txt)" }}>Sin llaves</b>: puedes jugar de práctica, pero no puntúa. Cada día que termines un entreno ganas una.</>}
       </div>
-      <div style={{ maxHeight:compacto ? 250 : "none", overflowY:compacto ? "auto" : "visible", marginBottom:10 }}>
-        {aliados.map(a=>{
-          const dentro = grupo.some(x=>x.id===a.id), r = RAMA[a.avatar.rama];
+      <div style={{ maxHeight:compacto ? 270 : "none", overflowY:compacto ? "auto" : "visible", marginBottom:8 }}>
+        <div style={{ padding:"7px 10px", marginBottom:5, background:"var(--card2)", border:`1px solid ${r0.color}` }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <AvatarCara av={yo.avatar} size={34}/>
+            <span style={{ flex:1, minWidth:0 }}>
+              <span style={{ display:"block", fontSize:13.5, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{yo.nombre}</span>
+              <span style={{ display:"block", fontSize:11, color:"var(--faint)" }}><span style={{ color:r0.color }}>{r0.nombre}</span> · {yo.hpMax} de vida</span>
+            </span>
+            <button className="fh-btn" onClick={()=>setElegir(v=>!v)} aria-expanded={elegir} style={{ flexShrink:0, padding:"6px 9px", fontSize:13, background:"var(--card)", color:"var(--txt)", border:"1px solid var(--line2)" }}>Especial</button>
+          </div>
+          <FichaDado h={yo}/>
+          {elegir && <div style={{ marginTop:7 }}>
+            {disponibles.map(e=>(
+              <button key={e.id} aria-pressed={M.especialDe(yo).id===e.id} onClick={()=>{ onEspecial(e.id); setElegir(false); }}
+                style={{ display:"block", width:"100%", textAlign:"left", padding:"6px 8px", marginBottom:4, cursor:"pointer", color:"var(--txt)", background:"var(--bg2)", border:`1px solid ${M.especialDe(yo).id===e.id ? RAMA[e.rama].color : "var(--line)"}` }}>
+                <span style={{ display:"block", fontSize:12.5 }}>{e.nombre} <span style={{ color:"var(--faint)" }}>· {e.coste} de Impulso</span></span>
+                <span style={{ display:"block", fontSize:11, color:"var(--muted)", lineHeight:1.3 }}>{e.texto(yo.ataque, yo.apoyo)}</span>
+              </button>
+            ))}
+            <div style={{ fontSize:11, color:"var(--faint)", lineHeight:1.35 }}>Se ganan más entrenando. Míralos todos en el botón de ayuda.</div>
+          </div>}
+        </div>
+        {fichas.map(({ a, h })=>{
+          const metido = grupo.some(x=>x.id===a.id), r = RAMA[a.avatar.rama];
           return (
-            <button key={a.id} onClick={()=>alterna(a)} aria-pressed={dentro}
-              style={{ display:"flex", alignItems:"center", gap:10, width:"100%", textAlign:"left", padding:"6px 10px", marginBottom:5, cursor:"pointer", color:"var(--txt)", background:dentro ? "var(--card2)" : "var(--bg2)", border:`1px solid ${dentro ? r.color : "var(--line)"}` }}>
-              <AvatarCara av={a.avatar} size={34}/>
-              <span style={{ flex:1, minWidth:0 }}>
-                <span style={{ display:"block", fontSize:13.5, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{a.nombre}{a.tipo==="amigo" && <span style={{ color:"var(--gold)", fontSize:10.5, marginLeft:6 }}>AMIGO</span>}</span>
-                <span style={{ display:"block", fontSize:11, color:"var(--faint)" }}><span style={{ color:r.color }}>{r.nombre}</span> · {a.oficio}</span>
+            <button key={a.id} onClick={()=>alterna(a)} aria-pressed={metido}
+              style={{ display:"block", width:"100%", textAlign:"left", padding:"7px 10px", marginBottom:5, cursor:"pointer", color:"var(--txt)", background:metido ? "var(--card2)" : "var(--bg2)", border:`1px solid ${metido ? r.color : "var(--line)"}` }}>
+              <span style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <AvatarCara av={a.avatar} size={34}/>
+                <span style={{ flex:1, minWidth:0 }}>
+                  <span style={{ display:"block", fontSize:13.5, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{a.nombre}{a.tipo==="amigo" && <span style={{ color:"var(--gold)", fontSize:10.5, marginLeft:6 }}>AMIGO</span>}</span>
+                  <span style={{ display:"block", fontSize:11, color:"var(--faint)" }}><span style={{ color:r.color }}>{r.nombre}</span> · {a.oficio} · {h.hpMax} de vida</span>
+                </span>
+                {metido && <Check size={16} color={r.color} style={{ flexShrink:0 }}/>}
               </span>
-              {dentro && <Check size={16} color={r.color} style={{ flexShrink:0 }}/>}
+              <FichaDado h={h}/>
             </button>
           );
         })}
+      </div>
+      <div style={{ fontSize:11.5, color:"var(--muted)", margin:"0 2px 8px", lineHeight:1.4 }}>
+        Tu grupo: <b style={{ color:"#FF9A8C" }}>{sumaCaras(dentro, t=>t==="golpe"||t==="doble"||t==="barrido")} ataque</b> · <b style={{ color:"#7FC8F8" }}>{sumaCaras(dentro, t=>t==="escudo")} escudo</b> · <b style={{ color:"#3DDC84" }}>{sumaCaras(dentro, t=>t==="cura")} cura</b> · {sumaCaras(dentro, t=>t==="vacio")} vacías
+        <div style={{ marginTop:5 }}>
+          {M.sinergiasDe(dentro).length ? <><ChipsSinergia heroes={dentro}/><span style={{ display:"block", marginTop:3, fontSize:11 }}>{M.sinergiasDe(dentro).map(id=>M.SINERGIAS[id].texto).join(" ")}</span></>
+            : <span style={{ fontSize:11, color:"var(--faint)" }}>Sin sinergias. Dos héroes del mismo tipo, o cuatro tipos distintos, activan una.</span>}
+        </div>
       </div>
       <button className="fh-btn" onClick={()=>onEntrar(grupo)} style={{ width:"100%", padding:12, fontSize:17, background:"var(--gold)", color:"#1A1020" }}>{mz.llaves>0 ? "Entrar (gasta 1 llave)" : "Entrar a practicar"}</button>
     </div>
   );
 }
 
-const Mazmorra = React.memo(function Mazmorra({ mz, actualizar, yo, amigos, compacto }){
+function BotonAyuda({ onClick }){
+  return <button onClick={onClick} aria-label="Ayuda de la mazmorra" title="Ayuda" className="arcade"
+    style={{ flexShrink:0, width:28, height:28, padding:0, fontSize:11, cursor:"pointer", background:"var(--card2)", color:"var(--gold)", border:"1px solid var(--line2)" }}>?</button>;
+}
+
+const AYUDA_CARAS = [["golpe","Quita vida a un enemigo."],["doble","Golpea dos veces al mismo enemigo."],["barrido","Golpea a todos los enemigos."],
+  ["escudo","Protege a un compañero hasta el final del turno."],["cura","Devuelve vida a un compañero."],["vacio","No hace nada. Se quita con equipo de piernas y pies."]];
+function AyudaMazmorra({ yo, puntos, compacto, onCerrar }){
+  const titulo = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--gold)", margin:"14px 0 5px" };
+  const texto = { fontSize:12.5, color:"var(--muted)", lineHeight:1.45, margin:"0 0 5px" };
+  const b = t=><b style={{ color:"var(--txt)" }}>{t}</b>;
+  return (
+    <div style={{ textAlign:"left" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8 }}>
+        <span className="disp" style={{ fontSize:19 }}>Cómo se juega</span>
+        <button className="fh-btn" onClick={onCerrar} style={{ padding:"7px 12px", fontSize:15, background:"var(--gold)", color:"#1A1020" }}>Volver al juego</button>
+      </div>
+      <div style={{ maxHeight:compacto ? 410 : "none", overflowY:compacto ? "auto" : "visible" }}>
+        <div style={titulo}>EL TURNO</div>
+        <p style={texto}>1. Los enemigos {b("anuncian")} lo que harán: lo ves encima de cada uno.</p>
+        <p style={texto}>2. Todos los dados se lanzan. {b("Toca un dado")} para guardarlo (borde dorado) y {b("Relanzar")} tira los demás, hasta 2 veces.</p>
+        <p style={texto}>3. {b("Usar dados")} cierra la tirada. Toca cada dado y luego su objetivo, en el orden que quieras.</p>
+        <p style={texto}>4. {b("Fin del turno")}: los enemigos que sigan en pie cumplen lo anunciado. Si matas a uno antes, no hace nada. Los escudos se acaban aquí.</p>
+
+        <div style={titulo}>LOS BOTONES</div>
+        <p style={texto}>{b("Relanzar (n)")}: tira los dados sin guardar. El número son las tiradas que te quedan.</p>
+        <p style={texto}>{b("Usar dados")}: da la tirada por buena. Ya no se puede relanzar.</p>
+        <p style={texto}>{b("Botón dorado bajo cada dado")}: el ataque especial de ese héroe. Si no se puede usar, tócalo y te dirá por qué.</p>
+        <p style={texto}>{b("Fin del turno")}: pasa el turno. Los dados sin usar se pierden.</p>
+        <p style={texto}>Si un ataque se te hace largo, {b("toca la pantalla")} para saltar la animación.</p>
+
+        <div style={titulo}>LAS CARAS DEL DADO</div>
+        {AYUDA_CARAS.map(([t,x])=>(
+          <div key={t} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
+            <CaraMini cara={{ t, v:2 }}/>
+            <span style={{ fontSize:12.5, color:"var(--muted)", lineHeight:1.35 }}>{b(CARA_INFO[t][0])}. {x}</span>
+          </div>
+        ))}
+        <p style={texto}>{b("Superserie")}: si al pulsar Usar dados hay dos o más dados con la misma acción, todos suben +1. Salen con borde verde.</p>
+
+        <div style={titulo}>CLASES Y EVOLUCIONES</div>
+        <p style={texto}>Todos empiezan en su {b("forma base")}. Al superar las salas {M.ASCENSOS.join(" y ")}, cada héroe {b("asciende")}: eliges entre dos clases, y la segunda sale de la primera. Cambian el dado, la vida, el tipo y los rasgos. Dura esa partida, y los enemigos también se endurecen.</p>
+        {RAMAS.map(r=>(
+          <div key={r.id} style={{ marginBottom:6 }}>
+            <div style={{ fontSize:12.5, fontWeight:700, color:r.color }}>{r.nombre}</div>
+            {Object.values(M.CLASES).filter(x=>x.rama===r.id && x.nivel===2).map(x=>(
+              <div key={x.id} style={{ fontSize:12, color:"var(--muted)", lineHeight:1.4 }}>{x.nombre} → {Object.values(M.CLASES).filter(y=>y.de===x.id).map(y=>y.nombre).join(" o ")}</div>
+            ))}
+          </div>
+        ))}
+
+        <div style={titulo}>RASGOS</div>
+        <p style={texto}>Cada héroe tiene los suyos, y {b("el orden en que usas los dados importa")}: primero quien marca, después quien aprovecha la marca.</p>
+        {Object.values(M.RASGOS).map(x=><p key={x.nombre} style={texto}>{b(x.nombre)}: {x.texto}</p>)}
+
+        <div style={titulo}>SINERGIAS DE GRUPO</div>
+        <p style={texto}>Cada clase tiene un tipo. Las sinergias activas salen en verde encima del combate, y cambian si alguien asciende a otro tipo.</p>
+        {Object.values(M.SINERGIAS).map(x=><p key={x.nombre} style={texto}>{b(x.nombre)}: {x.texto}</p>)}
+
+        <div style={titulo}>ATAQUES ESPECIALES</div>
+        <p style={texto}>Se pueden activar cuando se cumple todo esto:</p>
+        <p style={texto}>· Ya has pulsado {b("Usar dados")}.</p>
+        <p style={texto}>· Ese héroe sigue en pie y {b("no ha usado su dado")}: el especial lo gasta.</p>
+        <p style={texto}>· Tienes el {b("Impulso")} que cuesta.</p>
+        <p style={texto}>Llevas uno por partida: se elige antes de entrar, en el botón Especial de tu ficha o en Tu héroe. Los compañeros llevan el suyo.</p>
+
+        <div style={titulo}>TODOS LOS ESPECIALES</div>
+        <p style={texto}>Los números son los de tu héroe. Se desbloquean con series reales de cada rama.</p>
+        {RAMAS.map(r=>(
+          <div key={r.id} style={{ marginBottom:7 }}>
+            <div style={{ fontSize:12.5, fontWeight:700, color:r.color, marginBottom:3 }}>{r.nombre} · {r.estilo}</div>
+            {Object.values(M.ESPECIALES).filter(e=>e.rama===r.id).map(e=>{
+              const libre = M.especialDisponible(e, puntos), falta = e.u-(puntos?.[e.rama]||0);
+              return (
+                <div key={e.id} style={{ padding:"6px 8px", marginBottom:3, background:"var(--bg2)", border:`1px solid ${M.especialDe(yo).id===e.id ? r.color : "var(--line)"}`, opacity:libre ? 1 : .7 }}>
+                  <div style={{ fontSize:12.5, color:"var(--txt)", display:"flex", alignItems:"center", gap:5 }}>
+                    {!libre && <Lock size={12} color="var(--faint)" style={{ flexShrink:0 }}/>}
+                    <span style={{ flex:1, minWidth:0 }}>{e.nombre}</span>
+                    <span className="mono" style={{ fontSize:11, color:"var(--gold)", whiteSpace:"nowrap" }}>{e.coste} Imp.</span>
+                  </div>
+                  <div style={{ fontSize:11.5, color:"var(--muted)", lineHeight:1.35 }}>{e.texto(yo.ataque, yo.apoyo)}</div>
+                  {!libre && <div style={{ fontSize:11, color:"var(--faint)" }}>Faltan {falta} de {r.estilo}.</div>}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+
+        <div style={titulo}>EL GIMNASIO MANDA</div>
+        <p style={texto}>{b("Impulso")}: cada serie real que marcas suma 1, hasta 6. Paga los especiales.</p>
+        <p style={texto}>{b("Equipo y nivel")}: tus dados y tu vida. Lo que ganas entrenando te hace más fuerte aquí.</p>
+        <p style={texto}>{b("Liderazgo")}: tu equipo también mejora los dados y la vida de tus compañeros.</p>
+        <p style={texto}>{b("Llaves")}: cada día que terminas un entreno ganas una, hasta 3. Solo las partidas con llave dan Gloria.</p>
+        <p style={texto}>{b("Gloria")}: tu puntuación para la clasificación con tus amigos.</p>
+        <p style={texto}>La mazmorra nunca da XP, nivel ni equipo. Lo que eliges entre salas solo dura esa partida.</p>
+      </div>
+    </div>
+  );
+}
+
+/* Lo que sale sobre quien recibe: número, chispas y, si pega un enemigo, un zarpazo. */
+function MarcaGolpe({ c, deEnemigo }){
+  const chispas = useMemo(()=>Array.from({ length:7 }, (_,i)=>{ const a = i/7*Math.PI*2+.4, d = 24+Math.random()*16; return { dx:Math.round(Math.cos(a)*d), dy:Math.round(Math.sin(a)*d) }; }), []);
+  const quita = c.hp<0, texto = c.hp ? (c.hp>0 ? `+${c.hp}` : c.hp) : c.escudo>0 ? `+${c.escudo}` : `${c.escudo}`;
+  const color = c.hp>0 ? "#5CF0A0" : c.escudo>0 || !c.hp ? "#7FC8F8" : "#FFD24A";
+  return (<>
+    {quita && deEnemigo && <i className="fh-zarpazo"/>}
+    {quita && chispas.map((s,i)=><i key={i} className="fh-chispa" style={{ background:i%2 ? "#FFD24A" : "#FFF", "--dx":`${s.dx}px`, "--dy":`${s.dy}px` }}/>)}
+    <span className="arcade fh-num" style={{ color }}>{texto}</span>
+  </>);
+}
+/* Algo que viaja de un héroe a su objetivo. Sale de las posiciones reales de cada casilla. */
+function Proyectil({ de, a, sprite }){
+  const el = useRef(null);
+  useLayoutEffect(()=>{ el.current?.animate?.([{ transform:`translate(${de.x}px,${de.y}px) scale(.7) rotate(0deg)` }, { transform:`translate(${a.x}px,${a.y}px) scale(1.25) rotate(300deg)` }], { duration:190, easing:"ease-in", fill:"both" }); }, []);
+  return <span ref={el} style={{ position:"absolute", left:-16, top:-16, zIndex:8, pointerEvents:"none", display:"inline-flex", filter:"drop-shadow(0 0 3px #fff)" }}><Sprite id={sprite} size={32}/></span>;
+}
+const SPRITE_ARMA = { guerrero:104, picaro:103, barbaro:118, explorador:131, monje:129 };
+const IMPACTO_MS = 190, PASO_MS = 560, PAUSA_MUERTE_MS = 480;
+
+const Mazmorra = React.memo(function Mazmorra({ mz, actualizar, yo, amigos, compacto, puntos, onEspecial }){
   const [sel, setSel] = useState(null);       // { tipo:"dado"|"especial", i }
-  const p = mz.partida;
+  const [ayuda, setAyuda] = useState(false);
+  const [aviso, setAviso] = useState(null);   // por qué no se puede usar un especial
+  /* Las reglas ya han resuelto la jugada y está guardada; esto solo la va contando. Mientras
+     dura, se pinta `anim.v` en vez de la partida real, y un toque la salta. */
+  const [anim, setAnim] = useState(null);
+  const relojes = useRef([]), raiz = useRef(null), casillas = useRef({}), tragar = useRef(false);
+  const paraRelojes = ()=>{ relojes.current.forEach(clearTimeout); relojes.current = []; };
+  useEffect(()=>paraRelojes, []);
+  const real = mz.partida, p = anim?.v || real;
+  const salaVista = useRef(real?.sala), [rotulo, setRotulo] = useState(null);
+  useEffect(()=>{
+    if(!p || (p.fase!=="lanzar" && p.fase!=="usar") || p.sala===salaVista.current) return;
+    salaVista.current = p.sala; setRotulo(p.sala);
+    setTimeout(()=>setRotulo(null), 1100);
+  }, [p?.sala, p?.fase]);
   const aliados = useMemo(()=>[...(amigos||[]).map(aliadoDeAmigo), ...NPCS], [amigos]);
   const pon = (partida, resto={})=>actualizar(m=>({ ...m, partida, ...resto }));
   // Volver a una partida a medias no relanza nada: solo se anima lo que acaba de tirarse.
@@ -3321,7 +3583,45 @@ const Mazmorra = React.memo(function Mazmorra({ mz, actualizar, yo, amigos, comp
   useEffect(()=>{ if(p) actualizar(m=>m.partida ? { ...m, partida:M.refrescarHeroe(m.partida, yo) } : m); }, [p?.sala, yo]);
   useEffect(()=>{ if(p?.fase==="fin") p.victoria ? sfx("levelup",.5) : sfx("gameover",.4); }, [p?.fase]);
 
-  if(!p) return <ReclutarGrupo {...{ yo, aliados, mz, compacto }} onEntrar={grupo=>{
+  function posDe(lado, i){
+    const e = casillas.current[`${lado}${i}`], b = raiz.current;
+    if(!e || !b) return null;
+    const r = e.getBoundingClientRect(), o = b.getBoundingClientRect();
+    return { x:r.left-o.left+r.width/2, y:r.top-o.top+r.height/2 };
+  }
+  function proyectilesDe(v, ev){
+    if(ev.autor.lado!=="h") return [];
+    const h = v.heroes[ev.autor.i], de = posDe("h", ev.autor.i);
+    const sprite = ev.tipo==="cura" ? 115 : ev.tipo==="escudo" ? 101 : ev.tipo==="barrido" ? 118 : SPRITE_ARMA[h.rama];
+    return ev.cambios.map(c=>({ id:`${c.lado}${c.i}`, de, a:posDe(c.lado, c.i), sprite })).filter(x=>x.de && x.a);
+  }
+  function reproducir(base, evs, despues){
+    if(!evs?.length || window.matchMedia?.("(prefers-reduced-motion:reduce)").matches) return;
+    paraRelojes();
+    let t = 0;
+    evs.forEach((ev,n)=>{
+      const hacia = ev.autor.lado==="e";
+      relojes.current.push(setTimeout(()=>setAnim(a=>a && { ...a, ev, golpe:false, proy:proyectilesDe(a.v, ev), n }), t));
+      relojes.current.push(setTimeout(()=>{
+        setAnim(a=>a && { ...a, v:M.verEvento(a.v, ev), golpe:true, proy:[] });
+        const quita = ev.cambios.some(c=>c.hp<0);
+        tono(quita ? (hacia ? "enemigo" : "golpe") : ev.cambios.some(c=>c.hp>0) ? "cura" : "escudo");
+        if(quita) vibrar(hacia ? 35 : 15);
+      }, t+IMPACTO_MS));
+      t += PASO_MS;
+    });
+    const muere = despues.fase!=="usar" && despues.fase!=="lanzar";
+    relojes.current.push(setTimeout(()=>setAnim(null), t + (muere ? PAUSA_MUERTE_MS : 0)));
+    setAnim({ v:base, ev:null, golpe:false, proy:[], n:0 });
+  }
+  /* El toque que salta la animación no debe pulsar lo que haya debajo: `pointerdown`
+     quita la animación y el `click` de ese mismo toque llegaría ya a la pantalla normal. */
+  const saltarAnim = e=>{ if(!anim) return; e.stopPropagation(); tragar.current = true; setTimeout(()=>{ tragar.current = false; }, 450); paraRelojes(); setAnim(null); };
+  const tragarToque = e=>{ if(!tragar.current) return; tragar.current = false; e.stopPropagation(); e.preventDefault(); };
+
+  if(ayuda) return <AyudaMazmorra {...{ yo, puntos, compacto }} onCerrar={()=>setAyuda(false)}/>;
+
+  if(!p) return <ReclutarGrupo {...{ yo, aliados, mz, compacto, puntos, onEspecial }} onAyuda={()=>setAyuda(true)} onEntrar={grupo=>{
     const heroes = [yo, ...grupo.map(a=>M.crearHeroe(a, AVATAR.piezas))];
     actualizar(m=>M.empezar(m, heroes));
   }}/>;
@@ -3337,8 +3637,45 @@ const Mazmorra = React.memo(function Mazmorra({ mz, actualizar, yo, amigos, comp
     </div>
   );
 
+  if(p.fase==="evolucion"){
+    const h = p.heroes[p.evoCola[0]], r = RAMA[h.rama], actual = M.CLASES[h.clase]?.nombre || r.nombre;
+    return (
+      <div key={p.evoCola[0]} className="fh-in" style={{ textAlign:"left" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+          <AvatarCara av={h.avatar} size={44}/>
+          <div style={{ minWidth:0 }}>
+            <div className="disp" style={{ fontSize:20, color:r.color, lineHeight:1.1 }}>¡{h.nombre} asciende!</div>
+            <div style={{ fontSize:12, color:"var(--muted)" }}>{actual} · elige su nueva clase para esta partida</div>
+          </div>
+        </div>
+        <div style={{ fontSize:11, color:"var(--faint)", marginBottom:3 }}>Dado actual · {h.hpMax} de vida</div>
+        <div style={{ display:"flex", gap:3, marginBottom:9 }}>{h.caras.map((f,i)=><CaraMini key={i} cara={f}/>)}</div>
+        {M.opcionesClase(h).map(cl=>{
+          const n = M.conClase(h, cl.id);
+          return (
+            <button key={cl.id} className="fh-card" onClick={()=>{ sfx("levelup",.4); vibrar([30,30,60]); pon(M.elegirClase(p, cl.id)); }}
+              style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 12px", marginBottom:7, cursor:"pointer", color:"var(--txt)" }}>
+              <span style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:8 }}>
+                <span className="disp" style={{ fontSize:18, color:r.color }}>{cl.nombre}</span>
+                <span style={{ fontSize:11, color:"var(--faint)", whiteSpace:"nowrap" }}>{M.TIPOS[cl.tipo]}</span>
+              </span>
+              <span style={{ display:"block", fontSize:12, color:"var(--muted)", lineHeight:1.35 }}>{cl.texto} <b style={{ color:"#5CF0A0" }}>+{cl.hp} de vida</b></span>
+              {cl.rasgo && !M.rasgosDe(h).includes(cl.rasgo) && <span style={{ display:"block", fontSize:11.5, color:"var(--muted)", marginTop:3, lineHeight:1.35 }}><b style={{ color:"#9FD8FF" }}>{M.RASGOS[cl.rasgo].nombre}</b>: {M.RASGOS[cl.rasgo].texto}</span>}
+              <span style={{ display:"flex", gap:3, marginTop:6 }}>{n.caras.map((f,i)=><CaraMini key={i} cara={f}/>)}</span>
+              {(()=>{ const tras = M.sinergiasDe(p.heroes.map((x,k)=>k===p.evoCola[0] ? n : x)), antes = M.sinergiasDe(p.heroes), gana = tras.filter(s=>!antes.includes(s)), pierde = antes.filter(s=>!tras.includes(s));
+                return (gana.length || pierde.length) ? <span style={{ display:"block", fontSize:11.5, marginTop:5, lineHeight:1.35 }}>
+                  {gana.map(s=><b key={s} style={{ color:"var(--jade)", marginRight:8 }}>Activa {M.SINERGIAS[s].nombre}</b>)}
+                  {pierde.map(s=><b key={s} style={{ color:"#FF9A8C", marginRight:8 }}>Pierde {M.SINERGIAS[s].nombre}</b>)}
+                </span> : null; })()}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
   if(p.fase==="botin") return (
-    <div style={{ textAlign:"left" }}>
+    <div className="fh-in" style={{ textAlign:"left" }}>
       <div className="disp" style={{ fontSize:19, marginBottom:3 }}>Sala {p.sala} superada</div>
       <p style={{ fontSize:12, color:"var(--muted)", margin:"0 0 10px", lineHeight:1.4 }}>Elige uno. Solo dura esta partida.</p>
       {p.botin.map(b=>(
@@ -3352,9 +3689,13 @@ const Mazmorra = React.memo(function Mazmorra({ mz, actualizar, yo, amigos, comp
   );
 
   const usar = p.fase==="usar", impulso = mz.impulso||0;
-  const accion = (i, obj)=>{ const q = M.usarDado(p, i, obj); if(q!==p){ sfx("serie",.3); vibrar(12); } setSel(null); pon(q); };
-  const especial = (h, obj)=>{ const r = M.usarEspecial(p, h, obj, impulso); setSel(null); if(!r.gastado) return; sfx("record",.4); vibrar([20,30,40]); actualizar(m=>({ ...m, partida:r.partida, impulso:(m.impulso||0)-r.gastado })); };
+  const accion = (i, obj)=>{ const q = M.usarDado(p, i, obj); setSel(null); if(q===p) return; reproducir(p, q.ev, q); pon(q); };
+  const especial = (h, obj)=>{ const r = M.usarEspecial(p, h, obj, impulso); setSel(null); if(!r.gastado) return; sfx("record",.4); vibrar([20,30,40]); reproducir(p, r.partida.ev, r.partida); actualizar(m=>({ ...m, partida:r.partida, impulso:(m.impulso||0)-r.gastado })); };
+  const ev = anim?.ev, autorEs = (lado,i)=>ev && ev.autor.lado===lado && ev.autor.i===i && !anim.golpe && ev.tipo!=="bloqueo" && ev.tipo!=="cura";
+  const cambioDe = (lado,i)=>anim?.golpe ? ev?.cambios.find(c=>c.lado===lado && c.i===i) : null;
+  const fuerte = anim?.golpe && ev?.cambios.some(c=>c.hp<=-6 || (c.lado==="h" && c.hp<0));
   function tocarDado(i){
+    setAviso(null);
     if(!usar){ pon(M.fijar(p, i)); return; }
     const d = p.dados[i];
     if(!d || d.usado || d.cara.t==="vacio") return;
@@ -3364,70 +3705,87 @@ const Mazmorra = React.memo(function Mazmorra({ mz, actualizar, yo, amigos, comp
     if(lista.length===1){ accion(i, lista[0]); return; }
     setSel(sel?.tipo==="dado" && sel.i===i ? null : { tipo:"dado", i });
   }
+  /* El botón siempre responde: si no se puede usar, dice por qué. */
   function tocarEspecial(h){
-    const e = M.ESPECIALES[p.heroes[h].rama];
-    if(e.objetivo!=="enemigo"){ especial(h, 0); return; }
-    const lista = p.enemigos.map((x,n)=>x.hp>0 ? n : -1).filter(n=>n>=0);
+    const e = M.especialDe(p.heroes[h]), motivo = M.motivoEspecial(p, h, impulso);
+    if(motivo){ setSel(null); setAviso(`${e.nombre}: ${motivo}`); return; }
+    setAviso(null);
+    if(e.objetivo==="todos" || e.objetivo==="grupo"){ especial(h, 0); return; }
+    const lista = (e.objetivo==="enemigo" ? p.enemigos.map((x,n)=>x.hp>0 ? n : -1) : e.objetivo==="caido" ? p.heroes.map((x,n)=>x.hp<=0 ? n : -1) : p.heroes.map((x,n)=>x.hp>0 ? n : -1)).filter(n=>n>=0);
     if(lista.length===1){ especial(h, lista[0]); return; }
     setSel(sel?.tipo==="especial" && sel.i===h ? null : { tipo:"especial", i:h });
   }
-  const objetivo = !sel ? null : sel.tipo==="especial" ? "enemigo" : M.objetivoDe(p.dados[sel.i].cara.t);
+  const espSel = sel?.tipo==="especial" ? M.especialDe(p.heroes[sel.i]) : null;
+  const objetivo = !sel ? null : espSel ? espSel.objetivo : M.objetivoDe(p.dados[sel.i].cara.t);
   const tocarObjetivo = n=>{ if(sel.tipo==="especial") especial(sel.i, n); else accion(sel.i, n); };
   const pista = !usar ? "Toca los dados que quieras guardar y relanza el resto."
-    : !sel ? "Toca un dado para usarlo." : objetivo==="enemigo" ? "¿A qué enemigo?" : "¿A quién del grupo?";
+    : !sel ? "Toca un dado para usarlo." : objetivo==="enemigo" ? "¿A qué enemigo?" : objetivo==="caido" ? "¿A qué compañero caído?" : "¿A quién del grupo?";
 
   return (
-    <div style={{ textAlign:"left" }}>
+    <div ref={raiz} onPointerDownCapture={saltarAnim} onClickCapture={tragarToque} className={fuerte ? "fh-temblor" : ""} style={{ textAlign:"left", position:"relative" }}>
+      {(anim?.proy||[]).map(x=><Proyectil key={x.id} {...x}/>)}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
         <span className="disp" style={{ fontSize:16 }}>Sala {p.sala} de {M.SALAS}{!p.puntua && <span style={{ fontSize:13, color:"var(--faint)" }}> · práctica</span>}</span>
-        <span title="Cada serie real que haces suma 1" style={{ display:"flex", alignItems:"center", gap:5 }}>
-          <span style={{ fontSize:10.5, fontWeight:700, color:"var(--gold)", letterSpacing:".06em" }}>IMPULSO</span>
-          <span style={{ display:"flex", gap:2 }}>{Array.from({ length:M.IMPULSO_MAX }, (_,i)=><i key={i} style={{ width:9, height:9, background:i<impulso ? "var(--gold)" : "var(--bg2)", border:"1px solid var(--line2)" }}/>)}</span>
+        <span style={{ display:"flex", alignItems:"center", gap:7 }}>
+          <span title="Cada serie real que haces suma 1" style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <span style={{ fontSize:10.5, fontWeight:700, color:"var(--gold)", letterSpacing:".06em" }}>IMPULSO</span>
+            <span style={{ display:"flex", gap:2 }}>{Array.from({ length:M.IMPULSO_MAX }, (_,i)=><i key={i} style={{ width:9, height:9, background:i<impulso ? "var(--gold)" : "var(--bg2)", border:"1px solid var(--line2)" }}/>)}</span>
+          </span>
+          <BotonAyuda onClick={()=>setAyuda(true)}/>
         </span>
       </div>
 
-      <div className="fh-escena" style={{ display:"flex", justifyContent:"center", alignItems:"flex-end", gap:6, padding:"6px 4px 8px", minHeight:112, border:"2px solid var(--line2)" }}>
+      {M.sinergiasDe(p.heroes).length>0 && <div style={{ marginBottom:5 }}><ChipsSinergia heroes={p.heroes}/></div>}
+      <div className="fh-escena" style={{ display:"flex", justifyContent:"center", alignItems:"flex-end", gap:6, padding:"6px 4px 8px", minHeight:112, border:"2px solid var(--line2)", overflow:"visible" }}>
+        {rotulo===p.sala && <div className="arcade fh-rotulo" style={{ color:p.enemigos[0]?.jefe ? "#FF8A80" : "#FFF" }}>{p.enemigos[0]?.jefe ? "¡JEFE!" : `SALA ${p.sala}`}</div>}
+        {ev?.nombre && !anim?.golpe && <div className="arcade fh-rotulo" style={{ color:"var(--gold)", fontSize:11 }}>{ev.nombre}</div>}
         {p.enemigos.map((e,n)=>{
-          const vivo = e.hp>0, puede = objetivo==="enemigo" && vivo;
+          const vivo = e.hp>0, puede = objetivo==="enemigo" && vivo, c2 = cambioDe("e", n);
           return (
-            <button key={n} disabled={!puede} onClick={()=>tocarObjetivo(n)} aria-label={`${e.nombre}, ${e.hp} de vida`}
-              style={{ flex:1, maxWidth:150, minWidth:0, padding:"3px 4px", background:puede ? "rgba(255,200,61,.22)" : "rgba(6,8,13,.5)", border:`2px solid ${puede ? "var(--gold)" : "transparent"}`, cursor:puede ? "pointer" : "default", opacity:vivo ? 1 : .35, color:"#FFF", textAlign:"center" }}>
-              {vivo && <IntentoEnemigo e={e} heroes={p.heroes}/>}
-              <span key={e.hp} className={e.hp<e.hpMax ? "fh-sacude" : ""} style={{ display:"inline-flex", margin:"1px 0" }}><Sprite id={e.sprite} size={e.jefe ? 64 : 48}/></span>
-              <div style={{ fontSize:11, fontWeight:700, lineHeight:1.2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", textShadow:"1px 1px 0 #000" }}>{e.nombre}</div>
+            <div key={`${p.sala}-${n}`} className="fh-entra" style={{ flex:1, maxWidth:150, minWidth:0, animationDelay:`${n*.09}s` }}>
+            <button ref={x=>{ casillas.current[`e${n}`] = x; }} disabled={!puede} onClick={()=>tocarObjetivo(n)} aria-label={`${e.nombre}, ${e.hp} de vida`}
+              className={autorEs("e",n) ? "fh-baja" : ""} style={{ position:"relative", width:"100%", padding:"3px 4px", background:puede ? "rgba(255,200,61,.22)" : "rgba(6,8,13,.5)", border:`2px solid ${puede ? "var(--gold)" : "transparent"}`, cursor:puede ? "pointer" : "default", color:"#FFF", textAlign:"center" }}>
+              {vivo && (e.aturdido ? <div style={{ fontSize:10.5, fontWeight:700, lineHeight:1.2, color:"#C08BFF", textShadow:"1px 1px 0 #000" }}>¡Aturdido!</div> : <IntentoEnemigo e={e} heroes={p.heroes}/>)}
+              {vivo && e.marca>0 && <div style={{ fontSize:9.5, fontWeight:700, lineHeight:1.2, color:"var(--gold)", textShadow:"1px 1px 0 #000" }}>MARCADO</div>}
+              <span className={!vivo ? "fh-muere" : c2 ? "fh-impacto" : ""} style={{ display:"inline-flex", margin:"1px 0" }}><Sprite id={e.sprite} size={e.jefe ? 64 : 48}/></span>
+              <div style={{ fontSize:11, fontWeight:700, lineHeight:1.2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", textShadow:"1px 1px 0 #000", opacity:vivo ? 1 : .4 }}>{e.nombre}</div>
               <BarraVida hp={e.hp} max={e.hpMax} color="#E8433F" escudo={e.escudo}/>
+              {c2 && <MarcaGolpe c={c2}/>}
             </button>
+            </div>
           );
         })}
       </div>
 
       <div style={{ display:"flex", gap:5, marginTop:7 }}>
         {p.heroes.map((h,i)=>{
-          const d = p.dados[i], vivo = h.hp>0, puede = objetivo==="aliado" && vivo, esp = M.ESPECIALES[h.rama];
-          const pagable = usar && vivo && d && !d.usado && impulso>=esp.coste;
+          const d = p.dados[i], vivo = h.hp>0, puede = (objetivo==="aliado" && vivo) || (objetivo==="caido" && !vivo), esp = M.especialDe(h);
+          const pagable = !M.motivoEspecial(p, i, impulso);
           return (
             <div key={h.id} style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-              <button disabled={!puede} onClick={()=>tocarObjetivo(i)} aria-label={`${h.nombre}, ${h.hp} de vida`}
-                style={{ width:"100%", padding:"2px 2px 3px", background:puede ? "rgba(61,220,132,.2)" : "var(--bg2)", border:`2px solid ${puede ? "var(--jade)" : "var(--line)"}`, cursor:puede ? "pointer" : "default", opacity:vivo ? 1 : .4, textAlign:"center" }}>
+              <button ref={x=>{ casillas.current[`h${i}`] = x; }} disabled={!puede} onClick={()=>tocarObjetivo(i)} aria-label={`${h.nombre}, ${h.hp} de vida`} className={autorEs("h",i) ? "fh-sube" : cambioDe("h",i) ? "fh-impacto" : ""}
+                style={{ position:"relative", width:"100%", padding:"2px 2px 3px", background:puede ? "rgba(61,220,132,.2)" : "var(--bg2)", border:`2px solid ${puede ? "var(--jade)" : "var(--line)"}`, cursor:puede ? "pointer" : "default", opacity:vivo ? 1 : .4, textAlign:"center" }}>
                 <AvatarCara av={h.avatar} size={38}/>
                 <div style={{ fontSize:10.5, fontWeight:700, color:"var(--txt)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", lineHeight:1.3 }}>{h.nombre}</div>
+                <div style={{ fontSize:9.5, fontWeight:700, color:RAMA[h.rama].color, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", lineHeight:1.25 }}>{M.CLASES[h.clase]?.nombre || RAMA[h.rama].nombre}</div>
                 <BarraVida hp={h.hp} max={h.hpMax} escudo={h.escudo}/>
+                {cambioDe("h",i) && <MarcaGolpe c={cambioDe("h",i)} deEnemigo={ev.autor.lado==="e"}/>}
               </button>
               {d ? <Dado3D caras={h.caras} d={d} animar={p.tiro!==vistoTiro.current && d.tiro===p.tiro} retraso={i*70} etiqueta={`${CARA_INFO[d.cara.t][0]} ${d.cara.v||""}`}
                   activo={sel?.tipo==="dado" && sel.i===i} onClick={()=>tocarDado(i)}/> : <div style={{ width:50, height:50 }}/>}
-              <button className="fh-btn" disabled={!pagable} onClick={()=>tocarEspecial(i)} aria-label={`${esp.nombre}. ${esp.texto} Cuesta ${esp.coste} de Impulso.`} title={esp.texto}
-                style={{ width:"100%", padding:"3px 1px", fontSize:12, lineHeight:1.1, opacity:pagable ? 1 : .32, background:sel?.tipo==="especial" && sel.i===i ? "#FFF" : "var(--gold)", color:"#1A1020" }}>{esp.nombre}</button>
+              <button className="fh-btn" onClick={()=>tocarEspecial(i)} aria-label={`${esp.nombre}. ${esp.texto(h.ataque, h.apoyo)} Cuesta ${esp.coste} de Impulso.`} title={esp.texto(h.ataque, h.apoyo)}
+                style={{ width:"100%", padding:"3px 1px", fontSize:12, lineHeight:1.1, background:sel?.tipo==="especial" && sel.i===i ? "#FFF" : pagable ? "var(--gold)" : "var(--bg2)", color:pagable || sel?.tipo==="especial" && sel.i===i ? "#1A1020" : "var(--faint)", border:`1px solid ${pagable ? "var(--gold)" : "var(--line2)"}` }}>{esp.nombre} · {esp.coste}</button>
             </div>
           );
         })}
       </div>
 
-      <div style={{ fontSize:11.5, color:"var(--muted)", minHeight:30, margin:"7px 2px 6px", lineHeight:1.3 }}>{p.log[0] && usar ? <span style={{ color:"var(--txt)" }}>{p.log.slice(0,2).join(" · ")}</span> : pista}</div>
+      <div style={{ fontSize:11.5, color:"var(--muted)", minHeight:30, margin:"7px 2px 6px", lineHeight:1.3 }}>{aviso ? <span style={{ color:"var(--gold)" }}>{aviso}</span> : espSel ? <span style={{ color:"var(--txt)" }}>{espSel.texto(p.heroes[sel.i].ataque, p.heroes[sel.i].apoyo)} {pista}</span> : p.log[0] && usar && !sel ? <span style={{ color:"var(--txt)" }}>{p.log.slice(0,2).join(" · ")}</span> : pista}</div>
       {usar
-        ? <button className="fh-btn" onClick={()=>{ setSel(null); pon(M.finTurno(p)); vibrar(25); }} style={{ width:"100%", padding:11, fontSize:17, background:"var(--ember)", color:"#FFF" }}>Fin del turno</button>
+        ? <button className="fh-btn" onClick={()=>{ setSel(null); setAviso(null); const q = M.finTurno(p); reproducir(p, q.ev, q); pon(q); }} style={{ width:"100%", padding:11, fontSize:17, background:"var(--ember)", color:"#FFF" }}>Fin del turno</button>
         : <div style={{ display:"flex", gap:7 }}>
-            <button className="fh-btn" disabled={p.tiradas<=0} onClick={()=>pon(M.relanzar(p))} style={{ flex:1, padding:11, fontSize:16, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", opacity:p.tiradas>0 ? 1 : .4 }}>Relanzar ({p.tiradas})</button>
-            <button className="fh-btn" onClick={()=>pon(M.confirmar(p))} style={{ flex:1, padding:11, fontSize:16, background:"var(--gold)", color:"#1A1020" }}>Usar dados</button>
+            <button className="fh-btn" disabled={p.tiradas<=0} onClick={()=>{ setAviso(null); pon(M.relanzar(p)); }} style={{ flex:1, padding:11, fontSize:16, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", opacity:p.tiradas>0 ? 1 : .4 }}>Relanzar ({p.tiradas})</button>
+            <button className="fh-btn" onClick={()=>{ setAviso(null); pon(M.confirmar(p)); }} style={{ flex:1, padding:11, fontSize:16, background:"var(--gold)", color:"#1A1020" }}>Usar dados</button>
           </div>}
     </div>
   );
@@ -3459,7 +3817,8 @@ function ClasificacionMazmorra({ mz, yo, amigos }){
   </>);
 }
 
-function MazmorraView({ mz, actualizar, yo, amigos, onVolver }){
+function MazmorraView({ onVolver, ...juego }){
+  const { mz, yo, amigos } = juego;
   return (
     <div className="fh-in" style={{ paddingBottom:24 }}>
       <header style={{ padding:"22px 2px 12px", display:"flex", alignItems:"center", gap:10 }}>
@@ -3469,7 +3828,7 @@ function MazmorraView({ mz, actualizar, yo, amigos, onVolver }){
           <p style={{ margin:"3px 0 0", fontSize:13, color:"var(--muted)" }}>Tus malos hábitos te esperan. Cada serie real suma Impulso.</p>
         </div>
       </header>
-      <div className="fh-card" style={{ padding:12 }}><Mazmorra {...{ mz, actualizar, yo, amigos }}/></div>
+      <div className="fh-card" style={{ padding:12 }}><Mazmorra {...juego}/></div>
       <ClasificacionMazmorra {...{ mz, yo, amigos }}/>
     </div>
   );
@@ -3518,7 +3877,7 @@ function RestTimer({ hasta, total, onDone, onSaltar, onMas15, isRecomp, juego })
   // Portal al root .fh: evita que un ancestro con transform (animación .fh-in) rompa el position:fixed.
   const target = (typeof document!=="undefined" && document.getElementById("rpgym-root")) || (typeof document!=="undefined" ? document.body : null);
   const overlay = (
-    <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(6,8,13,.9)", backdropFilter:"blur(7px)", display:"flex", alignItems:"center", justifyContent:"center", padding:16, overflowY:"auto" }}>
+    <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(6,8,13,.9)", backdropFilter:"blur(7px)", display:"flex", alignItems:"center", justifyContent:"center", padding:"calc(16px + var(--st)) 16px calc(16px + var(--sb))", overflowY:"auto" }}>
       <div className="fh-card fh-pop" style={{ padding:jugar ? 16 : 26, borderColor:"var(--ember)", background:"linear-gradient(160deg,var(--card),var(--card2))", maxWidth:420, width:"100%", textAlign:"center", margin:"auto" }}>
         {!jugar && <div style={{ fontSize:11, color:"var(--muted)", fontWeight:700, letterSpacing:".14em", marginBottom:16 }}>DESCANSO</div>}
         <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:12, marginBottom:jugar ? 8 : 18 }}>
@@ -3648,6 +4007,7 @@ export default function App(){
   const [amigos, setAmigos] = useState([]);
   const [copiaNube, setCopiaNube] = useState(null);   // copia cifrada que ofrecer tras entrar
   const [amigoAbierto, setAmigoAbierto] = useState(null);   // ficha de amigo que se está viendo
+  const [amigosSeccion, setAmigosSeccion] = useState(null); // aquí y no en la vista: al volver de una ficha sigues donde estabas
   const [solicitudes, setSolicitudes] = useState([]);       // amistades que me piden
   const [enviosRutina, setEnviosRutina] = useState([]);     // rutinas que me mandan
   const [superadoPor, setSuperadoPor] = useState([]);      // quién me ha adelantado a mí
@@ -3658,7 +4018,8 @@ export default function App(){
 
   const level = levelFromXp(state.xp);
   const yo = useMemo(()=>M.crearHeroe({ id:"yo", nombre:state.profile?.name||"Tú", tipo:"yo", avatar, level }, AVATAR.piezas), [avatar, level, state.profile?.name]);
-  const juego = useMemo(()=>({ mz:mazmorra, actualizar:actualizarMazmorra, yo, amigos }), [mazmorra, actualizarMazmorra, yo, amigos]);
+  const elegirEspecial = useCallback(id=>{ setState(s=>{ const ns = { ...s, avatar:{ ...(s.avatar||avatar), especial:id } }; persist(ns); return ns; }); }, [avatar]);
+  const juego = useMemo(()=>({ mz:mazmorra, actualizar:actualizarMazmorra, yo, amigos, puntos, onEspecial:elegirEspecial }), [mazmorra, actualizarMazmorra, yo, amigos, puntos, elegirEspecial]);
   const rank = rankFor(level);
 
   const showToast = useCallback((t)=>{ setToast(t); clearTimeout(toastTimer.current); toastTimer.current=setTimeout(()=>setToast(null),3400); },[]);
@@ -4158,7 +4519,8 @@ export default function App(){
       rango: rankFor(finalLevel).name!==rankFor(prevLevel).name ? rankFor(finalLevel).name : null });
     if(goalJustMet) fx.push({ tipo:"vidaExtra" });
     actualizarMazmorra(m=>M.darLlave(m, todayISO()));
-    const botin = piezasNuevas(puntosDeRama(log), puntosDeRama(nlog));
+    const antesRamas = puntosDeRama(log), ahoraRamas = puntosDeRama(nlog);
+    const botin = [...piezasNuevas(antesRamas, ahoraRamas), ...M.especialesNuevos(antesRamas, ahoraRamas).map(e=>({ n:`Especial: ${e.nombre}`, rama:e.rama }))];
     if(botin.length) fx.push({ tipo:"botin", piezas:botin });
     if(fx.length) lanzarEfecto(...fx);
 
@@ -4654,7 +5016,7 @@ export default function App(){
   if(!state.avatar && !session) return (
     <div className="fh" id="rpgym-root" data-theme={theme}>
       <StyleTag/>
-      <div className="fh-shell" style={{ paddingBottom:24 }}>
+      <div className="fh-shell" style={{ paddingBottom:"calc(24px + var(--sb))" }}>
         <HeroeView arranque avatar={avatar} puntos={puntos} onCambiar={guardarAvatar} onAhoraNo={()=>guardarAvatar(avatar)}/>
       </div>
     </div>
@@ -4687,8 +5049,8 @@ export default function App(){
         {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines, setTab, quedadas }}/>}
         {tab==="informe" && <InformeSemanalView {...{ state, log, measures, lunes:informeLunes, setLunes:setInformeLunes,
           cloudEnabled:cloud.cloudEnabled, perfil, onVolver:()=>setTab(informeVuelve) }}/>}
-        {tab==="amigos" && <AmigosView {...{ perfil, cloudEnabled:cloud.cloudEnabled, setTab,
-          amigos, onRefrescarAmigos:refrescarAmigos, onQuitarAmigo:quitarAmigo, onAbrirAmigo:abrirAmigo,
+        {tab==="amigos" && <AmigosView {...{ perfil, cloudEnabled:cloud.cloudEnabled, setTab, seccion:amigosSeccion, setSeccion:setAmigosSeccion,
+          solicitudes, onResponderSolicitud:responderSolicitud, amigos, onRefrescarAmigos:refrescarAmigos, onQuitarAmigo:quitarAmigo, onAbrirAmigo:abrirAmigo,
           quedadas, onRefrescarQuedadas:refrescarQuedadas, cargandoQuedadas,
           onCargarTabla:(pe,a)=>cloud.leaderboard(pe, a), mz:mazmorra, yo }}/>}
         {tab==="logros" && <AchievementsView {...{ state, level }}/>}
@@ -4703,9 +5065,22 @@ export default function App(){
 
       {tab!=="workout" && tab!=="results" && tab!=="editor" && tab!=="heroe" && tab!=="mazmorra" && (
         <nav className="fh-nav"><div className="fh-nav-inner">
-          {[{id:"home",spr:SPR.puerta,label:"Inicio"},{id:"rutinas",spr:SPR.espada,label:"Rutinas"},{id:"progreso",cara:true,label:"RPGym"},{id:"logros",spr:SPR.cofre,label:"Logros"},{id:"dieta",spr:SPR.pocion,label:"Dieta"}].map(t=>(
-            <button key={t.id} className={tab===t.id?"on":""} onClick={()=>setTab(t.id)} aria-current={tab===t.id?"page":undefined}>{t.cara ? <AvatarCara av={avatar} size={32}/> : <Sprite id={t.spr} size={32}/>}<span>{t.label}</span></button>
-          ))}
+          {[{id:"home",spr:SPR.puerta,label:"Inicio"},{id:"rutinas",spr:SPR.espada,label:"Rutinas"},{id:"progreso",cara:true,label:"RPGym"},{id:"logros",spr:SPR.cofre,label:"Logros"},{id:"amigos",gente:true,label:"Amigos",aviso:solicitudes.length}].map(t=>{
+            // La ficha de un amigo y la dieta cuelgan de una pestaña: que se siga viendo cuál.
+            const on = (tab==="amigo" ? "amigos" : tab==="dieta" ? "home" : tab) === t.id;
+            return (
+              <button key={t.id} className={on?"on":""} onClick={()=>setTab(t.id)} aria-current={on?"page":undefined}
+                aria-label={t.aviso ? `${t.label}: ${t.aviso} sin responder` : undefined}>
+                <span style={{ position:"relative", display:"flex" }}>
+                  {t.cara ? <AvatarCara av={avatar} size={32}/>
+                    : t.gente ? <><Sprite id={SPR.amigo} size={32}/><Sprite id={SPR.amiga} size={32} style={{ marginLeft:-14 }}/></>
+                    : <Sprite id={t.spr} size={32}/>}
+                  <Contador n={t.aviso}/>
+                </span>
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
         </div></nav>
       )}
     </div>
@@ -5416,40 +5791,92 @@ function QuedadasPanel({ quedadas, onRefrescar, cargando, modo="todo" }){
   </>);
 }
 
-function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar, onAbrir }){
+const tituloSeccion = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
+const cajaCara = { width:36, height:36, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line2)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" };
+
+/* Tus amigos. Para añadir gente está la sección Buscar. */
+function AmigosPanel({ amigos, onQuitar, onAbrir, onBuscar }){
+  const [confirmar, setConfirmar] = useState(null);
+
+  return (<>
+    <div style={tituloSeccion}>TUS AMIGOS {amigos.length > 0 && `· ${amigos.length}`}</div>
+    <div className="fh-card" style={{ padding:16 }}>
+      {amigos.length === 0 && (
+        <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
+          Todavía no tienes a nadie. Mira quién hay en RPGym y mándale una solicitud.
+        </p>
+      )}
+
+      {amigos.map((a,i)=>(
+        <div key={a.id} style={{ display:"flex", alignItems:"center", gap:11, padding:"9px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+          <button onClick={()=>onAbrir(a)} aria-label={`Ver la ficha de ${a.handle}`}
+            style={{ flex:1, minWidth:0, display:"flex", alignItems:"center", gap:11, background:"none", border:"none", padding:0, cursor:"pointer", textAlign:"left", color:"inherit" }}>
+            <span style={cajaCara}><AvatarCara av={aliadoDeAmigo(a).avatar} size={32}/></span>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:13.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"var(--txt)" }}>{a.display_name || a.handle}</div>
+              <div className="mono" style={{ fontSize:11, color:"var(--faint)", marginTop:1 }}>@{a.handle} · nivel {a.level}</div>
+            </div>
+            <ChevronRight size={15} color="var(--faint)" style={{ flexShrink:0 }}/>
+          </button>
+          <button onClick={()=>setConfirmar(confirmar===a.id?null:a.id)} aria-label={`Quitar a ${a.handle}`}
+            style={{ background:"var(--bg2)", border:"1px solid var(--line)", borderRadius:8, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--faint)", flexShrink:0 }}>
+            <X size={14}/>
+          </button>
+        </div>
+      ))}
+
+      {confirmar && (
+        <div className="fh-card" style={{ background:"var(--bg2)", padding:12, marginTop:10, display:"flex", alignItems:"center", gap:9, flexWrap:"wrap" }}>
+          <span style={{ fontSize:12.5, color:"var(--muted)", flex:1, minWidth:140 }}>¿Dejar de ser amigos? Podréis volver a pediros amistad.</span>
+          <button className="fh-btn" onClick={()=>setConfirmar(null)} style={{ background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:"8px 13px", fontSize:12 }}>No</button>
+          <button className="fh-btn" onClick={()=>{ const id=confirmar; setConfirmar(null); onQuitar(id); }} style={{ background:"var(--crimson)", color:"#fff", padding:"8px 13px", fontSize:12 }}>Sí</button>
+        </div>
+      )}
+
+      <button className="fh-btn" onClick={onBuscar}
+        style={{ width:"100%", marginTop:amigos.length?13:0, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+        <Search size={15} color="var(--gold)"/> Buscar gente
+      </button>
+    </div>
+  </>);
+}
+
+/* Toda la gente de RPGym, sin tener que saber cómo se llama: la app la usa un grupo
+   pequeño, así que se baja la lista entera y escribir solo la filtra aquí. Quien no
+   tenga cuenta todavía entra con un código de invitación. */
+function GentePanel({ amigos, onRefrescarAmigos, onAbrir }){
+  const [gente, setGente] = useState(null);        // null: todavía cargando
+  const [error, setError] = useState(null);
+  const [busqueda, setBusqueda] = useState("");
+  const [pedidos, setPedidos] = useState([]);      // a quién has pedido desde que entraste aquí
   const [modo, setModo] = useState(null);          // invitar | canjear
   const [codigo, setCodigo] = useState("");
   const [entrada, setEntrada] = useState("");
   const [msg, setMsg] = useState(null);
   const [cargando, setCargando] = useState(false);
-  const [confirmar, setConfirmar] = useState(null);
-  const [busqueda, setBusqueda] = useState("");
-  const [resultados, setResultados] = useState([]);
-  const [buscando, setBuscando] = useState(false);
-  const [pedidos, setPedidos] = useState([]);      // a quién ya has pedido en esta pantalla
 
-  /* Se busca sola al dejar de escribir. Medio segundo: lo justo para no lanzar
-     una consulta por tecla y que no parezca que no hace nada. */
   useEffect(()=>{
-    const t = String(busqueda||"").trim();
-    if(modo !== "buscar" || t.length < 2){ setResultados([]); return; }
     let vivo = true;
-    setBuscando(true);
-    const id = setTimeout(async()=>{
-      const r = await cloud.buscarGente(t);
+    cloud.directorioGente().then(r=>{
       if(!vivo) return;
-      setBuscando(false);
-      setResultados(r.ok ? r.gente : []);
-    }, 500);
-    return ()=>{ vivo=false; clearTimeout(id); };
-  }, [busqueda, modo]);
+      setGente(r.ok ? r.gente : []);
+      setError(r.ok ? null : r.msg);
+    });
+    return ()=>{ vivo = false; };
+  }, [amigos.length]);
+
+  const esAmigo = id => amigos.find(a=>a.id===id);
+  const texto = normTxt(busqueda.trim().replace(/^@/,""));
+  const visibles = (gente||[])
+    .filter(g=>!texto || normTxt(g.handle).includes(texto) || normTxt(g.display_name||"").includes(texto))
+    .sort((a,b)=>!!esAmigo(a.id) - !!esAmigo(b.id));   // primero a quien aún no conoces; sort es estable
 
   async function pedir(g){
+    setError(null);
     const r = await cloud.pedirAmistad(g.id);
-    if(!r.ok){ setMsg({ ok:false, t:r.msg }); return; }
+    if(!r.ok){ setError(r.msg); return; }
     setPedidos(p => [...p, g.id]);
     cloud.avisarAmigos("amistad", { para:g.id });
-    setMsg({ ok:true, t:`Solicitud mandada a ${g.display_name || "@"+g.handle}. Te avisará cuando conteste.` });
   }
 
   const puedeCompartir = typeof navigator !== "undefined" && !!navigator.share;
@@ -5481,51 +5908,49 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar, onAbrir }){
     onRefrescarAmigos();
   }
 
-  const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
-
   return (<>
-    <div style={sectionTitle}>AMIGOS {amigos.length > 0 && `· ${amigos.length}`}</div>
+    <div style={tituloSeccion}>GENTE EN RPGYM {gente?.length > 0 && `· ${gente.length}`}</div>
     <div className="fh-card" style={{ padding:16 }}>
-      {amigos.length === 0 && !modo && (
-        <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
-          Todavía no tienes a nadie. Pásale tu código a quien quieras y apareceréis los dos en la clasificación.
-        </p>
-      )}
+      <input value={busqueda} maxLength={30} autoCapitalize="none" autoCorrect="off"
+        onChange={e=>setBusqueda(e.target.value)}
+        placeholder="Filtrar por nombre o @usuario" aria-label="Filtrar por nombre o usuario"
+        style={{ textAlign:"left" }}/>
+      <div style={{ fontSize:11, color:"var(--faint)", margin:"7px 2px 4px", lineHeight:1.45 }}>
+        {gente === null ? "Cargando…"
+          : !gente.length && !error ? "Todavía no hay nadie más. Invita a alguien con tu código."
+          : !visibles.length ? "Nadie con ese nombre."
+          : "Pídele amistad a quien quieras: le llegará una solicitud y decidirá si te acepta."}
+      </div>
+      {error && <div style={{ fontSize:12, color:"var(--crimson)", margin:"6px 2px", lineHeight:1.45 }}>{error}</div>}
 
-      {amigos.map((a,i)=>(
-        <div key={a.id} style={{ display:"flex", alignItems:"center", gap:11, padding:"9px 0", borderTop:i?"1px solid var(--line)":"none" }}>
-          <button onClick={()=>onAbrir(a)} aria-label={`Ver la ficha de ${a.handle}`}
-            style={{ flex:1, minWidth:0, display:"flex", alignItems:"center", gap:11, background:"none", border:"none", padding:0, cursor:"pointer", textAlign:"left", color:"inherit" }}>
-            <div style={{ width:34, height:34, borderRadius:10, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <User size={16} color="var(--gold)"/>
-            </div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:13.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"var(--txt)" }}>{a.display_name || a.handle}</div>
-              <div className="mono" style={{ fontSize:11, color:"var(--faint)", marginTop:1 }}>@{a.handle} · nivel {a.level}</div>
-            </div>
-            <ChevronRight size={15} color="var(--faint)" style={{ flexShrink:0 }}/>
-          </button>
-          <button onClick={()=>setConfirmar(confirmar===a.id?null:a.id)} aria-label={`Quitar a ${a.handle}`}
-            style={{ background:"var(--bg2)", border:"1px solid var(--line)", borderRadius:8, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--faint)", flexShrink:0 }}>
-            <X size={14}/>
-          </button>
-        </div>
-      ))}
+      {visibles.map((g,i)=>{
+        const amigo = esAmigo(g.id);
+        const persona = <>
+          <span style={cajaCara}><AvatarCara av={aliadoDeAmigo(g).avatar} size={32}/></span>
+          <span style={{ display:"block", flex:1, minWidth:0 }}>
+            <span style={{ display:"block", fontSize:13.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"var(--txt)" }}>{g.display_name || g.handle}</span>
+            <span className="mono" style={{ display:"block", fontSize:10.5, color:"var(--faint)", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{g.handle} · nivel {g.level}</span>
+          </span>
+        </>;
+        return (
+          <div key={g.id} style={{ display:"flex", alignItems:"center", gap:11, padding:"10px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+            {amigo ? (
+              <button onClick={()=>onAbrir(amigo)} aria-label={`Ver la ficha de ${g.handle}`}
+                style={{ flex:1, minWidth:0, display:"flex", alignItems:"center", gap:11, background:"none", border:"none", padding:0, cursor:"pointer", textAlign:"left" }}>{persona}</button>
+            ) : <div style={{ flex:1, minWidth:0, display:"flex", alignItems:"center", gap:11 }}>{persona}</div>}
+            {amigo ? <span className="fh-chip" style={{ background:"var(--bg2)", color:"var(--jade)", border:"none", flexShrink:0 }}>amigo</span>
+              : g.pendiente==="recibida" ? <span className="fh-chip" style={{ background:"var(--bg2)", color:"var(--gold)", border:"none", flexShrink:0 }}>te la ha pedido</span>
+              : g.pendiente || pedidos.includes(g.id) ? <span className="fh-chip" style={{ background:"var(--bg2)", color:"var(--faint)", border:"none", flexShrink:0 }}>pendiente</span>
+              : <button className="fh-btn" onClick={()=>pedir(g)} aria-label={`Pedir amistad a ${g.handle}`}
+                  style={{ background:"var(--jade)", padding:"8px 12px", fontSize:12, flexShrink:0 }}>Pedir</button>}
+          </div>
+        );
+      })}
+    </div>
 
-      {confirmar && (
-        <div className="fh-card" style={{ background:"var(--bg2)", padding:12, marginTop:10, display:"flex", alignItems:"center", gap:9, flexWrap:"wrap" }}>
-          <span style={{ fontSize:12.5, color:"var(--muted)", flex:1, minWidth:140 }}>¿Dejar de ser amigos? Podéis volver con otro código.</span>
-          <button className="fh-btn" onClick={()=>setConfirmar(null)} style={{ background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:"8px 13px", fontSize:12 }}>No</button>
-          <button className="fh-btn" onClick={()=>{ const id=confirmar; setConfirmar(null); onQuitar(id); }} style={{ background:"var(--crimson)", color:"#fff", padding:"8px 13px", fontSize:12 }}>Sí</button>
-        </div>
-      )}
-
-      <button className="fh-btn" onClick={()=>{ setModo(modo==="buscar"?null:"buscar"); setMsg(null); }}
-        style={{ width:"100%", marginTop:amigos.length?13:0, background:modo==="buscar"?"var(--gold)":"var(--card2)", color:modo==="buscar"?"#0F131A":"var(--txt)", border:modo==="buscar"?"none":"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-        <Search size={15} color={modo==="buscar"?"#0F131A":"var(--gold)"}/> Buscar a alguien
-      </button>
-
-      <div style={{ display:"flex", gap:8, marginTop:8 }}>
+    <div style={tituloSeccion}>¿AÚN NO ESTÁ EN RPGYM?</div>
+    <div className="fh-card" style={{ padding:16 }}>
+      <div style={{ display:"flex", gap:8 }}>
         <button className="fh-btn" onClick={invitar}
           style={{ flex:1, background:modo==="invitar"?"var(--gold)":"var(--card2)", color:modo==="invitar"?"#0F131A":"var(--txt)", border:modo==="invitar"?"none":"1px solid var(--line2)", padding:11, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
           <Share2 size={14} color={modo==="invitar"?"#0F131A":"var(--gold)"}/> Invitar
@@ -5535,42 +5960,6 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar, onAbrir }){
           <Plus size={15} color={modo==="canjear"?"#0F131A":"var(--jade)"}/> Tengo un código
         </button>
       </div>
-
-      {modo === "buscar" && (
-        <div className="fh-in" style={{ marginTop:12 }}>
-          <input value={busqueda} maxLength={30} autoCapitalize="none" autoCorrect="off"
-            onChange={e=>{ setBusqueda(e.target.value); setMsg(null); }}
-            placeholder="Nombre o @usuario" aria-label="Buscar a alguien"
-            style={{ textAlign:"left" }}/>
-          <div style={{ fontSize:11, color:"var(--faint)", margin:"7px 2px 0", lineHeight:1.45 }}>
-            {busqueda.trim().length < 2
-              ? "Escribe al menos dos letras."
-              : buscando ? "Buscando…"
-              : resultados.length ? "Le llegará una solicitud y decidirá si te acepta."
-              : "Nadie con ese nombre. Repasa cómo se escribe o pásale tu código."}
-          </div>
-
-          {resultados.map((g,i)=>(
-            <div key={g.id} style={{ display:"flex", alignItems:"center", gap:11, padding:"10px 0", borderTop:i?"1px solid var(--line)":"none" }}>
-              <div style={{ width:32, height:32, borderRadius:10, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <User size={15} color="var(--gold)"/>
-              </div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:13, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.display_name || g.handle}</div>
-                <div className="mono" style={{ fontSize:10.5, color:"var(--faint)", marginTop:1 }}>@{g.handle} · nivel {g.level}</div>
-              </div>
-              {g.ya_amigo ? (
-                <span className="fh-chip" style={{ background:"var(--bg2)", color:"var(--jade)", border:"none", flexShrink:0 }}>ya es amigo</span>
-              ) : g.pendiente || pedidos.includes(g.id) ? (
-                <span className="fh-chip" style={{ background:"var(--bg2)", color:"var(--faint)", border:"none", flexShrink:0 }}>pendiente</span>
-              ) : (
-                <button className="fh-btn" onClick={()=>pedir(g)}
-                  style={{ background:"var(--jade)", padding:"8px 12px", fontSize:12, flexShrink:0 }}>Pedir</button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
 
       {modo === "invitar" && (
         <div className="fh-in" style={{ marginTop:12 }}>
@@ -5630,6 +6019,43 @@ function AmigosPanel({ amigos, onRefrescarAmigos, onQuitar, onAbrir }){
 /* La campana: lo que otra persona ha puesto en tus manos y espera respuesta.
    Solo cosas que EXIGEN decisión (amistades y rutinas). Lo que solo se mira
    —quién ha entrenado, quién te ha superado— sigue en Inicio, sin insistir. */
+function SolicitudesCard({ solicitudes, onResponder }){
+  const [ocupado, setOcupado] = useState(null);
+  async function responder(id, acepto){
+    setOcupado(id);
+    try { await onResponder(id, acepto); } finally { setOcupado(null); }
+  }
+  if(!solicitudes.length) return null;
+  return (<>
+    <div style={tituloSeccion}>QUIEREN SER TUS AMIGOS · {solicitudes.length}</div>
+    <div className="fh-card" style={{ padding:16 }}>
+      {solicitudes.map((s,i)=>(
+        <div key={s.id} style={{ padding:"11px 0", borderTop:i?"1px solid var(--line)":"none" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:11 }}>
+            <div style={{ width:36, height:36, borderRadius:11, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <User size={17} color="var(--gold)"/>
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:13.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.display_name || s.handle}</div>
+              <div className="mono" style={{ fontSize:11, color:"var(--faint)", marginTop:2 }}>@{s.handle} · nivel {s.level} · {s.total_workouts || 0} entrenos</div>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:8, marginTop:10 }}>
+            <button className="fh-btn" disabled={ocupado===s.id} onClick={()=>responder(s.id, false)}
+              style={{ flex:1, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:10, fontSize:12.5 }}>
+              Rechazar
+            </button>
+            <button className="fh-btn" disabled={ocupado===s.id} onClick={()=>responder(s.id, true)}
+              style={{ flex:1.4, background:"var(--jade)", padding:10, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+              <Check size={14}/> Aceptar
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </>);
+}
+
 function AvisosView({ solicitudes, envios, onResponderSolicitud, onResponderRutina, onVolver }){
   const [ocupado, setOcupado] = useState(null);
   const sectionTitle = { fontSize:12, fontWeight:700, letterSpacing:".08em", color:"var(--faint)", margin:"18px 4px 8px" };
@@ -5662,36 +6088,7 @@ function AvisosView({ solicitudes, envios, onResponderSolicitud, onResponderRuti
         </div>
       )}
 
-      {solicitudes.length > 0 && (<>
-        <div style={sectionTitle}>QUIEREN SER TUS AMIGOS · {solicitudes.length}</div>
-        <div className="fh-card" style={{ padding:16 }}>
-          {solicitudes.map((s,i)=>(
-            <div key={s.id} style={{ padding:"11px 0", borderTop:i?"1px solid var(--line)":"none" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:11 }}>
-                <div style={{ width:36, height:36, borderRadius:11, flexShrink:0, background:"var(--bg2)", border:"1px solid var(--line2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <User size={17} color="var(--gold)"/>
-                </div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:13.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.display_name || s.handle}</div>
-                  <div className="mono" style={{ fontSize:11, color:"var(--faint)", marginTop:2 }}>@{s.handle} · nivel {s.level} · {s.total_workouts || 0} entrenos</div>
-                </div>
-              </div>
-              <div style={{ display:"flex", gap:8, marginTop:10 }}>
-                <button className="fh-btn" disabled={ocupado===s.id}
-                  onClick={()=>conBloqueo(s.id, ()=>onResponderSolicitud(s.id, false))}
-                  style={{ flex:1, background:"var(--card2)", color:"var(--muted)", border:"1px solid var(--line2)", padding:10, fontSize:12.5 }}>
-                  Rechazar
-                </button>
-                <button className="fh-btn" disabled={ocupado===s.id}
-                  onClick={()=>conBloqueo(s.id, ()=>onResponderSolicitud(s.id, true))}
-                  style={{ flex:1.4, background:"var(--jade)", padding:10, fontSize:12.5, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                  <Check size={14}/> Aceptar
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </>)}
+      <SolicitudesCard solicitudes={solicitudes} onResponder={onResponderSolicitud}/>
 
       {envios.length > 0 && (<>
         <div style={sectionTitle}>RUTINAS QUE TE MANDAN · {envios.length}</div>
@@ -6442,18 +6839,7 @@ function SettingsView({ state, log, updateProfile, setReminders, setSub, setCycl
         </div>
       </header>
 
-      <div style={{ display:"flex", gap:7, overflowX:"auto", padding:"10px 2px 4px", scrollbarWidth:"none" }}>
-        {SETTINGS_TABS.map(t=>{
-          const on = sec === t.id; const I = t.icon;
-          return (
-            <button key={t.id} onClick={()=>setSec(t.id)} className="fh-btn" aria-pressed={on}
-              style={{ flexShrink:0, padding:"9px 13px", fontSize:12.5, whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:6,
-                       background:on?"var(--gold)":"var(--card)", color:on?"#0F131A":"var(--muted)", border:on?"none":"1px solid var(--line)" }}>
-              <I size={14}/> {t.label}
-            </button>
-          );
-        })}
-      </div>
+      <FilaPestanas tabs={SETTINGS_TABS} activa={sec} onCambia={setSec}/>
 
       {sec==="perfil" && (<>
       {/* --- Apariencia --- */}
@@ -6952,31 +7338,23 @@ function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminar
   const greeting=useMemo(()=>greetingFor(state.profile?.name), [state.profile?.name]);
   const opts=semanaOpts(state);
   const deVacaciones=vacacionDeHoy(state.vacations);
+  const racha=habitStreak(log, state.reminders?.days, opts);
+  const semana=resumenSemana(log, plannedDaysOf(state), mondayOf(todayISO()), opts);
+  const tituloCifra={ fontSize:12, color:"var(--muted)", fontWeight:700, letterSpacing:".08em", display:"flex", alignItems:"center", gap:5 };
+  const notaCifra={ fontSize:12, color:"var(--muted)", marginTop:4 };
+  const filaAcceso={ display:"flex", alignItems:"center", gap:12, width:"100%", textAlign:"left", padding:"10px 14px", marginTop:12, cursor:"pointer", color:"var(--txt)" };
 
   return (
     <div className="fh-in">
-      <header style={{ padding:"22px 2px 16px", display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10 }}>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontSize:12, color:"var(--muted)", fontWeight:600, letterSpacing:".08em" }}>RPGYM · SEMANA {week}</div>
-          <h1 style={{ margin:"3px 0 0", fontSize:21, lineHeight:1.2 }}>{greeting}</h1>
-        </div>
+      <header style={{ padding:"22px 2px 14px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+        <h1 style={{ flex:1, minWidth:0, margin:0, fontSize:21, lineHeight:1.15 }}>{greeting}</h1>
         <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-          <div className="fh-chip" style={{ background:"rgba(232,176,75,.14)", color:"var(--gold)", display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap", flexShrink:0 }} title="Días entrenados seguidos. Solo se corta si cierras una semana con menos sesiones de las previstas: el día concreto da igual."><Flame size={13}/> {habitStreak(log, state.reminders?.days, opts)} d</div>
           {cloudEnabled && perfil && (
             <button onClick={()=>setTab("avisos")} aria-label={pendientes ? `Avisos: ${pendientes} sin responder` : "Avisos"}
               style={{ background:"var(--card)", border:`1px solid ${pendientes?"var(--gold)":"var(--line)"}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:pendientes?"var(--gold)":"var(--muted)", flexShrink:0, position:"relative" }}>
               <Bell size={17}/>
-              {pendientes > 0 && (
-                <span className="mono" style={{ position:"absolute", top:-5, right:-5, minWidth:17, height:17, padding:"0 4px", borderRadius:999, background:"var(--crimson)", color:"#fff", fontSize:10, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid var(--bg)" }}>
-                  {pendientes > 9 ? "9+" : pendientes}
-                </span>
-              )}
+              <Contador n={pendientes}/>
             </button>
-          )}
-          {/* Aquí estaba el acceso a la cuenta, que ahora vive dentro de Ajustes:
-              lo que se mira a diario es la gente, no el correo con el que entras. */}
-          {cloudEnabled && (
-            <button onClick={()=>setTab("amigos")} aria-label="Amigos" style={{ background:"var(--card)", border:`1px solid ${perfil?"var(--gold)":"var(--line)"}`, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:perfil?"var(--gold)":"var(--muted)", flexShrink:0 }}><Users size={17}/></button>
           )}
           <button onClick={()=>setTab("ajustes")} aria-label="Ajustes" style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><Settings size={17}/></button>
         </div>
@@ -7026,11 +7404,34 @@ function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminar
         </div>
       </div>
 
-      <button className="fh-card" onClick={()=>setTab("mazmorra")} style={{ display:"flex", alignItems:"center", gap:12, width:"100%", textAlign:"left", padding:"10px 14px", marginTop:12, cursor:"pointer", color:"var(--txt)" }}>
+      {/* Semana y racha, grandes y a la vista: lo que se mira cada vez que se abre la app. */}
+      <div style={{ display:"flex", gap:12, marginTop:12 }}>
+        <div className="fh-card" style={{ flex:1, minWidth:0, padding:"12px 14px" }}>
+          <div style={tituloCifra}><CalendarDays size={14} color="var(--sky)"/> SEMANA</div>
+          <div className="disp" style={{ fontSize:38, lineHeight:1, marginTop:4 }}>{week}</div>
+          <div style={notaCifra}>{semana.previstos ? `${semana.hechos} de ${semana.previstos} sesiones` : "Sin sesiones previstas"}</div>
+        </div>
+        <div className="fh-card" style={{ flex:1, minWidth:0, padding:"12px 14px" }}>
+          <div style={tituloCifra}><Flame size={14} color={racha>0?"var(--ember)":"var(--faint)"}/> RACHA</div>
+          <div className="disp" style={{ fontSize:38, lineHeight:1, marginTop:4, color:racha>0?"var(--gold)":"var(--txt)" }}>{racha} <span style={{ fontSize:20 }}>{racha===1?"día":"días"}</span></div>
+          <div style={notaCifra}>Récord: {Math.max(state.bestStreak||0, racha)}</div>
+        </div>
+      </div>
+
+      <button className="fh-card" onClick={()=>setTab("mazmorra")} style={filaAcceso}>
         <Sprite id={110} size={32}/>
         <span style={{ flex:1, minWidth:0 }}>
           <span className="disp" style={{ display:"block", fontSize:18, lineHeight:1.15 }}>La mazmorra</span>
           <span style={{ display:"block", fontSize:12, color:"var(--muted)" }}>{mazmorra?.partida && mazmorra.partida.fase!=="fin" ? `Sala ${mazmorra.partida.sala} de ${M.SALAS}` : mazmorra?.gloria ? `${mazmorra.gloria} de Gloria` : "Lleva tu héroe a combatir"} · {mazmorra?.llaves||0} {mazmorra?.llaves===1 ? "llave" : "llaves"} · Impulso {mazmorra?.impulso||0}</span>
+        </span>
+        <ChevronRight size={16} color="var(--faint)" style={{ flexShrink:0 }}/>
+      </button>
+
+      <button className="fh-card" onClick={()=>setTab("dieta")} style={filaAcceso}>
+        <Sprite id={SPR.pocion} size={32}/>
+        <span style={{ flex:1, minWidth:0 }}>
+          <span className="disp" style={{ display:"block", fontSize:18, lineHeight:1.15 }}>Dieta</span>
+          <span style={{ display:"block", fontSize:12, color:"var(--muted)" }}>Plan semanal y lista de la compra</span>
         </span>
         <ChevronRight size={16} color="var(--faint)" style={{ flexShrink:0 }}/>
       </button>
@@ -7170,7 +7571,7 @@ function ShareRoutinePanel({ routine, onClose, publicada, onPublicar, setTab }){
 
       {!cloud.cloudEnabled ? (
         <p style={{ fontSize:12, color:"var(--muted)", margin:0, lineHeight:1.5 }}>
-          Para compartir rutinas hace falta cuenta. Entra desde <b style={{ color:"var(--txt)" }}>Inicio → tu cuenta</b>.
+          Para compartir rutinas hace falta cuenta. Entra desde <b style={{ color:"var(--txt)" }}>Ajustes → Cuenta</b>.
         </p>
       ) : (<>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
@@ -7427,7 +7828,7 @@ function ExercisePicker({ dayName, already, onPick, onRemove, onClose }){
     /* Fondo opaco con la variable del tema: el selector ocupa toda la pantalla y así
        se lee igual de bien en claro que en oscuro (un velo oscuro fijo no valdría). */
     <div style={{ position:"fixed", inset:0, zIndex:210, background:"var(--bg)", display:"flex", justifyContent:"center" }}>
-      <div style={{ width:"100%", maxWidth:480, display:"flex", flexDirection:"column", padding:"16px 16px calc(12px + env(safe-area-inset-bottom))", minHeight:0 }}>
+      <div style={{ width:"100%", maxWidth:480, display:"flex", flexDirection:"column", padding:"calc(16px + var(--st)) 16px calc(12px + var(--sb))", minHeight:0 }}>
 
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12, flexShrink:0 }}>
           <div style={{ flex:1, minWidth:0 }}>
@@ -8289,7 +8690,7 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
       </button>
 
       {sesionConjunta?.con && (
-        <div className="fh-chip" style={{ position:"fixed", bottom:14, left:"50%", transform:"translateX(-50%)", background:"var(--jade)", color:"#0F131A", display:"flex", alignItems:"center", gap:6, zIndex:60, boxShadow:"0 4px 14px rgba(0,0,0,.4)" }}>
+        <div className="fh-chip" style={{ position:"fixed", bottom:"calc(14px + var(--sb))", left:"50%", transform:"translateX(-50%)", background:"var(--jade)", color:"#0F131A", display:"flex", alignItems:"center", gap:6, zIndex:60, boxShadow:"0 4px 14px rgba(0,0,0,.4)" }}>
           <Users size={12}/> Entrenando con {sesionConjunta.con}
         </div>
       )}
@@ -9180,22 +9581,20 @@ function InformeSemanalView({ state, log, measures, lunes, setLunes, cloudEnable
    AMIGOS
    ========================================================================= */
 
-/* Todo lo que tiene que ver con tu gente, en un sitio: quiénes son, cómo vais
-   en la clasificación y las quedadas. Antes estaba repartido entre Inicio (que
-   se cargaba de cosas) y la pestaña RPGym (que es tu progreso, no el de nadie
-   más). Se entra por el botón de la cabecera de Inicio — el que antes abría la
-   cuenta, que ahora vive en Ajustes — y se sale con el botón de volver. */
-function AmigosView({ perfil, cloudEnabled, setTab, amigos, onRefrescarAmigos, onQuitarAmigo, onAbrirAmigo,
+/* Todo lo que tiene que ver con tu gente, en su propia pestaña de la barra: quiénes
+   son, quién más hay en RPGym, las quedadas y quién va ganando. */
+const AMIGOS_SECCIONES = [
+  { id:"circulo", label:"Amigos" }, { id:"gente", label:"Buscar" }, { id:"quedadas", label:"Quedadas" }, { id:"clasificacion", label:"Clasificación" },
+];
+function AmigosView({ perfil, cloudEnabled, setTab, seccion, setSeccion, solicitudes, onResponderSolicitud, amigos, onRefrescarAmigos, onQuitarAmigo, onAbrirAmigo,
                       quedadas, onRefrescarQuedadas, cargandoQuedadas, onCargarTabla, mz, yo }){
+  // Sin amigos todavía, lo útil es ver quién hay.
+  const sec = seccion || (amigos.length || solicitudes.length ? "circulo" : "gente");
   return (
     <div className="fh-in">
-      <header style={{ padding:"22px 2px 8px", display:"flex", alignItems:"center", gap:10 }}>
-        <button onClick={()=>setTab("home")} aria-label="Volver a Inicio"
-          style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
-        <div style={{ minWidth:0 }}>
-          <h1 style={{ margin:0, fontSize:22 }}>Amigos</h1>
-          <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Tu círculo, las quedadas y quién va ganando.</p>
-        </div>
+      <header style={{ padding:"22px 2px 8px" }}>
+        <h1 style={{ margin:0, fontSize:22 }}>Amigos</h1>
+        <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Tu círculo, quién más entrena aquí y quién va ganando.</p>
       </header>
 
       {!cloudEnabled ? (
@@ -9219,10 +9618,17 @@ function AmigosView({ perfil, cloudEnabled, setTab, amigos, onRefrescarAmigos, o
         </div>
       ) : (
         <>
-          <AmigosPanel amigos={amigos} onRefrescarAmigos={onRefrescarAmigos} onQuitar={onQuitarAmigo} onAbrir={onAbrirAmigo}/>
-          <QuedadasPanel modo="todo" quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={cargandoQuedadas}/>
-          <ClasificacionMazmorra mz={mz} yo={yo} amigos={amigos}/>
-          <ClasificacionCard perfil={perfil} cargar={onCargarTabla} señal={amigos.length}/>
+          <FilaPestanas tabs={AMIGOS_SECCIONES.map(s=>s.id==="circulo" ? { ...s, aviso:solicitudes.length } : s)} activa={sec} onCambia={setSeccion}/>
+          {sec==="circulo" && <>
+            <SolicitudesCard solicitudes={solicitudes} onResponder={onResponderSolicitud}/>
+            <AmigosPanel amigos={amigos} onQuitar={onQuitarAmigo} onAbrir={onAbrirAmigo} onBuscar={()=>setSeccion("gente")}/>
+          </>}
+          {sec==="gente" && <GentePanel amigos={amigos} onRefrescarAmigos={onRefrescarAmigos} onAbrir={onAbrirAmigo}/>}
+          {sec==="quedadas" && <QuedadasPanel modo="todo" quedadas={quedadas} onRefrescar={onRefrescarQuedadas} cargando={cargandoQuedadas}/>}
+          {sec==="clasificacion" && <>
+            <ClasificacionMazmorra mz={mz} yo={yo} amigos={amigos}/>
+            <ClasificacionCard perfil={perfil} cargar={onCargarTabla} señal={amigos.length}/>
+          </>}
         </>
       )}
 
@@ -9279,14 +9685,15 @@ function PanelRamas({ puntos, actual }){
 
 function HeroeView({ avatar, puntos, onCambiar, onVolver, arranque, onAhoraNo }){
   const [av, setAv] = useState(avatar);
-  const secciones = [["senda","Senda"],["aspecto","Aspecto"],["color","Color"], ...(arranque ? [] : [["equipo","Equipo"]])];
+  const secciones = [["senda","Senda"],["aspecto","Aspecto"],["color","Color"], ...(arranque ? [] : [["equipo","Equipo"],["especial","Especial"]])];
   const [sec, setSec] = useState(arranque ? "senda" : "equipo");
   const [ranura, setRanura] = useState(null);
   const cambiar = p=>{ const n = { ...av, ...p }; setAv(n); if(!arranque) onCambiar(n); };
-  const elegirRama = id=>cambiar({ rama:id, equipo:equipoDeRama(id, puntos), ...(arranque ? { armadura:RAMA[id].armadura } : {}) });
+  const elegirRama = id=>cambiar({ rama:id, equipo:equipoDeRama(id, puntos), especial:null, ...(arranque ? { armadura:RAMA[id].armadura } : {}) });
   const equipar = (id, slot)=>{ const equipo = { ...av.equipo }; if(id) equipo[slot] = id; else delete equipo[slot]; cambiar({ equipo }); };
   const ganadas = Object.values(PIEZAS_POR_RAMA).flat().filter(p=>p.u>0 && p.u<=(puntos[p.rama]||0)).length;
   const paso = secciones.findIndex(s=>s[0]===sec), ultimo = paso===secciones.length-1;
+  const heroeVista = M.crearHeroe({ id:"yo", nombre:"", avatar:av, level:1 }, AVATAR.piezas), especialActual = M.especialDe(heroeVista).id;
 
   return (
     <div className="fh-in" style={{ paddingBottom:arranque ? 8 : 24 }}>
@@ -9306,9 +9713,9 @@ function HeroeView({ avatar, puntos, onCambiar, onVolver, arranque, onAhoraNo })
         </div>
       </div>
 
-      <div role="tablist" style={{ display:"flex", gap:6, marginBottom:4 }}>
+      <div role="tablist" style={{ display:"flex", gap:4, marginBottom:4 }}>
         {secciones.map(([id,et])=><button key={id} role="tab" aria-selected={sec===id} className="fh-btn" onClick={()=>setSec(id)}
-          style={{ flex:1, padding:"9px 2px", fontSize:15, background:sec===id ? "var(--gold)" : "var(--card)", color:sec===id ? "#1A1020" : "var(--muted)", border:`1px solid ${sec===id ? "var(--gold)" : "var(--line2)"}` }}>{et}</button>)}
+          style={{ flex:1, minWidth:0, padding:"9px 0", fontSize:secciones.length>4 ? 12.5 : 14, letterSpacing:0, background:sec===id ? "var(--gold)" : "var(--card)", color:sec===id ? "#1A1020" : "var(--muted)", border:`1px solid ${sec===id ? "var(--gold)" : "var(--line2)"}` }}>{et}</button>)}
       </div>
 
       {sec==="senda" && <>
@@ -9405,6 +9812,30 @@ function HeroeView({ avatar, puntos, onCambiar, onVolver, arranque, onAhoraNo })
         })}
         <div style={tituloHeroe}>TUS RAMAS</div>
         <div className="fh-card" style={{ padding:14 }}><PanelRamas puntos={puntos} actual={av.rama}/></div>
+      </>}
+
+      {sec==="especial" && <>
+        <div style={tituloHeroe}>TU ATAQUE ESPECIAL</div>
+        <p style={{ fontSize:12.5, color:"var(--muted)", margin:"0 2px 10px", lineHeight:1.45 }}>Llevas uno a la mazmorra. Se paga con Impulso y se desbloquean más con series reales de cada rama.</p>
+        {RAMAS.map(r=>(
+          <div key={r.id} style={{ marginBottom:10 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:r.color, margin:"0 2px 4px" }}>{r.nombre} · {r.estilo}</div>
+            {Object.values(M.ESPECIALES).filter(e=>e.rama===r.id).map(e=>{
+              const libre = M.especialDisponible(e, puntos), lleva = especialActual===e.id, falta = e.u-(puntos[e.rama]||0);
+              return (
+                <button key={e.id} disabled={!libre} onClick={()=>cambiar({ especial:e.id })} aria-pressed={lleva}
+                  style={{ display:"flex", alignItems:"center", gap:9, width:"100%", textAlign:"left", padding:"8px 10px", marginBottom:4, cursor:libre ? "pointer" : "default", color:"var(--txt)", background:lleva ? "var(--card2)" : "var(--card)", border:`1px solid ${lleva ? r.color : "var(--line)"}`, opacity:libre ? 1 : .62 }}>
+                  {libre ? (lleva ? <Check size={15} color={r.color} style={{ flexShrink:0 }}/> : <i style={{ width:15, height:15, background:r.color, flexShrink:0 }}/>) : <Lock size={15} color="var(--faint)" style={{ flexShrink:0 }}/>}
+                  <span style={{ flex:1, minWidth:0 }}>
+                    <span style={{ display:"block", fontSize:13.5 }}>{e.nombre} <span style={{ color:"var(--gold)", fontSize:11.5 }}>· {e.coste} de Impulso</span></span>
+                    <span style={{ display:"block", fontSize:11.5, color:"var(--muted)", lineHeight:1.35 }}>{e.texto(heroeVista.ataque, heroeVista.apoyo)}</span>
+                    {!libre && <span style={{ display:"block", fontSize:11, color:"var(--faint)" }}>Faltan {falta} de {r.estilo}</span>}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </>}
 
       {arranque && <button className="fh-btn" onClick={()=>ultimo ? onCambiar(av) : setSec(secciones[paso+1][0])}
@@ -9954,9 +10385,13 @@ function DietView({ state, mealPlan, saveMealPlan, excludes, setExcludes, setTab
 
   return (
     <div className="fh-in">
-      <header style={{ padding:"22px 2px 12px" }}>
-        <h1 style={{ margin:0, fontSize:22 }}>Dieta</h1>
-        <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Plan semanal a tu medida y lista para la compra.</p>
+      <header style={{ padding:"22px 2px 12px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={()=>setTab("home")} aria-label="Volver a Inicio"
+          style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
+        <div style={{ minWidth:0 }}>
+          <h1 style={{ margin:0, fontSize:22 }}>Dieta</h1>
+          <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Plan semanal a tu medida y lista para la compra.</p>
+        </div>
       </header>
 
       {state.profile?.sex === "mujer" && !dietTipClosed && (

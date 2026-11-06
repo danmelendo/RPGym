@@ -253,8 +253,8 @@ export async function cambiarHandle(nuevo){
 /* Solo el aspecto y el equipo: es lo que un amigo necesita para llevarte en su grupo. */
 function avatarPublico(av){
   if (!av?.rama) return null;
-  const { sexo, rama, piel, pelo, colorPelo, barba, ojos, armadura, equipo } = av;
-  return { sexo, rama, piel, pelo, colorPelo, barba, ojos, armadura, equipo };
+  const { sexo, rama, piel, pelo, colorPelo, barba, ojos, armadura, equipo, especial } = av;
+  return { sexo, rama, piel, pelo, colorPelo, barba, ojos, armadura, equipo, especial };
 }
 
 export async function sincronizarPerfil({ level, xp, totalWorkouts, bestStreak, displayName, appVersion, atributos, avatar }){
@@ -730,14 +730,27 @@ export async function quedarCon({ amigoId, cuando, lugar, nota }){
 
 /* --- Buscar gente y solicitudes de amistad ------------------------------- */
 
-export async function buscarGente(texto){
+/* Toda la gente de RPGym, para poder pedirle amistad sin saber cómo se llama. La app
+   la usa un grupo pequeño: se trae entera y se filtra en el móvil. `profiles` ya se
+   puede leer con sesión (es lo que usa la clasificación) y de `friend_requests` solo
+   vuelven las tuyas, así que no hace falta función de servidor. `pendiente` dice en
+   qué sentido va la solicitud viva, si la hay: "enviada" o "recibida". */
+export async function directorioGente(){
   if (!supabase) return sinNube;
-  const t = String(texto || "").trim();
-  if (t.length < 2) return { ok:true, gente:[] };
   try {
-    const { data, error } = await supabase.rpc("buscar_gente", { p_texto: t });
-    if (error) return { ok:false, msg:traducir(error) };
-    return { ok:true, gente:data || [] };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const [perfiles, vivas] = await Promise.all([
+      supabase.from("profiles").select("id, handle, display_name, level, avatar")
+        .neq("id", user.id).order("level", { ascending:false }).limit(200),
+      supabase.from("friend_requests").select("de, para").eq("estado", "pendiente"),
+    ]);
+    if (perfiles.error) return { ok:false, msg:traducir(perfiles.error) };
+    const sentido = {};
+    (vivas.data || []).forEach(r => {
+      if (r.de === user.id) sentido[r.para] = "enviada"; else sentido[r.de] = "recibida";
+    });
+    return { ok:true, gente:(perfiles.data || []).map(p => ({ ...p, pendiente:sentido[p.id] || null })) };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 

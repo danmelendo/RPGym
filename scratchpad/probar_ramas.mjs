@@ -71,7 +71,9 @@ for (const s of capas) {
 // Lo que llega de otro móvil no se da por bueno
 const rampas = trozo("const RAMPAS = {", "const NOMBRES_COLOR");
 const amigo = trozo("const NPC_BASE = {", "const NPCS = [") + trozo("/* Lo que llega de otro móvil", "const CARA_INFO");
-const f = new Function("AVATAR", "RAMA", "RAMAS", "equipoDeRama", rampas + amigo + "; return { normalizarAvatar, aliadoDeAmigo };")(AVATAR, m.RAMA, m.RAMAS, m.equipoDeRama);
+const f = new Function("AVATAR", "RAMA", "RAMAS", "equipoDeRama", "M", rampas + amigo + "; return { normalizarAvatar, aliadoDeAmigo };")(AVATAR, m.RAMA, m.RAMAS, m.equipoDeRama, { ESPECIALES:{ muro:{} } });
+assert.equal(f.normalizarAvatar({ rama:"monje", especial:"muro" }).especial, "muro");
+assert.equal(f.normalizarAvatar({ rama:"monje", especial:"inventado" }).especial, null);
 assert.equal(f.normalizarAvatar(null), null);
 assert.equal(f.normalizarAvatar({ rama:"astronauta" }), null);
 const raro = f.normalizarAvatar({ rama:"picaro", sexo:"x", piel:"plutonio", pelo:"nada", colorPelo:"?", ojos:"?", armadura:"?", equipo:{ arma:"g_mandoble", torso:"no_existe", cabeza:"g_mandoble" } });
