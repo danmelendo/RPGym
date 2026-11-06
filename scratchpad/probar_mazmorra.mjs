@@ -324,4 +324,34 @@ assert(unMes>novato && medio>unMes && veterano>medio, "cada escalón de equipo d
 assert(veterano>.9, `con todo el equipo debe ser ganable: ${veterano}`);
 assert(amigos>unMes, "tener amigos que entrenan debe notarse");
 assert(conImpulso>unMes, "entrar con series hechas debe notarse");
+// Logros: solo con llave, una sola vez, y nunca tocan nada que no sea la mazmorra
+{
+  const hoy = "2026-11-06", ids = M.LOGROS.map(l=>l.id);
+  assert(new Set(ids).size===ids.length, "ids repetidos");
+  const vacia = M.cargarMazmorra(null);
+  assert(!Object.keys(M.comprobarLogros({ ...vacia, llaves:1 }, hoy).logros).length, "nada ganado, nada apuntado");
+  const totales = M.comprobarLogros({ ...vacia, salas:1, mejorSala:5, mazmorras:1, llaves:3, impulso:M.IMPULSO_MAX }, hoy);
+  for(const id of ["m_sala","m_sofa","m_abandono","m_llaves","m_impulso"]) assert(totales.logros[id]===hoy, id);
+  assert(totales.logrosNuevos.length===5, "avisa de los cinco");
+  assert(M.comprobarLogros(totales, "2027-01-01")===totales, "una vez ganado no se vuelve a apuntar");
+  const callado = M.comprobarLogros({ ...vacia, salas:1 }, hoy, false);
+  assert(callado.logros.m_sala && !callado.logrosNuevos.length, "al abrir la app no avisa");
+  const ramas = M.cargarMazmorra({ ramasGanadas:["guerrero","picaro","barbaro","explorador","monje"] });
+  assert(M.comprobarLogros(ramas, hoy).logros.m_ramas, "cinco ramas");
+  // Una victoria de práctica no da nada; la misma partida con llave, sí
+  const h = (rama,tipo="npc",hp=5,ev=[])=>({ rama, tipo, hp, evoluciones:ev, clase:rama });
+  const partida = { fase:"fin", victoria:true, especiales:1, heroes:[h("guerrero"),h("picaro","amigo",5,["a"]),h("monje","amigo",5,["a","b"]),h("barbaro","amigo")] };
+  const practica = M.comprobarLogros({ ...vacia, partida:{ ...partida, puntua:false } }, hoy);
+  assert(!Object.keys(practica.logros).length, "sin llave no hay logro");
+  const buena = M.comprobarLogros({ ...vacia, partida:{ ...partida, puntua:true } }, hoy);
+  for(const id of ["m_bajas","m_amigo","m_amigos","m_ascenso","m_final","m_especial"]) assert(buena.logros[id], id);
+  const baja = M.comprobarLogros({ ...vacia, partida:{ ...partida, puntua:true, heroes:[h("guerrero","npc",0),...partida.heroes.slice(1)] } }, hoy);
+  assert(!baja.logros.m_bajas, "con una baja no vale");
+  const enCurso = M.comprobarLogros({ ...vacia, partida:{ ...partida, fase:"usar", victoria:undefined, puntua:true } }, hoy);
+  assert(!enCurso.logros.m_amigo && enCurso.logros.m_ascenso, "las victorias esperan al final; ascender, no");
+  // La victoria apunta la rama del jugador, y solo la del jugador
+  const fin = M.apuntar({ ...vacia, partida:{ ...partida, sala:10, ganadas:10, contadas:9, puntua:true } });
+  assert(fin.ramasGanadas.length===1 && fin.ramasGanadas[0]==="guerrero", "rama ganada");
+}
+
 console.log("Mazmorra: todo correcto");

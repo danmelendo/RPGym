@@ -95,6 +95,10 @@ export function especialesNuevos(antes, despues){
    `cambia` sustituye caras del dado; `ata` y `apo` suben las que ya tenía; `rasgo` se suma
    a los que ya tiene; `tipo` cuenta para las sinergias de grupo. */
 export const ASCENSOS = [3, 7];
+/* Tres zonas, partidas por los ascensos. Solo cambian el decorado: la dificultad ya sube en
+   esos mismos saltos (AJUSTE.tramos). */
+export const ZONAS = [{ id:1, nombre:"El sótano", desde:1 }, { id:2, nombre:"Las catacumbas", desde:ASCENSOS[0]+1 }, { id:3, nombre:"La sala del trono", desde:ASCENSOS[1]+1 }];
+export const zonaDe = sala => [...ZONAS].reverse().find(z=>sala>=z.desde) || ZONAS[0];
 
 /* Los rasgos se combinan según el ORDEN en que usas los dados: primero quien marca, luego
    quien aprovecha la marca. Es lo que hace que importe quién va en el grupo. */
@@ -410,7 +414,7 @@ export function usarEspecial(p, h, obj, impulso, rng=Math.random){
   if(e.objetivo==="caido" && !(p.heroes[obj] && p.heroes[obj].hp<=0)) return nada;
   let q = e.hacer(p, { h, obj, a:heroe.ataque, s:heroe.apoyo });
   const ev = [evento(p, q, { lado:"h", i:h }, "especial", { dado:h, obj, nombre:e.nombre })];
-  q = { ...q, n:q.n+1, ev, dados:q.dados.map((x,n)=>n===h && x ? { ...x, usado:true } : x) };
+  q = { ...q, n:q.n+1, ev, especiales:(q.especiales||0)+1, dados:q.dados.map((x,n)=>n===h && x ? { ...x, usado:true } : x) };
   return { partida:tras(anota(q, `${heroe.nombre}: ${e.nombre}`), rng), gastado:e.coste };
 }
 
@@ -487,7 +491,7 @@ export function finTurno(p, rng=Math.random){
    nada que cambie al héroe. Para que escalar en la clasificación exija ir al gimnasio,
    solo puntúan las partidas con llave, y las llaves salen de entrenos terminados, una
    al día. Sin llave se juega igual, de práctica. */
-export const MAZMORRA_VACIA = { partida:null, impulso:0, llaves:1, ultimaLlave:null, gloria:0, salas:0, mazmorras:0, mejorSala:0 };
+export const MAZMORRA_VACIA = { partida:null, impulso:0, llaves:1, ultimaLlave:null, gloria:0, salas:0, mazmorras:0, mejorSala:0, ramasGanadas:[], logros:{}, logrosNuevos:[] };
 const JEFES = new Set(OLEADAS.map((o,i)=>ENEMIGOS[o[0]].jefe ? i+1 : 0));
 export const gloriaDeSala = n => 10*n + (JEFES.has(n) ? 50 : 0);
 export const GLORIA_VICTORIA = 200;
@@ -518,5 +522,43 @@ export function apuntar(mz){
   const partida = { ...p, contadas:ganadas, cerrada:p.fase==="fin", gloriaPartida:(p.gloriaPartida||0)+(p.puntua ? suma : 0) };
   if(!p.puntua) return { ...mz, partida };
   return { ...mz, partida, gloria:(mz.gloria||0)+suma, salas:(mz.salas||0)+ganadas-antes,
-    mejorSala:Math.max(mz.mejorSala||0, ganadas), mazmorras:(mz.mazmorras||0)+(cierra && p.victoria ? 1 : 0) };
+    mejorSala:Math.max(mz.mejorSala||0, ganadas), mazmorras:(mz.mazmorras||0)+(cierra && p.victoria ? 1 : 0),
+    ramasGanadas:cierra && p.victoria ? [...new Set([...(mz.ramasGanadas||[]), p.heroes[0].rama])] : mz.ramasGanadas };
+}
+
+/* Logros de la mazmorra. Van aparte de los del gimnasio porque aquellos dan XP y esta
+   mazmorra nunca da nada: solo se guardan aquí, en `mz`, y no tocan `state`. Y como la
+   Gloria, solo cuentan las partidas con llave: si no, saldrían jugando sin pisar el gym.
+   `si(mz, p, ganada)`: `p` es la partida en curso si puntúa, y null si no. */
+const amigosEn = p => p ? p.heroes.filter(h=>h.tipo==="amigo").length : 0;
+const asciende = (p, n) => !!p?.heroes.some(h=>(h.evoluciones||[]).length>=n);
+export const LOGROS = [
+  { id:"m_sala",     titulo:"Primera sangre",        texto:"Supera tu primera sala",                     sprite:120, si:mz=>mz.salas>=1 },
+  { id:"m_sofa",     titulo:"Arriba de una vez",     texto:"Derrota al Sofá Maldito",                    sprite:110, si:mz=>mz.mejorSala>=5 },
+  { id:"m_abandono", titulo:"Aquí no se rinde nadie", texto:"Derrota a El Abandono",                     sprite:111, si:mz=>mz.mazmorras>=1 },
+  { id:"m_cinco",    titulo:"Costumbre",             texto:"Supera 5 mazmorras",                         sprite:92,  si:mz=>mz.mazmorras>=5 },
+  { id:"m_veinte",   titulo:"Hábito de hierro",      texto:"Supera 20 mazmorras",                        sprite:93,  si:mz=>mz.mazmorras>=20 },
+  { id:"m_cien",     titulo:"Cien puertas",          texto:"Supera 100 salas",                           sprite:45,  si:mz=>mz.salas>=100 },
+  { id:"m_gloria",   titulo:"Con gloria",            texto:"Consigue 1.000 de Gloria",                   sprite:117, si:mz=>mz.gloria>=1000 },
+  { id:"m_leyenda",  titulo:"Leyenda del gimnasio",  texto:"Consigue 5.000 de Gloria",                   sprite:105, si:mz=>mz.gloria>=5000 },
+  { id:"m_ascenso",  titulo:"Un paso más",           texto:"Haz ascender a un héroe",                    sprite:98,  si:(mz,p)=>asciende(p,1) },
+  { id:"m_final",    titulo:"Forma final",           texto:"Lleva a un héroe a su última clase",         sprite:96,  si:(mz,p)=>asciende(p,2) },
+  { id:"m_bajas",    titulo:"Nadie se queda atrás",  texto:"Supera una mazmorra sin perder a nadie",     sprite:115, si:(mz,p,g)=>g && p.heroes.every(h=>h.hp>0) },
+  { id:"m_amigo",    titulo:"Con ayuda de un amigo", texto:"Supera una mazmorra con un amigo en el grupo", sprite:99, si:(mz,p,g)=>g && amigosEn(p)>=1 },
+  { id:"m_amigos",   titulo:"Todos a una",           texto:"Supera una mazmorra con tres amigos",        sprite:100, si:(mz,p,g)=>g && amigosEn(p)>=3 },
+  { id:"m_sinergia", titulo:"Buen equipo",           texto:"Supera una mazmorra con dos sinergias",      sprite:116, si:(mz,p,g)=>g && sinergiasDe(p.heroes).length>=2 },
+  { id:"m_ramas",    titulo:"Maestro de las cinco",  texto:"Supera una mazmorra con cada rama",          sprite:84,  si:mz=>(mz.ramasGanadas||[]).length>=5 },
+  { id:"m_especial", titulo:"Golpe especial",        texto:"Usa un ataque especial",                     sprite:129, si:(mz,p)=>(p?.especiales||0)>=1 },
+  { id:"m_impulso",  titulo:"A tope",                texto:`Llega a ${IMPULSO_MAX} de Impulso entrenando`, sprite:114, si:mz=>mz.impulso>=IMPULSO_MAX },
+  { id:"m_llaves",   titulo:"Llavero lleno",         texto:`Junta ${LLAVES_MAX} llaves`,                 sprite:91,  si:mz=>mz.llaves>=LLAVES_MAX },
+];
+/* Se puede llamar tras cada toque. Con `avisar` deja los nuevos en `logrosNuevos` para
+   que la interfaz los enseñe; sin él (al abrir la app) los apunta sin decir nada. */
+export function comprobarLogros(mz, hoy, avisar=true){
+  const p = mz.partida?.puntua ? mz.partida : null, ganada = !!(p?.victoria && p.fase==="fin");
+  const nuevos = LOGROS.filter(l=>!mz.logros?.[l.id] && l.si(mz, p, ganada));
+  if(!nuevos.length) return mz;
+  const logros = { ...mz.logros };
+  nuevos.forEach(l=>{ logros[l.id] = hoy; });
+  return { ...mz, logros, logrosNuevos:avisar ? [...(mz.logrosNuevos||[]), ...nuevos.map(l=>l.id)] : mz.logrosNuevos };
 }

@@ -8,6 +8,10 @@ repositorio, se queda con las filas de frente y de perfil de la animación de
 andar, y escribe:
 
     public/avatar/*.png          una capa por fichero, 576x128 (9 fotogramas x 2 filas)
+    public/avatar/acc/*.png      la misma capa con las acciones de quien está entrenando,
+                                 896x256 en fotogramas de 128: brazos arriba y tajo
+    public/avatar/ej/*.png       la misma capa con las poses de los ejercicios, 512x512 en
+                                 fotogramas de 64 (filas en EJERCICIOS)
     public/avatar/CREDITOS.csv   autores, licencia y enlace de cada capa usada
     src/avatar-data.json         el catálogo que lee la app
 
@@ -27,6 +31,8 @@ COMMIT = "86160e7507d6841259cff624a51a63c1d4847ee3"
 RAW = f"https://raw.githubusercontent.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator/{COMMIT}/spritesheets/"
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SALIDA = os.path.join(RAIZ, "public", "avatar")
+SALIDA_ACC = os.path.join(SALIDA, "acc")
+SALIDA_EJ = os.path.join(SALIDA, "ej")
 ORDEN_LICENCIAS = ["CC0", "OGA-BY 3.0", "OGA-BY 3.0+", "CC-BY 4.0", "CC-BY 3.0", "CC-BY 3.0+", "CC-BY-SA 4.0", "CC-BY-SA 3.0"]
 FILA_FRENTE, FILA_PERFIL = 2, 3          # orden LPC: espalda, izquierda, frente, derecha
 CUERPOS = {"m": "male", "f": "female"}
@@ -211,6 +217,66 @@ def recorta(ruta_local):
     return out
 
 
+# Acciones: (carpeta LPC, fila de la hoja LPC, fotogramas). Una fila cada una en acc/.
+# Van en fotogramas de 128 porque un mandoble en pleno tajo no cabe en los 64 de andar.
+ACCIONES = [("spellcast", FILA_FRENTE, 7), ("slash", FILA_PERFIL, 6)]
+ACC = 128
+
+# Poses de los ejercicios: (animación LPC, fila LPC, fila en ej/, fotogramas). LPC no trae
+# ejercicios: "herido" cortado antes de caer es una sentadilla, y el conjuro da las
+# elevaciones y los curl. La fila 7 son dos poses quietas de andar, de frente y de perfil.
+# Sin armas ni escudos: nadie hace sentadillas con la espada en la mano.
+EJERCICIOS = [("hurt", 0, 0, 4), ("spellcast", FILA_FRENTE, 1, 7), ("spellcast", 0, 2, 7), ("climb", 0, 3, 6),
+              ("thrust", FILA_PERFIL, 4, 6), ("sit", FILA_PERFIL, 5, 3), ("run", FILA_PERFIL, 6, 8)]
+EJ = 64
+
+
+def pega_ej(lienzo, ruta_local, fila_lpc, fila, n, x0=0):
+    im = Image.open(ruta_local).convert("RGBA")
+    if im.size[1] == EJ: fila_lpc = 0      # "herido" y "trepar" traen una sola fila
+    for i in range(n):
+        if (i + 1) * EJ > im.size[0]: break
+        lienzo.paste(im.crop((i * EJ, fila_lpc * EJ, (i + 1) * EJ, (fila_lpc + 1) * EJ)), ((x0 + i) * EJ, fila * EJ))
+
+
+def hermana(ruta, anim, todos):
+    """La misma capa en otra animación, si existe."""
+    for r in (ruta.replace("/walk/", f"/{anim}/"), ruta.replace("/walk.png", f"/{anim}.png")):
+        if r != ruta and r in todos: return r
+    return None
+
+
+def capas_tajo(ruta_def, todos, cuerpo):
+    """Las armas largas traen el tajo aparte, en fotogramas de 128 o 192."""
+    d = json.load(open(ruta_def, encoding="utf-8"))
+    out = []
+    for k, v in d.items():
+        if not k.startswith("layer_") or v.get("custom_animation") not in ("slash_128", "slash_oversize"): continue
+        base = v.get(cuerpo)
+        if not base: continue
+        cand = sorted(p for p in todos if p.startswith(base) and p.endswith(".png") and p.count("/") == base.count("/"))
+        if not cand: continue
+        elegido = next((c for pref in ("steel", "iron", "gray", "grey", "white", "base", "silver", "light", "blue") for c in cand
+                        if os.path.basename(c)[:-4].lstrip("_") == pref), cand[0])
+        out.append({"src": elegido, "z": v["zPos"]})
+    return out, d.get("credits", [])
+
+
+def pega_accion(lienzo, ruta_local, fila_lpc, fila, n):
+    """Copia una fila al lienzo. Sea cual sea el tamaño de origen, el personaje queda
+    centrado en un fotograma de 128: por eso las tres vías encajan entre sí."""
+    im = Image.open(ruta_local).convert("RGBA")
+    tam = im.size[1] // 4                   # las hojas LPC tienen siempre 4 direcciones
+    for i in range(n):
+        if (i + 1) * tam > im.size[0]: break
+        trozo = im.crop((i * tam, fila_lpc * tam, (i + 1) * tam, (fila_lpc + 1) * tam))
+        if tam > ACC:
+            m = (tam - ACC) // 2
+            trozo = trozo.crop((m, m, m + ACC, m + ACC))
+        m = (ACC - min(tam, ACC)) // 2
+        lienzo.paste(trozo, (i * ACC + m, fila * ACC + m))
+
+
 def luma(c): return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
 
 
@@ -291,6 +357,67 @@ def main():
         im.save(os.path.join(SALIDA, slug + ".png"), optimize=True)
         autores, lics, urls = licencia_de(ruta, creditos, cr)
         filas.append({"capa": slug, "original": ruta, "autores": autores, "licencia": mejor_licencia(lics), "licencias_posibles": lics, "enlaces": urls})
+
+    # Acciones: cada capa de andar con sus hermanas, y las armas con su tajo aparte.
+    os.makedirs(SALIDA_ACC, exist_ok=True)
+    trabajos = {}          # slug -> (grupo, [(ruta, fila lpc, fila, fotogramas)], credits_def)
+    for (ruta, grupo), (slug, _, cr) in usadas.items():
+        partes = [(hermana(ruta, a, todos), f, i, n) for i, (a, f, n) in enumerate(ACCIONES)]
+        partes = [x for x in partes if x[0]]
+        if partes: trabajos[slug] = (grupo, partes, cr)
+    for pid, d, nombre, ranura, rama, umbral, grupo in PIEZAS:
+        if ranura != "arma": continue
+        tajos = {}
+        for k, cuerpo in CUERPOS.items():
+            cs, cr = capas_tajo(busca(idx, d), todos, cuerpo)
+            tajos[k] = []
+            for c in cs:
+                slug = "tajo-" + re.sub(r"[^a-z0-9]+", "-", c["src"].lower().replace(".png", "")).strip("-")
+                trabajos[slug] = (None, [(c["src"], FILA_PERFIL, 1, 6)], cr)
+                tajos[k].append({"s": slug, "z": c["z"]})
+        if any(tajos.values()): datos["piezas"][pid]["tajo"] = tajos
+    rutas_acc = sorted({x[0] for _, partes, _ in trabajos.values() for x in partes})
+    print(f"{len(trabajos)} capas de acción, {len(rutas_acc)} ficheros")
+    with ThreadPoolExecutor(8) as ex:
+        locales_acc = dict(zip(rutas_acc, ex.map(lambda r: baja(r, cache), rutas_acc)))
+    vistas = set()
+    for slug, (grupo, partes, cr) in sorted(trabajos.items()):
+        lienzo = Image.new("RGBA", (7 * ACC, 2 * ACC))
+        for ruta, fila_lpc, fila, n in partes:
+            pega_accion(lienzo, locales_acc[ruta], fila_lpc, fila, n)
+            if ruta not in vistas:
+                vistas.add(ruta)
+                autores, lics, urls = licencia_de(ruta, creditos, cr)
+                filas.append({"capa": "acc/" + slug, "original": ruta, "autores": autores, "licencia": mejor_licencia(lics), "licencias_posibles": lics, "enlaces": urls})
+        if grupo: lienzo = indexa(lienzo)
+        lienzo.save(os.path.join(SALIDA_ACC, slug + ".png"), optimize=True)
+    datos["acc"] = sorted(s for s in trabajos if not s.startswith("tajo-"))
+
+    # Poses de los ejercicios.
+    os.makedirs(SALIDA_EJ, exist_ok=True)
+    poses = {}             # slug -> (grupo, ruta de andar, [(ruta, fila lpc, fila, fotogramas)], credits_def)
+    for (ruta, grupo), (slug, _, cr) in usadas.items():
+        if ruta.startswith(("weapon", "shield")): continue
+        partes = [(hermana(ruta, a, todos), f, i, n) for a, f, i, n in EJERCICIOS]
+        poses[slug] = (grupo, ruta, [x for x in partes if x[0]], cr)
+    rutas_ej = sorted({x[0] for _, _, partes, _ in poses.values() for x in partes} | {v[1] for v in poses.values()})
+    print(f"{len(poses)} capas de ejercicios, {len(rutas_ej)} ficheros")
+    with ThreadPoolExecutor(8) as ex:
+        locales_ej = dict(zip(rutas_ej, ex.map(lambda r: baja(r, cache), rutas_ej)))
+    vistas_ej = set()
+    for slug, (grupo, andar, partes, cr) in sorted(poses.items()):
+        lienzo = Image.new("RGBA", (8 * EJ, 8 * EJ))
+        for ruta, fila_lpc, fila, n in partes:
+            pega_ej(lienzo, locales_ej[ruta], fila_lpc, fila, n)
+            if ruta not in vistas_ej:
+                vistas_ej.add(ruta)
+                autores, lics, urls = licencia_de(ruta, creditos, cr)
+                filas.append({"capa": "ej/" + slug, "original": ruta, "autores": autores, "licencia": mejor_licencia(lics), "licencias_posibles": lics, "enlaces": urls})
+        pega_ej(lienzo, locales_ej[andar], FILA_FRENTE, 7, 1)
+        pega_ej(lienzo, locales_ej[andar], FILA_PERFIL, 7, 1, 1)
+        if grupo: lienzo = indexa(lienzo)
+        lienzo.save(os.path.join(SALIDA_EJ, slug + ".png"), optimize=True)
+    datos["ej"] = sorted(poses)
 
     # El pícaro lleva dos dagas. LPC solo dibuja la de la mano derecha, así que la otra
     # es la misma reflejada, medio paso desfasada para que las manos no vayan a la par.

@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 // Ejecuta las funciones reales de src/App.jsx (no una copia) y comprueba el catálogo.
 import fs from "fs";
 import assert from "assert";
@@ -52,6 +53,10 @@ for (const r of m.RAMAS) {
   const eq = m.equipoDeRama(r.id, cero);
   for (const ranura of ["torso", "piernas", "pies", "arma"]) assert(eq[ranura], `${r.id} sin ${ranura}`);
 }
+
+// Las acciones de quien entrena: cada capa declarada existe, y solo el arco y el bastón van sin tajo
+for (const s of AVATAR.acc) assert(existsSync(`public/avatar/acc/${s}.png`), `falta acc/${s}`);
+for (const [id, p] of Object.entries(AVATAR.piezas)) for (const sx of "mf") for (const c of p.tajo?.[sx] || []) assert(existsSync(`public/avatar/acc/${c.s}.png`), `falta el tajo de ${id}`);
 
 // Todas las capas existen en disco, con el tamaño esperado (cabecera PNG)
 const capas = new Set();

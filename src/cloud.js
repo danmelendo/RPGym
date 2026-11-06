@@ -546,7 +546,24 @@ export async function quienEntrenaAhora(){
   try {
     const { data, error } = await supabase.from("entrenando_ahora").select("*").limit(10);
     if (error) return { ok:false, msg:traducir(error) };
-    return { ok:true, sesiones:data || [] };
+    if (!data?.length) return { ok:true, sesiones:[] };
+    // También entrena quien se ha unido. El que ya terminó ha apuntado su XP.
+    const { data: gente } = await supabase.from("compañeros_sesion").select("session_id, id, xp").in("session_id", data.map(s => s.id));
+    return { ok:true, sesiones:data.map(s => ({ ...s, miembros:(gente || []).filter(g => g.session_id === s.id && !g.xp).map(g => g.id) })) };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+/* Salir sin terminar. Sin esto seguías "entrenando" para tus amigos hasta 3 horas. */
+export async function dejarSesion({ sessionId, laAbriYo }){
+  if (!supabase) return sinNube;
+  try {
+    if (laAbriYo) {
+      await supabase.from("joint_sessions").update({ ended_at:new Date().toISOString() }).eq("id", sessionId);
+      return { ok:true };
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await supabase.from("joint_members").delete().eq("session_id", sessionId).eq("user_id", user.id);
+    return { ok:true };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
