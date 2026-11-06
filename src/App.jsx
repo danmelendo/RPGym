@@ -861,14 +861,14 @@ const EX_BASE = {
   "Dominadas o jalón":35, "Zancadas con barra":12, "Extensión de cuádriceps en máquina":25,
   "Elevación de talones de pie":40, "Elevaciones laterales":8, "Face pull":15, "Curl de bíceps":10,
   "Curl martillo":10, "Curl predicador":12, 
-  "Press francés":15, "Aperturas con mancuernas":10, "Fondos en paralelas":0, "Fondos asistidos":0, "Flexiones":0,
+  "Press francés":15, "Aperturas con mancuernas":10, "Fondos en paralelas":0, "Fondos asistidos":0, "Dominada asistida":0, "Flexiones":0,
   "Flexiones diamante":0, "Flexiones inclinadas":0, 
   "Superserie de bíceps y tríceps":10,
   "Jalón agarre neutro":32, "Curl con barra":20, "Curl femoral tumbado":25, "Curl femoral sentado":25,
   "Aperturas en polea":12, "Extensión de tríceps en polea":15, "Sentadilla frontal":30,
   "Press mancuernas sentado":14, "Dominadas lastradas":0, "Fondos en paralelas lastrados":0, "Plancha con lastre":0,
   "Zancadas con mancuernas":12, "Elevaciones laterales en polea":8, "Pullover en polea":12, "Pájaros en polea":8,
-  "Hip thrust":40, "Puente de glúteo":20, "Patada de glúteo en polea":10, "Abductores en máquina":30,
+  "Hip thrust":40, "Puente de glúteo":20, "Patada de glúteo en polea":10, "Patada de glúteo en máquina":20, "Elevación lateral en máquina":15, "Pulldown en máquina de discos":30, "Abductores en máquina":30,
   "Aductores en máquina":30, "Peso muerto sumo":40, "Sentadilla sumo con mancuerna":16, "Zancada caminando":10,
   "Good morning":20,
   /* Cardio / peso corporal: sin carga sugerida (peso 0 → no prefill). */
@@ -936,7 +936,7 @@ const BODYWEIGHT_EX = new Set([
   "Plancha", "Plancha lateral", "Rueda abdominal", "Crunch abdominal", "Bicicleta abdominal",
   "Russian twist", "Elevación de piernas", "Elevación de piernas en barra", "Mountain climbers",
   "Flexiones", "Flexiones diamante", "Flexiones inclinadas",
-  "Fondos en paralelas", "Fondos asistidos", "Dominada supina",
+  "Fondos en paralelas", "Fondos asistidos", "Dominada asistida", "Dominada supina",
   "HIIT en bici o cinta", "Calentamiento en cinta o bici",
   /* Catálogo ampliado: peso corporal, isométricos y cardio */
   "Flexiones declinadas", "Hiperextensiones", "Sentadilla con salto", "Sentadilla sin peso",
@@ -961,6 +961,19 @@ const EX_MUSCLE = {};
 ROUTINES.forEach(r=>r.days.forEach(d=>d.exercises.forEach(ex=>{ if(!(ex.name in EX_MUSCLE)) EX_MUSCLE[ex.name]=ex.muscle; })));
 /* Ejercicios del catálogo (EX_BASE/EX_HOW/EX_IMG) que ninguna rutina de la app usa: sin
    esto no tendrían músculo y el configurador de rutinas no podría ofrecerlos. */
+/* Agarres del jalón: cada serie lleva el suyo para poder intercalarlos. El cerrado es otro
+   ejercicio, con sus propias marcas y su propio peso, así que al terminar cada serie se
+   apunta en el suyo. Con `separarAgarres` todo lo que va después sigue contando por nombre. */
+const AGARRES = { abierto:"Jalón al pecho", cerrado:"Jalón agarre cerrado" };
+const tieneAgarres = n => n===AGARRES.abierto || n===AGARRES.cerrado;
+const agarreDe = (ex, l) => l.agarre || (ex.name===AGARRES.cerrado ? "cerrado" : "abierto");
+const nombreSerie = (ex, l) => tieneAgarres(ex.name) ? AGARRES[agarreDe(ex, l)] : ex.name;
+function separarAgarres(ejercicios){
+  return ejercicios.flatMap(ex=>{
+    if(!tieneAgarres(ex.name)) return [ex];
+    return [...new Set(ex.logs.map(l=>nombreSerie(ex, l)))].map(name=>({ ...ex, name, logs:ex.logs.filter(l=>nombreSerie(ex, l)===name) }));
+  });
+}
 const EX_MUSCLE_EXTRA = {
   "Aductores en máquina":"Pierna", "Good morning":"Femoral", "Patada de tríceps":"Tríceps",
   "Press declinado con barra":"Pecho", "Contractora de pecho":"Pecho", "Press de pecho en máquina":"Pecho", "Flexiones declinadas":"Pecho", "Pullover con mancuerna":"Pecho",
@@ -982,6 +995,8 @@ const EX_MUSCLE_EXTRA = {
   "Aperturas en banco con poleas":"Pecho", "Press inclinado en polea":"Pecho",
   "Press de pecho en máquina de discos":"Pecho", "Cruce de poleas a una mano":"Pecho",
   "Remo alto en máquina":"Espalda", "Remo en máquina a un brazo":"Espalda",
+  "Pulldown en máquina de discos":"Espalda", "Dominada asistida":"Espalda",
+  "Elevación lateral en máquina":"Hombro", "Patada de glúteo en máquina":"Pierna",
   "Remo en polea a una mano":"Espalda", "Jalón a una mano":"Espalda",
   "Remo en multipower":"Espalda", "Hiperextensión inversa":"Espalda",
   "Pullover en polea inclinado":"Espalda", "Remo en polea alto":"Espalda",
@@ -1205,6 +1220,10 @@ const EX_HOW = {
   "Elevaciones laterales":"De pie con una mancuerna en cada mano y codos algo flexionados, sube los brazos a los lados hasta la altura del hombro liderando con el codo, y baja despacio. Sin impulso del cuerpo.",
   "Elevación de piernas":"Tumbado boca arriba, sube las piernas (rectas o con la rodilla algo flexionada) llevando la pelvis hacia el ombligo, y baja controlado sin arquear la lumbar.",
   "Remo en máquina":"Sentado con el pecho apoyado, agarra las asas y tira de los codos hacia atrás apretando la espalda; vuelve estirando sin redondear. Hombros abajo.",
+  "Patada de glúteo en máquina":"De pie, apoya el pecho en la almohadilla y el pie en la plataforma con la rodilla algo flexionada. Empuja hacia atrás estirando cadera y rodilla, aprieta el glúteo y vuelve despacio. Acaba las repeticiones y cambia de pierna.",
+  "Elevación lateral en máquina":"Ajusta el asiento para que los hombros queden a la altura del eje de giro. Apoya los antebrazos en las almohadillas, sube los codos hasta la altura de los hombros y baja despacio, sin encogerte.",
+  "Pulldown en máquina de discos":"Sentado y con los muslos sujetos, agarra los mangos por encima de la cabeza. Tira hacia abajo llevando los codos a los costados, aprieta la espalda y sube controlando, sin dejar caer los discos.",
+  "Dominada asistida":"Sube a la máquina y apoya las rodillas en la almohadilla. Agarra los mangos y sube hasta que la barbilla pase las manos, con el pecho erguido, y baja despacio. Cuanto más peso pongas, más te ayuda la máquina.",
   "Fondos asistidos":"En la máquina de fondos con apoyo de rodillas, baja flexionando los codos hasta que el hombro llegue a su altura y empuja arriba. Inclínate algo adelante para más pecho.",
   "Face pull":"Cuerda en polea a la altura de la cara: tira hacia la frente separando las manos con los codos altos y atrás, apretando la parte trasera del hombro. Peso ligero y control.",
   "Curl de bíceps":"De pie con una mancuerna en cada mano y codos pegados, sube flexionando el codo sin balancear y baja controlando.",
@@ -1437,6 +1456,10 @@ const EX_IMG = {
   "Flexiones inclinadas": "exercises/Incline_Push-Up/0.jpg",
   "Fondos en paralelas": "exercises/Dips_-_Chest_Version/0.jpg",
   "Fondos asistidos": "exercises/Dips_-_Chest_Version/0.jpg",
+  "Dominada asistida": "exercises/Band_Assisted_Pull-Up/0.jpg",
+  "Elevación lateral en máquina": "exercises/Seated_Side_Lateral_Raise/0.jpg",
+  "Patada de glúteo en máquina": "exercises/One-Legged_Cable_Kickback/0.jpg",
+  "Pulldown en máquina de discos": "exercises/Leverage_High_Row/0.jpg",
   "Fondos en paralelas lastrados": "exercises/Parallel_Bar_Dip/0.jpg",
   "Jalón agarre cerrado": "exercises/Close-Grip_Front_Lat_Pulldown/0.jpg",
   "Jalón agarre neutro": "exercises/V-Bar_Pulldown/0.jpg",
@@ -3128,11 +3151,26 @@ function AvatarAccion({ av, accion, escala=2, style }){
    suyas reaprovechadas: "herido" cortado antes de caer es una sentadilla, el conjuro da
    elevaciones y curl. Lo tumbado no existe en LPC y girar el sprite parece un desmayo: el
    banco y el suelo se quedan en "espera", el héroe de pie, hasta que haya poses dibujadas.
-   Las máquinas y barras se pintan aquí, por encima o por debajo según toque. */
+   Las barras se pintan aquí. Las máquinas son fondos fijos de rpg/maq/ (MAQ_EJ): lo que se
+   mueve encima son poses del héroe, y solo las piernas se dibujan con los colores de su equipo. */
 const EJ_W = 112, EJ_H = 76, EJ_X = 24, EJ_Y = 10, EJ_PISO = 66;
 const [P_HERIDO, P_FRENTE, P_ESPALDA, P_TREPA, P_EMPUJA, P_SENTADO, P_CORRE, P_QUIETO] = [0,1,2,3,4,5,6,7];
 const REGLAS_EJ = [
-  [/Extensión de cuádriceps|Curl femoral sentado|Prensa|Gemelo en prensa|Abductores|Aductores en m|Press de pecho|Press de hombro en m|Press inclinado en m|Press declinado en m|Curl predicador|Curl de bíceps en m|[Cc]ontractora|Crunch en m|Elevación de talones sentado|Extensión de tríceps en m|Fondos en m|Curl concentrado|Press mancuernas sentado/, "maquina"],
+  [/Extensión de cuádriceps/, "m_extension"],
+  [/Curl femoral sentado/, "m_curlfem"],
+  [/Press de pecho en m|Press inclinado en m|Press declinado en m/, "m_pecho"],
+  [/Press de hombro en m/, "m_hombro"],
+  [/[Cc]ontractora/, "m_mariposa"],
+  [/Curl de bíceps en m|Curl predicador/, "m_biceps"],
+  [/Extensión de tríceps en m|Fondos en m/, "m_triceps"],
+  [/Remo en máquina|Remo alto en m/, "m_remo"],
+  [/Pulldown/, "m_pulldown"],
+  [/^Jalón/, "m_jalon"],
+  [/Elevación lateral en m/, "m_lateral"],
+  [/Patada de glúteo en m/, "m_glute"],
+  [/Dominada asistida/, "m_asistida"],
+  [/Fondos asistidos/, "m_fondos"],
+  [/Prensa|Gemelo en prensa|Abductores|Aductores en m|Press de pecho|Crunch en m|Elevación de talones sentado|Curl concentrado|Press mancuernas sentado/, "maquina"],
   [/Plancha|^Flexiones|Crunch abdominal|Bicicleta abdominal|^Encogimientos$|Tijeras|Mountain|Rueda|Russian|Elevación de piernas$|Puente|Hip thrust|Elevación de cadera|Curl nórdico|Hiperextensión inversa|Curl femoral|Curl tumbado|Press banca|Press declinado|Press inclinado|Press francés|Aperturas con|Aperturas en banco|Pullover con|Pullover en polea inclinado|Fondos|Sentadilla tumbada|Press cerrado|Curl araña|Curl inclinado/, "espera"],
   [/[Cc]inta|Caminar|HIIT|Calentamiento|Elíptica|Escaladora/, "cinta"],
   [/^Bici /, "bici"],
@@ -3152,6 +3190,13 @@ const REGLAS_EJ = [
   [/talones|Gemelos|puntas|Encogimientos/, "gemelos"],
 ];
 const familiaEjercicio = n => REGLAS_EJ.find(([r])=>r.test(n))?.[1] || "espera";
+const MAQ_EJ = { m_extension:"extension", m_curlfem:"extension", m_pecho:"press", m_triceps:"press", m_remo:"remo", m_hombro:"frente", m_mariposa:"frente", m_lateral:"frente", m_biceps:"frente", m_jalon:"jalon", m_pulldown:"jalon", m_glute:"glute", m_asistida:"asistida", m_fondos:"asistida" };
+const maquinas = new Map();
+function cargarMaquina(n){
+  if(!n) return Promise.resolve(null);
+  if(!maquinas.has(n)) maquinas.set(n, new Promise(ok=>{ const i = new Image(); i.onload = ()=>ok(i); i.onerror = ()=>ok(null); i.src = `rpg/maq/${n}.png`; }));
+  return maquinas.get(n);
+}
 const hojasEj = new Map(), tirasEj = new Map();
 function hojaEjercicio(av){
   const clave = JSON.stringify(av);
@@ -3168,8 +3213,8 @@ function hojaEjercicio(av){
   return hojasEj.get(clave);
 }
 /* Qué fotogramas lleva cada familia. Cada paso recibe el lienzo y pinta un fotograma. */
-function pasosEjercicio(base, familia, conCarga){
-  const HIERRO = "#AAB0BE", OSCURO = "#1E1E28", DISCO = "#BE3C32", ACERO = "#606678", CABLE = "#D2D2E1", MADERA = "#785438";
+function pasosEjercicio(base, familia, conCarga, maquina){
+  const HIERRO = "#AAB0BE", OSCURO = "#1E1E28", DISCO = "#BE3C32", ACERO = "#606678", CABLE = "#D2D2E1", MADERA = "#785438", NEGRO = "#26262F", TRAZO = "#18141E", PLATA = "#8A90A0";
   const lee = base.getContext("2d", { willReadFrequently:true });
   /* Lo que ocupa una pose, para poner la barra o el cable donde caiga con su equipo. */
   const caja = (fila, f, y0=0, y1=64)=>{
@@ -3197,6 +3242,71 @@ function pasosEjercicio(base, familia, conCarga){
   const poste = (c, x, y=8)=>{ rect(c, ACERO, x, y, 3, EJ_PISO-y); rect(c, OSCURO, x+3, y, 1, EJ_PISO-y); };
   const arco = (c, cx, cy, rx, ry, desde, hasta)=>{ c.fillStyle = CABLE; for(let a=desde;a<=hasta;a+=.03) c.fillRect(Math.round(cx+rx*Math.cos(a)), Math.round(cy+ry*Math.sin(a)), 1, 1); };
   const X = EJ_X, Y = EJ_Y;
+  const fondo = c=>{ if(maquina) c.drawImage(maquina, 0, 0); };
+  /* Colores de lo que lleva puesto, sacados de la pose de perfil: valen con cualquier equipo. */
+  const tono = (x0, y0, x1, y1)=>{
+    const d = lee.getImageData(64+x0, P_QUIETO*64+y0, x1-x0, y1-y0).data, px = [];
+    for(let i=0;i<d.length;i+=4) if(d[i+3]>200 && d[i]*.3+d[i+1]*.59+d[i+2]*.11>40) px.push([d[i],d[i+1],d[i+2]]);
+    px.sort((a,b)=>(a[0]+a[1]+a[2])-(b[0]+b[1]+b[2]));
+    const pide = q=>{ const p = px[Math.floor(q*px.length)] || [90,90,100]; return `rgb(${p})`; };
+    return [pide(.5), pide(.8)];
+  };
+  /* Una pieza gruesa con su contorno, entre dos puntos. */
+  const miembro = (c, [x0,y0], [x1,y1], [medio,luz], ancho=4)=>{
+    const n = Math.round(Math.max(Math.abs(x1-x0), Math.abs(y1-y0))) || 1, a = ancho/2;
+    const cada = f=>{ for(let i=0;i<=n;i++) f(Math.round(x0+(x1-x0)*i/n), Math.round(y0+(y1-y0)*i/n)); };
+    cada((x,y)=>rect(c, TRAZO, x-a-1, y-a-1, ancho+2, ancho+2));
+    cada((x,y)=>rect(c, medio, x-a, y-a, ancho, ancho));
+    cada((x,y)=>rect(c, luz, x-a, y-a, ancho-1, 1));
+  };
+  const rodillo = (c, x, y, r=4)=>{ for(let dy=-r;dy<=r;dy++){ const w = Math.round(Math.sqrt(r*r-dy*dy)); rect(c, NEGRO, Math.round(x)-w, Math.round(y)+dy, w*2+1, 1); } };
+  /* Sentado de perfil: brazos de `fila` sobre las piernas de la pose de silla. */
+  const sentado = (c, fila, f, dx=0, dy=0, corte=44)=>{
+    c.drawImage(base, 128, P_SENTADO*64+corte, 64, 64-corte, X+dx, Y+dy+corte, 64, 64-corte);
+    c.drawImage(base, f*64, fila*64, 64, corte, X+dx, Y+dy, 64, corte);
+  };
+  /* Sentado de frente o de espaldas: el tronco baja sobre sus propias piernas. */
+  const frontal = (c, fila, f, baja=6)=>mezcla(c, [fila,f], [fila,1], 46, baja);
+  /* Dónde cae la mano en una pose de perfil: el píxel más adelantado a media altura. */
+  const punta = (fila, f)=>{
+    const d = lee.getImageData(f*64, fila*64+28, 64, 24).data;
+    let px = 0, py = 40;
+    for(let y=0;y<24;y++) for(let x=0;x<64;x++) if(d[(y*64+x)*4+3] && x>px){ px = x; py = y+28; }
+    return { x:px, y:py };
+  };
+  /* Las manos en las poses de frente y espalda: la altura la marca el fotograma. */
+  const manos = (fila, f, baja=6)=>{
+    const b = caja(fila, f, 20, 56);
+    return { x0:X+b.x0, x1:X+b.x1-1, y:Y+baja+({1:44,2:40,3:42,4:33,5:25})[f] };
+  };
+  const pierna = (c, t, curl)=>{
+    const ropa = tono(24,49,40,54), bota = tono(24,56,40,62), rod = [56,52], a = (90-80*t)*Math.PI/180;
+    const tob = [rod[0]+15*Math.cos(a), rod[1]+15*Math.sin(a)];
+    fondo(c);
+    miembro(c, [38,52], rod, ropa, 6);
+    c.drawImage(base, 128, P_SENTADO*64, 64, 44, X-18, Y-8, 64, 44);
+    c.drawImage(base, 128, P_SENTADO*64+44, 44, 10, X-18, Y+36, 44, 10);
+    miembro(c, rod, tob, ropa, 5);
+    miembro(c, tob, [tob[0]+4*Math.sin(a), tob[1]-4*Math.cos(a)+1], bota, 4);
+    const s = curl ? -1 : 1, ro = [tob[0]-3*Math.cos(a)+s*4*Math.sin(a), tob[1]-3*Math.sin(a)-s*4*Math.cos(a)+(curl ? 0 : 6)];
+    linea(c, PLATA, rod[0], rod[1], Math.round(ro[0]), Math.round(ro[1]));
+    rodillo(c, ro[0], ro[1]);
+    if(curl) rect(c, NEGRO, 42, 44, 15, 4);
+  };
+  const empuje = (c, i, dx, palanca)=>{
+    fondo(c);
+    const p = i ? punta(P_EMPUJA, i) : { x:42, y:50 }, hx = X+dx+p.x, hy = Y+p.y;
+    palanca(c, hx, hy);
+    sentado(c, P_EMPUJA, i, dx, 0, 49);   // el puño extendido cae por debajo del corte de 44
+    rect(c, NEGRO, hx-1, hy-5, 3, 10);
+  };
+  const barraJalon = (c, f, discos)=>{
+    const m = manos(P_ESPALDA, f);
+    fondo(c);
+    linea(c, CABLE, 56, 10, 56, m.y);
+    if(discos) barra(c, m.x0-9, m.x1+9, m.y); else { rect(c, HIERRO, m.x0-3, m.y, m.x1-m.x0+7, 2); rect(c, OSCURO, m.x0-3, m.y+2, m.x1-m.x0+7, 1); }
+    frontal(c, P_ESPALDA, f);
+  };
   const F = {
     espera:{ ms:420, pasos:[0,0,-1,-1].map(dy=>c=>pon(c, P_QUIETO, 0, 0, dy)) },
     sentadilla:{ ms:150, pasos:[0,1,2,3,3,2,1,0].map(i=>c=>{ if(conCarga) barra(c, X+6, X+58, Y+caja(P_HERIDO, i).arriba+17); pon(c, P_HERIDO, i); }) },
@@ -3229,13 +3339,37 @@ function pasosEjercicio(base, familia, conCarga){
     comba:{ ms:110, pasos:[[0,[56,66,28,4,0,Math.PI]],[-1,[56,50,42,22,0,Math.PI]],[-5,[56,32,42,28,Math.PI,6.28]],[-6,[56,28,26,22,Math.PI,6.28]],[-5,[56,32,42,28,Math.PI,6.28]],[-1,[56,50,42,22,0,Math.PI]]].map(([dy,a])=>c=>{ pon(c, P_QUIETO, 0, 0, dy); arco(c, ...a); }) },
     zancada:{ ms:190, pasos:[0,2,6,6,2,0].map(dy=>c=>{ if(!dy) pon(c, P_QUIETO, 1); else mezcla(c, [P_QUIETO,1], [P_CORRE,0], 38, 0, 0); }) },
     gemelos:{ ms:120, pasos:[0,-1,-2,-3,-3,-2,-1,0].map(dy=>c=>pon(c, P_QUIETO, 0, 0, dy)) },
+    m_extension:{ ms:170, pasos:[0,0,.35,.7,1,1,.7,.35].map(t=>c=>pierna(c, t, false)) },
+    m_curlfem:{ ms:170, pasos:[1,1,.7,.35,0,0,.35,.7].map(t=>c=>pierna(c, t, true)) },
+    m_pecho:{ ms:170, pasos:[1,1,2,3,4,5,5,4,3,2].map(i=>c=>empuje(c, i, -12, (c,x,y)=>{ linea(c, PLATA, 16, 22, x+8, 22); linea(c, PLATA, x+8, 22, x+1, y); })) },
+    m_triceps:{ ms:190, pasos:[2,2,1,0,0,1].map(i=>c=>empuje(c, i, -12, (c,x,y)=>linea(c, PLATA, x, y, 22, 60))) },
+    m_remo:{ ms:170, pasos:[5,4,3,2,2,3,4,5].map(i=>c=>empuje(c, i, -17, (c,x,y)=>linea(c, PLATA, x, y, 74, 22))) },
+    m_hombro:{ ms:190, pasos:[3,4,5,5,4,3].map(i=>c=>{ fondo(c); const m = manos(P_FRENTE, i);
+      linea(c, PLATA, m.x0, m.y, 46, 16); linea(c, PLATA, m.x1, m.y, 66, 16); frontal(c, P_FRENTE, i); rect(c, NEGRO, m.x0-3, m.y-1, 6, 3); rect(c, NEGRO, m.x1-2, m.y-1, 6, 3); }) },
+    m_mariposa:{ ms:190, pasos:[4,4,3,2,2,3].map(i=>c=>{ fondo(c); const m = manos(P_FRENTE, i), a = i===2 ? 51 : m.x0, b = i===2 ? 61 : m.x1;
+      linea(c, PLATA, a, m.y, 46, 14); linea(c, PLATA, b, m.y, 66, 14); frontal(c, P_FRENTE, i); rect(c, NEGRO, a-1, m.y-5, 3, 11); rect(c, NEGRO, b-1, m.y-5, 3, 11); }) },
+    m_lateral:{ ms:190, pasos:[1,3,4,4,3,1].map(i=>c=>{ fondo(c); const m = manos(P_FRENTE, i);
+      linea(c, PLATA, m.x0, m.y, 50, 30); linea(c, PLATA, m.x1, m.y, 62, 30); frontal(c, P_FRENTE, i); rect(c, NEGRO, m.x0-1, m.y-4, 7, 4); rect(c, NEGRO, m.x1-5, m.y-4, 7, 4); }) },
+    m_biceps:{ ms:190, pasos:[1,1,3,2,2,3].map(i=>c=>{ fondo(c); rect(c, PLATA, 34, 52, 45, 2); rect(c, NEGRO, 34, 54, 45, 4); frontal(c, P_FRENTE, i);
+      rect(c, HIERRO, 44, manos(P_FRENTE, i).y, 25, 2); }) },
+    m_jalon:{ ms:170, pasos:[5,5,4,3,3,4].map(f=>c=>barraJalon(c, f, false)) },
+    m_pulldown:{ ms:170, pasos:[5,5,4,3,3,4].map(f=>c=>barraJalon(c, f, true)) },
+    m_glute:{ ms:170, pasos:[0,0,.35,.7,1,1,.7,.35].map(t=>c=>{
+      const ropa = tono(24,49,40,54), bota = tono(24,56,40,62), cad = [46,53], a = (100+95*t)*Math.PI/180, b = (170+25*t)*Math.PI/180;
+      const rod = [cad[0]+9*Math.cos(a), cad[1]+9*Math.sin(a)], pie = [rod[0]+9*Math.cos(b), rod[1]+9*Math.sin(b)];
+      fondo(c); miembro(c, cad, rod, ropa, 5); miembro(c, rod, pie, ropa, 4); miembro(c, pie, [pie[0]-1, pie[1]+3], bota, 3); pon(c, P_QUIETO, 1, 0, -6); }) },
+    m_asistida:{ ms:150, pasos:[[P_ESPALDA,5,-9],[P_ESPALDA,5,-9],[P_TREPA,2,-14],[P_TREPA,5,-19],[P_TREPA,5,-19],[P_TREPA,2,-14],[P_ESPALDA,5,-9],[P_ESPALDA,5,-9]].map(([fila,i,dy])=>c=>{
+      fondo(c); pon(c, fila, i, 0, dy); rect(c, NEGRO, 44, Y+dy+58, 24, 4); linea(c, CABLE, 56, Y+dy+62, 56, 68); }) },
+    m_fondos:{ ms:170, pasos:[0,0,-2,-4,-4,-2].map(dy=>c=>{ const m = manos(P_ESPALDA, 1, 0);
+      fondo(c); pon(c, P_ESPALDA, 1, 0, dy-6); rect(c, NEGRO, m.x0-4, m.y-2, 8, 3); rect(c, NEGRO, m.x1-3, m.y-2, 8, 3); rect(c, NEGRO, 44, Y+dy+52, 24, 4); linea(c, CABLE, 56, Y+dy+56, 56, 68); }) },
   };
   return F[familia] || F.espera;
 }
 async function tiraEjercicio(av, familia, conCarga){
   const clave = `${JSON.stringify(av)}|${familia}|${conCarga}`;
   if(tirasEj.has(clave)) return tirasEj.get(clave);
-  const base = await hojaEjercicio(av), { ms, pasos } = pasosEjercicio(base, familia, conCarga);
+  const [base, maquina] = await Promise.all([hojaEjercicio(av), cargarMaquina(MAQ_EJ[familia])]);
+  const { ms, pasos } = pasosEjercicio(base, familia, conCarga, maquina);
   const tira = document.createElement("canvas"); tira.width = EJ_W*pasos.length; tira.height = EJ_H;
   const ctx = tira.getContext("2d");
   pasos.forEach((paso,i)=>{
@@ -4554,10 +4688,11 @@ export default function App(){
   }
 
   async function finishWorkout(){
+    const ejercicios = separarAgarres(session.exercises);
     let volume=0, xpBase=100, xpSets=0, xpPr=0, prs=0, seriesDone=0;
     const bests={ ...state.bests }, firstBests={ ...state.firstBests };
     let doubled=false; const prList=[];
-    session.exercises.forEach(ex=>{
+    ejercicios.forEach(ex=>{
       ex.logs.forEach(l=>{
         if(l.done){
           seriesDone++; xpSets+=5;
@@ -4581,7 +4716,7 @@ export default function App(){
        intervalos por segundos el campo son segundos y compararlos sería mentir).
        Cuenta como PR una vez por ejercicio, aunque mejores varias métricas. */
     const cardioBests={ ...(state.cardioBests||{}) };
-    session.exercises.forEach(ex=>{
+    ejercicios.forEach(ex=>{
       if(!tracksTime(ex)) return;
       const beaten=[];
       ex.logs.forEach(l=>{
@@ -4613,7 +4748,7 @@ export default function App(){
 
     // XP por grupo muscular (ficha de personaje)
     const muscleXp={ ...(state.muscleXp||{}) }; const mGains={}; const muscleLevelUps=[];
-    session.exercises.forEach(ex=>{ const catg=BODY_MAP[ex.muscle]; if(!catg) return;
+    ejercicios.forEach(ex=>{ const catg=BODY_MAP[ex.muscle]; if(!catg) return;
       const cardioTime=tracksTime(ex);
       ex.logs.forEach(l=>{ if(l.done){ const w=parseFloat(l.weight)||0, reps=parseInt(l.reps)||0;
         // Cardio continuo: sin kilos que contar, la XP sale de los minutos aguantados.
@@ -4656,7 +4791,7 @@ export default function App(){
 
     // Progresión de peso (doble progresión): si completas TODAS las series al tope del rango, sube el peso la próxima vez.
     const nextWeight={ ...(state.nextWeight||{}) }; const progressed=[];
-    session.exercises.forEach(ex=>{
+    ejercicios.forEach(ex=>{
       if(isCardio(ex.name)) return;                 // el cardio no progresa por kilos
       const doneSets=ex.logs.filter(l=>l.done); if(!doneSets.length) return;
       const w=Math.max(...doneSets.map(l=>parseFloat(l.weight)||0)); if(w<=0) return; // sin carga: no progresa por peso
@@ -4671,7 +4806,7 @@ export default function App(){
     const durationMin = Math.max(1, Math.round((Date.now()-session.startedAt)/60000));
     const record={ date:todayISO(), routineName:session.routineName, dayName:session.dayName,
       volume:Math.round(volume), xp:sessionXp+achXp, series:seriesDone, energy:session.energy, durationMin,
-      exercises:session.exercises.map(e=>({ name:e.name, muscle:e.muscle, objetivo:e.reps, logs:e.logs.filter(l=>l.done).map(l=>{
+      exercises:ejercicios.map(e=>({ name:e.name, muscle:e.muscle, objetivo:e.reps, logs:e.logs.filter(l=>l.done).map(l=>{
         const base={ weight:parseFloat(l.weight)||0, reps:parseInt(l.reps)||0 };
         if(!isCardio(e.name)) return base;
         // El cardio guarda también lo que marcó la máquina (solo lo que se rellenó).
@@ -7432,7 +7567,7 @@ function SettingsView({ state, log, updateProfile, setReminders, setSub, setCycl
       <div className="fh-card" style={{ padding:16, fontSize:12, color:"var(--muted)", lineHeight:1.5 }}>
         <p style={{ margin:"0 0 8px" }}>Personajes: <b style={{ color:"var(--txt)" }}>Liberated Pixel Cup</b> (LPC), bajo licencias OGA-BY 3.0, CC-BY-SA 3.0 y CC0. Detalle de cada capa en <span className="mono">avatar/CREDITOS.csv</span> y en opengameart.org/content/lpc-collection.</p>
         <p style={{ margin:"0 0 8px" }}>Autores: {AVATAR.autores.join(", ")}.</p>
-        <p style={{ margin:0 }}>Iconos y monstruos: Tiny Dungeon de Kenney (CC0). Sonidos: Juhani Junkala (CC0). Fondo: generado con FLUX.1 schnell.</p>
+        <p style={{ margin:0 }}>Iconos y monstruos: Tiny Dungeon de Kenney (CC0). Sonidos: Juhani Junkala (CC0). Fondo: generado con FLUX.1 schnell. Máquinas: generadas con PixelLab.</p>
       </div>
 
       </>)}
@@ -8551,8 +8686,7 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
     const mult=ENERGY[val].mult;
     const exercises=session.exercises.map(e=>{
       if(isBodyweight(e.name)) return e;            // sin carga: no hay peso que ajustar
-      const sug=round25((e.base||10)*mult);
-      return { ...e, logs:e.logs.map(l=> l.done? l : ({ ...l, weight: sug||"" })) };
+      return { ...e, logs:e.logs.map(l=> l.done? l : ({ ...l, weight: round25(((l.base ?? e.base)||10)*mult)||"" })) };
     });
     setSession({ ...session, energy:val, exercises });
   }
@@ -8562,7 +8696,9 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
     setSession({ ...session, exercises });
   }
   function setExerciseWeight(exI, w){
-    const exercises=session.exercises.map((e,i)=> i!==exI? e : ({ ...e, logs:e.logs.map(l=> l.done? l : ({ ...l, weight:w })) }));
+    /* Con agarres, el desplegable es el de la serie que toca: el otro agarre lleva su peso. */
+    const ex=session.exercises[exI], pend=ex.logs.find(l=>!l.done), otro=l=>tieneAgarres(ex.name) && pend && agarreDe(ex,l)!==agarreDe(ex,pend);
+    const exercises=session.exercises.map((e,i)=> i!==exI? e : ({ ...e, logs:e.logs.map(l=> l.done || otro(l) ? l : ({ ...l, weight:w })) }));
     setSession({ ...session, exercises });
   }
   function update(exI,setI,field,val){
@@ -8580,7 +8716,7 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
   function completeSet(exI,setI,evento){
     const ex=session.exercises[exI]; const wasDone=ex.logs[setI].done;
     if(!wasDone){
-      const kg = parseFloat(ex.logs[setI].weight)||0, marca = misBests?.[ex.name];
+      const kg = parseFloat(ex.logs[setI].weight)||0, marca = misBests?.[nombreSerie(ex, ex.logs[setI])];
       flotar(evento, "+5 XP", "#FFC83D");
       if(kg>0 && marca!=null && kg>marca){ flotar(evento, "NEW RECORD!", "#3DDC84", 220); sfx("record",.55); vibrar([30,40,60]); }
       else { sfx("serie",.35); vibrar(18); }
@@ -8652,6 +8788,16 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
       ? { weight:"", reps: objetivo ? objetivo[1] : "", km:"", kcal:"", level:nivel, done:false }
       : { weight:sug, reps: parseTargetReps(reps), done:false };
   }
+  /* Al cambiar de agarre, el peso sale de la última serie con ese agarre o, si es la
+     primera, de sus marcas: el cerrado no se levanta con lo mismo que el abierto. */
+  function cambiarAgarre(exI, setI, agarre){
+    const ex = session.exercises[exI], l = ex.logs[setI];
+    if(l.done || agarreDe(ex, l)===agarre) return;
+    const igual = ex.logs.filter((x,j)=>j!==setI && agarreDe(ex, x)===agarre && x.weight!=="").pop();
+    const { base } = pesoInicial(AGARRES[agarre]);
+    const nuevo = { agarre, base:igual?.base ?? base, weight:igual ? igual.weight : round25(base*ENERGY[session.energy].mult)||"" };
+    setSession({ ...session, exercises:session.exercises.map((e,i)=> i!==exI ? e : ({ ...e, logs:e.logs.map((x,j)=> j===setI ? { ...x, ...nuevo } : x) })) });
+  }
   function cambiarSerie(exI, fn){
     setSession(s=>({ ...s, editado:true, exercises:s.exercises.map((e,i)=> i===exI ? fn(e) : e) }));
   }
@@ -8661,7 +8807,8 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
       const ultima = e.logs[e.logs.length-1];
       const nueva = serieVacia(e.name, e.reps, ultima?.weight ?? "", ultima?.level || "");
       // La nueva parte de lo que acabas de levantar, no del objetivo de la rutina.
-      return { ...e, logs:[...e.logs, isCardio(e.name) ? nueva : { ...nueva, reps:ultima?.reps ?? nueva.reps }] };
+      const agarre = ultima?.agarre ? { agarre:ultima.agarre, base:ultima.base } : {};
+      return { ...e, logs:[...e.logs, isCardio(e.name) ? nueva : { ...nueva, ...agarre, reps:ultima?.reps ?? nueva.reps }] };
     });
   }
   /* Quita la última serie sin hacer. Las hechas no se tocan: son lo que has entrenado. */
@@ -8776,7 +8923,8 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
         const consola=hasConsole(ex);                      // máquina con pantalla: km, kcal y nivel
         const unit=repUnit(ex.reps);                       // REPS · SEG · MIN
         const cols=consola ? "22px 1fr 1fr 1fr 84px" : bw ? "28px 1fr 90px" : "28px 1fr 1fr 90px";
-        const sug=bw ? 0 : round25((ex.base||10)*mult);
+        const pendiente=ex.logs.find(l=>!l.done);
+        const sug=bw ? 0 : round25(((pendiente?.base ?? ex.base)||10)*mult);
         const opts=bw ? [] : [...new Set([round25(sug*0.85),round25(sug*0.9),round25(sug*0.95),sug,round25(sug*1.05),round25(sug*1.1)])].filter(v=>v>0);
         const curW=ex.logs.find(l=>!l.done)?.weight ?? ex.logs[0].weight;
         const rec=cardio ? bests?.[ex.name] : null;        // récord de cardio de este ejercicio
@@ -8855,7 +9003,7 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
             {/* Desplegable de peso del ejercicio */}
             {opts.length>0 && (
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                <span style={{ fontSize:11, color:"var(--muted)", whiteSpace:"nowrap" }}>Peso a levantar</span>
+                <span style={{ fontSize:11, color:"var(--muted)", whiteSpace:"nowrap" }}>{tieneAgarres(ex.name) && pendiente ? `Peso · ${agarreDe(ex, pendiente)}` : "Peso a levantar"}</span>
                 <select value={String(curW)} onChange={e=>setExerciseWeight(exI, e.target.value)} style={{ flex:1, padding:"8px 12px", fontSize:14 }}>
                   {opts.map(o=>(<option key={o} value={String(o)}>{o} kg{o===sug?"  · sugerido":""}</option>))}
                 </select>
@@ -8893,6 +9041,16 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
                     {l.done ? <><Check size={15}/> Hecho</> : ex.rest>0 ? <><Timer size={13}/> Descanso</> : <><Check size={14}/> Marcar</>}
                   </button>
                 </div>
+
+                {tieneAgarres(ex.name) && (
+                  <div role="group" aria-label={`Agarre de la serie ${setI+1}`} style={{ display:"flex", gap:6, margin:"-2px 0 9px 36px" }}>
+                    {Object.keys(AGARRES).map(a=>{
+                      const activo = agarreDe(ex, l)===a;
+                      return <button key={a} className="fh-btn" aria-pressed={activo} disabled={l.done} onClick={()=>cambiarAgarre(exI, setI, a)}
+                        style={{ flex:1, padding:"5px 6px", fontSize:12.5, opacity:l.done && !activo ? .4 : 1, background:activo ? "var(--gold)" : "var(--bg2)", color:activo ? "#0F131A" : "var(--muted)", border:`1px solid ${activo ? "var(--gold)" : "var(--line2)"}` }}>{a==="abierto" ? "Abierto" : "Cerrado"}</button>;
+                    })}
+                  </div>
+                )}
 
                 {/* Cardio: el tiempo se mide, no se teclea. */}
                 {cardio && !l.done && (

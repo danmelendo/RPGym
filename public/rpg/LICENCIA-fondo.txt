@@ -8,3 +8,8 @@ zona-1.png, zona-2.png y zona-3.png
 
 Compuestos con scripts/generar-fondos-mazmorra.py a partir de la hoja Tiny Dungeon
 de Kenney (CC0), con tinte, luz y sombra añadidos ahí.
+
+maq/*.png
+
+Máquinas de gimnasio genéricas generadas el 2026-11-06 con PixelLab a partir de
+descripciones de texto, sin fotos de referencia ni logotipos, y colocadas a mano.

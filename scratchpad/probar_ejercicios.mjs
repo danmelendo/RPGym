@@ -12,7 +12,10 @@ for(const [f,l] of Object.entries(reparto).sort((a,b)=>b[1].length-a[1].length))
 const datos = JSON.parse(fs.readFileSync("src/avatar-data.json", "utf8"));
 const faltan = datos.ej.filter(s=>!fs.existsSync(`public/avatar/ej/${s}.png`));
 const noUsadas = [...familias].filter(f=>!reparto[f]);
-const fallos = [...mal, ...faltan, ...noUsadas.map(f=>`familia sin ejercicios: ${f}`)];
+const maqs = [...trozo("const MAQ_EJ", "};").matchAll(/(\w+):"(\w+)"/g)];
+const sinMaquina = maqs.filter(m=>!fs.existsSync(`public/rpg/maq/${m[2]}.png`)).map(m=>`falta la máquina ${m[2]}`);
+const maqSinFamilia = maqs.filter(m=>!familias.has(m[1])).map(m=>`máquina de una familia que no existe: ${m[1]}`);
+const fallos = [...mal, ...faltan, ...sinMaquina, ...maqSinFamilia, ...noUsadas.map(f=>`familia sin ejercicios: ${f}`)];
 if(nombres.length<200) fallos.push(`solo ${nombres.length} ejercicios`);
 for(const n of ["Sentadilla","Press banca","Plancha","Press militar","Cinta de correr","Bici estática","Bicicleta abdominal","Jalón al pecho","Remo al mentón","Press Pallof"]) console.log(n.padEnd(22), familiaEjercicio(n));
 if(fallos.length){ console.error("FALLOS:", fallos); process.exit(1); }
