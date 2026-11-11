@@ -679,6 +679,41 @@ const ROUTINES = [
       ]},
     ]},
 
+  /* -------- CASA CON MATERIAL --------
+     Lo que hay en casa del grupo: kettlebell de 6 kg, mancuernas de 5 kg, goma con asas,
+     goma en 8, tensor de pedal, agarres de flexiones, rueda abdominal y tonificador de
+     muslos. Las gomas no llevan kilos (van en BODYWEIGHT_EX): se progresa en repeticiones
+     o acortando la goma. */
+  { id:"casa_material", cat:"Casa / Express", name:"Casa con material", subtitle:"3 días · kettlebell, gomas y mancuernas",
+    daysPerWeek:3, rpe:"7-8",
+    blurb:"Para entrenar en casa con poco material: una kettlebell, mancuernas ligeras, gomas con asas o en 8, agarres de flexiones, la rueda abdominal y el tonificador. Si te falta algo, cámbialo con el botón «Cambiar» del entreno.",
+    days:[
+      { name:"Día A", exercises:[
+        { name:"Sentadilla goblet", sets:3, reps:"12-15", rest:60, muscle:"Pierna" },
+        { name:"Flexiones con agarres", sets:3, reps:"máx", rest:60, muscle:"Pecho" },
+        { name:"Remo sentado con goma", sets:3, reps:"12-15", rest:60, muscle:"Espalda" },
+        { name:"Press de hombro con goma", sets:3, reps:"12-15", rest:60, muscle:"Hombro" },
+        { name:"Curl de bíceps con goma", sets:3, reps:"12-15", rest:45, muscle:"Bíceps" },
+        { name:"Rueda abdominal", sets:3, reps:"8-10", rest:45, muscle:"Core" },
+      ]},
+      { name:"Día B", exercises:[
+        { name:"Swing con kettlebell", sets:4, reps:"15", rest:60, muscle:"Femoral" },
+        { name:"Press de suelo con kettlebell", sets:3, reps:"10-12", rest:60, muscle:"Pecho" },
+        { name:"Remo con kettlebell", sets:3, reps:"10-12", rest:60, muscle:"Espalda" },
+        { name:"Aperturas inversas con goma", sets:3, reps:"15-20", rest:45, muscle:"Hombro" },
+        { name:"Extensión de tríceps con goma", sets:3, reps:"12-15", rest:45, muscle:"Tríceps" },
+        { name:"Plancha", sets:3, reps:"40 s", rest:40, muscle:"Core" },
+      ]},
+      { name:"Día C", exercises:[
+        { name:"Zancadas con mancuernas", sets:3, reps:"10/pierna", rest:75, muscle:"Pierna" },
+        { name:"Peso muerto a una pierna con kettlebell", sets:3, reps:"10/pierna", rest:60, muscle:"Femoral" },
+        { name:"Aductores con tonificador", sets:3, reps:"15-20", rest:45, muscle:"Pierna" },
+        { name:"Aperturas de pie con goma", sets:3, reps:"12-15", rest:45, muscle:"Pecho" },
+        { name:"Elevaciones laterales", sets:3, reps:"10-12", rest:45, muscle:"Hombro" },
+        { name:"Crunch abdominal", sets:3, reps:"15", rest:40, muscle:"Core" },
+      ]},
+    ]},
+
   /* -------- EXPRESS -------- */
   { id:"express", cat:"Casa / Express", name:"Express 30 min", subtitle:"1 día · para días sin ganas",
     daysPerWeek:1, rpe:"7",
@@ -924,6 +959,8 @@ const EX_BASE = {
   "Giro ruso en polea":12, "Crunch en polea sentado":18, "Crunch en polea con giro":15,
   "Flexión lateral en polea alta":12, "Press Pallof con giro":12, 
   "Elevación de cadera en multipower":20, "Leñador invertido en polea":15, "Crunch en polea de pie":18,
+  /* Casa con material: la kettlebell de casa es de 6 kg (×0,62 en modo femenino da 6). */
+  "Swing con kettlebell":10, "Peso muerto a una pierna con kettlebell":10, "Remo con kettlebell":10, "Press de suelo con kettlebell":10,
 };
 
 /* Peso base sugerido ajustado por sexo (solo punto de partida; luego se adapta a tus marcas). */
@@ -945,6 +982,9 @@ const BODYWEIGHT_EX = new Set([
   "Elíptica", "Máquina de remo", "Comba", "Escaladora",
   /* Máquinas y poleas sin carga externa */
   "Hiperextensión inversa", "Curl nórdico en máquina", "Bici reclinada",
+  /* Casa: gomas (no tienen kilos), agarres de flexiones y tonificador */
+  "Flexiones con agarres", "Remo sentado con goma", "Curl de bíceps con goma", "Aperturas inversas con goma",
+  "Aperturas de pie con goma", "Press de hombro con goma", "Extensión de tríceps con goma", "Aductores con tonificador",
 ]);
 const isBodyweight = (name) => BODYWEIGHT_EX.has(name);
 
@@ -1467,6 +1507,19 @@ const EX_HOW = {
   "Leñador invertido en polea":"Desde la polea baja y de lado, tira en diagonal hacia arriba y hacia el hombro contrario girando el tronco, y vuelve controlando. Es el leñador al revés: de abajo hacia arriba.",
   "Crunch en polea de pie":"De pie frente a la polea alta con la cuerda junto a la cabeza, enrolla el tronco hacia abajo apretando el abdomen y vuelve despacio. Igual que el de rodillas pero sin castigar las rodillas.",
   "Bici reclinada":"Bici con respaldo y pedales por delante. Es la opción más cómoda para la espalda y la más fácil de mantener mucho rato, ideal si empiezas o vuelves de una lesión.",
+  /* --- Casa con material --- */
+  "Swing con kettlebell":"De pie, con los pies algo más abiertos que la cadera y la kettlebell cogida con las dos manos (o con una). Lleva la cadera atrás dejando que pase entre las piernas y estírala de golpe apretando el glúteo, para que suba hasta la altura del pecho. La fuerza sale de la cadera, no de los brazos; la espalda, recta todo el rato.",
+  "Peso muerto a una pierna con kettlebell":"De pie sobre una pierna, con la kettlebell en la mano contraria. Inclina el tronco hacia delante con la espalda recta mientras la otra pierna se estira hacia atrás, hasta notar el femoral, y vuelve apretando el glúteo. Despacio: aquí el reto es el equilibrio.",
+  "Remo con kettlebell":"Inclinado, con la espalda recta y la mano libre apoyada en la rodilla, tira de la kettlebell hacia la cadera llevando el codo atrás y pegado al cuerpo. Bájala controlando y cambia de lado.",
+  "Press de suelo con kettlebell":"Boca arriba en el suelo, con las rodillas dobladas y la kettlebell en una mano, el codo apoyado. Empuja hacia arriba hasta estirar el brazo y baja hasta que el codo roce el suelo, sin rebotar. Sin banco: el suelo corta el recorrido y cuida el hombro.",
+  "Flexiones con agarres":"Una flexión con las manos en los agarres, a la anchura de los hombros: dejan bajar más y no doblan la muñeca. Cuerpo en bloque, baja el pecho entre los agarres y empuja hasta estirar los brazos. Si cuesta, con las rodillas apoyadas.",
+  "Remo sentado con goma":"Sentado en el suelo con las piernas estiradas y la goma pasada por los pies (o los pies en el pedal del tensor). Coge las asas y tira hacia el abdomen llevando los codos atrás y juntando las escápulas. Vuelve despacio, sin dejar que la goma te arrastre ni echarte hacia atrás.",
+  "Curl de bíceps con goma":"De pie pisando la goma (o el pedal del tensor), con las asas en las manos y los codos pegados al cuerpo. Sube las manos hacia los hombros apretando el bíceps y baja controlando. Para más tensión, pisa más cerca de las asas.",
+  "Aperturas inversas con goma":"De pie, con la goma delante a la altura del pecho y los brazos estirados. Ábrelos hacia los lados juntando las escápulas hasta que la goma llegue al pecho, y vuelve despacio. Vale la goma en 8 o la de asas.",
+  "Aperturas de pie con goma":"Con la goma pasada por detrás de la espalda (o atada a la altura del pecho), los brazos abiertos y los codos algo doblados. Junta las manos delante del pecho como en un abrazo y vuelve controlando.",
+  "Press de hombro con goma":"De pie pisando la goma, con las asas a la altura de los hombros. Empuja hacia arriba hasta estirar los brazos sin arquear la espalda y baja controlando hasta los hombros.",
+  "Extensión de tríceps con goma":"Pisa la goma con un pie y sujeta el asa por detrás de la cabeza, con el codo apuntando al techo. Estira el brazo hacia arriba sin mover el codo y baja controlando. También con las dos manos en la misma asa.",
+  "Aductores con tonificador":"Con el tonificador entre las rodillas, sentado o tumbado boca arriba con las piernas dobladas. Junta las rodillas apretando la cara interna del muslo, aguanta un segundo y abre despacio sin soltarlo.",
 };
 
 /* Imágenes de ejercicios (free-exercise-db, dominio público / Unlicense) */
@@ -1694,6 +1747,20 @@ const EX_IMG = {
   "Leñador invertido en polea": "exercises/Standing_Cable_Lift/0.jpg",
   "Crunch en polea de pie": "exercises/Standing_Rope_Crunch/0.jpg",
   "Bici reclinada": "exercises/Recumbent_Bike/0.jpg",
+  /* Casa con material. El remo y el curl con goma no tienen demostración propia en
+     free-exercise-db: usan las de polea baja, que es el mismo gesto. */
+  "Swing con kettlebell": "exercises/One-Arm_Kettlebell_Swings/0.jpg",
+  "Peso muerto a una pierna con kettlebell": "exercises/Kettlebell_One-Legged_Deadlift/0.jpg",
+  "Remo con kettlebell": "exercises/One-Arm_Kettlebell_Row/0.jpg",
+  "Press de suelo con kettlebell": "exercises/One-Arm_Kettlebell_Floor_Press/0.jpg",
+  "Flexiones con agarres": "exercises/Pushups/0.jpg",
+  "Remo sentado con goma": "exercises/Seated_Cable_Rows/0.jpg",
+  "Curl de bíceps con goma": "exercises/Standing_Biceps_Cable_Curl/0.jpg",
+  "Aperturas inversas con goma": "exercises/Band_Pull_Apart/0.jpg",
+  "Aperturas de pie con goma": "exercises/Cross_Over_-_With_Bands/0.jpg",
+  "Press de hombro con goma": "exercises/Shoulder_Press_-_With_Bands/0.jpg",
+  "Extensión de tríceps con goma": "exercises/Speed_Band_Overhead_Triceps/0.jpg",
+  "Aductores con tonificador": "exercises/Thigh_Adductor/0.jpg",
 };
 
 /* =========================================================================
@@ -3255,13 +3322,13 @@ const REGLAS_EJ = [
   [/Dominada asistida/, "m_asistida"],
   [/Fondos asistidos/, "m_fondos"],
   [/Prensa|Gemelo en prensa|Abductores|Aductores en m|Press de pecho|Crunch en m|Elevación de talones sentado|Curl concentrado|Press mancuernas sentado/, "maquina"],
-  [/Plancha|^Flexiones|Crunch abdominal|Bicicleta abdominal|^Encogimientos$|Tijeras|Mountain|Rueda|Russian|Elevación de piernas$|Puente|Hip thrust|Elevación de cadera|Curl nórdico|Hiperextensión inversa|Curl femoral|Curl tumbado|Press banca|Press declinado|Press inclinado|Press francés|Aperturas con|Aperturas en banco|Pullover con|Pullover en polea inclinado|Fondos|Sentadilla tumbada|Press cerrado|Curl araña|Curl inclinado/, "espera"],
+  [/Plancha|^Flexiones|Crunch abdominal|Bicicleta abdominal|^Encogimientos$|Tijeras|Mountain|Rueda|Russian|Elevación de piernas$|Puente|Hip thrust|Elevación de cadera|Curl nórdico|Hiperextensión inversa|Curl femoral|Curl tumbado|Press banca|Press declinado|Press inclinado|Press francés|Aperturas con|Aperturas en banco|Pullover con|Pullover en polea inclinado|Fondos|Sentadilla tumbada|Press cerrado|Curl araña|Curl inclinado|Press de suelo/, "espera"],
   [/[Cc]inta|Caminar|HIIT|Calentamiento|Elíptica|Escaladora/, "cinta"],
   [/^Bici /, "bici"],
   [/Máquina de remo/, "remo"],
   [/Comba|con salto/, "comba"],
   [/Sentadilla(?! búlgara)/, "sentadilla"],
-  [/Peso muerto|Good morning|Pull through|Hiperextensiones/, "peso"],
+  [/Peso muerto|Good morning|Pull through|Hiperextensiones|Swing/, "peso"],
   [/Zancada|búlgara|Subida al caj/, "zancada"],
   [/Dominada|Jalón|Elevación de rodillas|en barra$/, "dominada"],
   [/Remo al/, "curl"],
