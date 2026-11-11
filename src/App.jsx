@@ -16,7 +16,7 @@ import {
   Settings, Bell, CreditCard, User, Users, ChevronRight, ChevronDown, Plus, X,
   Sun, Palette, Scale, Download, Upload, Cloud,
   Trash2, Search, ArrowUp, ArrowDown, Pencil, Copy, FileText, Eye, Minus, Share2, Volume2,
-  BedDouble, Palmtree,
+  BedDouble, Palmtree, CheckCircle2, GitBranch,
 } from "lucide-react";
 
 /* =========================================================================
@@ -868,7 +868,7 @@ const EX_BASE = {
   "Aperturas en polea":12, "Extensión de tríceps en polea":15, "Sentadilla frontal":30,
   "Press mancuernas sentado":14, "Dominadas lastradas":0, "Fondos en paralelas lastrados":0, "Plancha con lastre":0,
   "Zancadas con mancuernas":12, "Elevaciones laterales en polea":8, "Pullover en polea":12, "Pájaros en polea":8,
-  "Hip thrust":40, "Puente de glúteo":20, "Patada de glúteo en polea":10, "Patada de glúteo en máquina":20, "Elevación lateral en máquina":15, "Pulldown en máquina de discos":30, "Abductores en máquina":30,
+  "Hip thrust":40, "Puente de glúteo":20, "Patada de glúteo en polea":10, "Patada de glúteo en máquina":20, "Elevación lateral en máquina":15, "Pulldown en máquina de discos":30, "Jalón en máquina":35, "Remo de deltoides posterior en máquina":15, "Abductores en máquina":30,
   "Aductores en máquina":30, "Peso muerto sumo":40, "Sentadilla sumo con mancuerna":16, "Zancada caminando":10,
   "Good morning":20,
   /* Cardio / peso corporal: sin carga sugerida (peso 0 → no prefill). */
@@ -974,6 +974,26 @@ function separarAgarres(ejercicios){
     return [...new Set(ex.logs.map(l=>nombreSerie(ex, l)))].map(name=>({ ...ex, name, logs:ex.logs.filter(l=>nombreSerie(ex, l)===name) }));
   });
 }
+/* Lo que pone en el rótulo de cada máquina (las del gimnasio del dueño, que llevan el nombre
+   escrito en la torre de placas). En la sala nadie sabe que la "Mariposa pectoral" es nuestra
+   "Contractora de pecho": con esto se encuentra buscando por cualquiera de los dos nombres y
+   el selector y el entreno enseñan el rótulo. Solo se añade aquí lo que de verdad pone en una
+   máquina; un sinónimo cualquiera no. */
+const EX_MAQUINA = {
+  "Extensión de cuádriceps en máquina":"Extensión de pierna",
+  "Curl femoral sentado":"Contracción de pierna sentado",
+  "Press de hombro en máquina":"Extensora de hombros",
+  "Contractora de pecho":"Mariposa pectoral",
+  "Curl de bíceps en máquina":"Contracción de bíceps",
+  "Fondos en máquina":"Press de tríceps",
+  "Remo en máquina":"Remo / deltoides posterior",
+  "Remo de deltoides posterior en máquina":"Remo / deltoides posterior",
+  "Jalón en máquina":"Estirar hacia abajo",
+  "Pulldown en máquina de discos":"Pull down",
+  "Patada de glúteo en máquina":"Glute",
+  "Dominada asistida":"Descenso / ascenso asistido",
+  "Fondos asistidos":"Descenso / ascenso asistido",
+};
 const EX_MUSCLE_EXTRA = {
   "Aductores en máquina":"Pierna", "Good morning":"Femoral", "Patada de tríceps":"Tríceps",
   "Press declinado con barra":"Pecho", "Contractora de pecho":"Pecho", "Press de pecho en máquina":"Pecho", "Flexiones declinadas":"Pecho", "Pullover con mancuerna":"Pecho",
@@ -996,6 +1016,7 @@ const EX_MUSCLE_EXTRA = {
   "Press de pecho en máquina de discos":"Pecho", "Cruce de poleas a una mano":"Pecho",
   "Remo alto en máquina":"Espalda", "Remo en máquina a un brazo":"Espalda",
   "Pulldown en máquina de discos":"Espalda", "Dominada asistida":"Espalda",
+  "Jalón en máquina":"Espalda", "Remo de deltoides posterior en máquina":"Hombro",
   "Elevación lateral en máquina":"Hombro", "Patada de glúteo en máquina":"Pierna",
   "Remo en polea a una mano":"Espalda", "Jalón a una mano":"Espalda",
   "Remo en multipower":"Espalda", "Hiperextensión inversa":"Espalda",
@@ -1219,12 +1240,14 @@ const EX_HOW = {
   "Press inclinado mancuernas":"Banco inclinado 30-45°, mancuernas a los lados del pecho. Empuja arriba juntándolas un poco y baja controlado hasta notar estiramiento en el pecho. Omóplatos apretados.",
   "Elevaciones laterales":"De pie con una mancuerna en cada mano y codos algo flexionados, sube los brazos a los lados hasta la altura del hombro liderando con el codo, y baja despacio. Sin impulso del cuerpo.",
   "Elevación de piernas":"Tumbado boca arriba, sube las piernas (rectas o con la rodilla algo flexionada) llevando la pelvis hacia el ombligo, y baja controlado sin arquear la lumbar.",
-  "Remo en máquina":"Sentado con el pecho apoyado, agarra las asas y tira de los codos hacia atrás apretando la espalda; vuelve estirando sin redondear. Hombros abajo.",
-  "Patada de glúteo en máquina":"De pie, apoya el pecho en la almohadilla y el pie en la plataforma con la rodilla algo flexionada. Empuja hacia atrás estirando cadera y rodilla, aprieta el glúteo y vuelve despacio. Acaba las repeticiones y cambia de pierna.",
-  "Elevación lateral en máquina":"Ajusta el asiento para que los hombros queden a la altura del eje de giro. Apoya los antebrazos en las almohadillas, sube los codos hasta la altura de los hombros y baja despacio, sin encogerte.",
+  "Remo en máquina":"Ajusta el asiento para que la mitad del pecho quede a la altura de la parte alta de la almohadilla, y acerca o aleja la almohadilla hasta poder estirar del todo los brazos. Con la cabeza y el pecho erguidos, agarra los mangos verticales y tira hacia atrás despacio hasta que los codos queden a la altura del cuerpo; vuelve estirando sin despegar el pecho.",
+  "Patada de glúteo en máquina":"Ajusta la almohadilla para que te quede entre el pecho y el abdomen. De pie, apoya un pie en la plataforma con la rodilla algo doblada, estira cadera y rodilla empujando hacia atrás, aprieta el glúteo y vuelve despacio. Acaba las repeticiones, gira la plataforma y repite con la otra pierna.",
+  "Elevación lateral en máquina":"Siéntate de cara a la máquina y ajusta el asiento para que los hombros queden alineados con los ejes de giro: si está bien, las almohadillas no resbalan por los brazos al subir. Apoya los antebrazos en las almohadillas, agarra los mangos sin apretar, sube los codos hasta la altura de los hombros y baja despacio, sin encogerte.",
   "Pulldown en máquina de discos":"Sentado y con los muslos sujetos, agarra los mangos por encima de la cabeza. Tira hacia abajo llevando los codos a los costados, aprieta la espalda y sube controlando, sin dejar caer los discos.",
-  "Dominada asistida":"Sube a la máquina y apoya las rodillas en la almohadilla. Agarra los mangos y sube hasta que la barbilla pase las manos, con el pecho erguido, y baja despacio. Cuanto más peso pongas, más te ayuda la máquina.",
-  "Fondos asistidos":"En la máquina de fondos con apoyo de rodillas, baja flexionando los codos hasta que el hombro llegue a su altura y empuja arriba. Inclínate algo adelante para más pecho.",
+  "Jalón en máquina":"Ajusta el asiento para que los muslos queden bien sujetos bajo los rodillos. Agarra los mangos por encima de la cabeza y tira hacia abajo hasta la altura de los hombros llevando los codos a los costados; aprieta la espalda y sube controlando, sin dejar caer las placas ni encoger los hombros.",
+  "Remo de deltoides posterior en máquina":"En la máquina de remo con apoyo de pecho, pero con los mangos horizontales y los codos abiertos a la altura de los hombros. Tira hacia atrás separando los codos hasta que queden a la altura del cuerpo, aprieta la parte de atrás del hombro y vuelve despacio. Menos peso que en el remo: aquí trabaja el hombro, no la espalda.",
+  "Dominada asistida":"Sube por los apoyos, agarra los mangos en la posición que prefieras y apoya las rodillas en la almohadilla. Sube despacio hasta que la barbilla pase las manos, con el pecho erguido, y baja controlando. Al acabar, deja que la almohadilla suba hasta que las placas descansen y bájate con cuidado. Cuanto más peso pongas, más te ayuda la máquina.",
+  "Fondos asistidos":"Sube por los apoyos y gira los mangos hacia dentro. Agárralos, apoya las rodillas en la almohadilla y baja con el tronco erguido y los hombros atrás, solo hasta donde vayas cómodo; luego sube despacio. Al acabar, deja subir la almohadilla y bájate con cuidado. Cuanto más peso pongas, más te ayuda la máquina.",
   "Face pull":"Cuerda en polea a la altura de la cara: tira hacia la frente separando las manos con los codos altos y atrás, apretando la parte trasera del hombro. Peso ligero y control.",
   "Curl de bíceps":"De pie con una mancuerna en cada mano y codos pegados, sube flexionando el codo sin balancear y baja controlando.",
   "Sentadilla":"Barra sobre la parte alta de la espalda. Baja flexionando cadera y rodillas con el pecho alto y la espalda recta hasta pasar la paralela, y sube empujando con todo el pie. Rodillas hacia la punta de los pies.",
@@ -1235,7 +1258,7 @@ const EX_HOW = {
   "Peso muerto rumano":"De pie con barra y piernas casi rectas, lleva la cadera atrás bajando la barra pegada a las piernas hasta notar tensión en los femorales, espalda recta, y sube apretando glúteos.",
   "Zancadas con barra":"Da un paso al frente y baja la rodilla trasera hacia el suelo con el tronco erguido y la rodilla delantera sobre el tobillo. Empuja para volver y alterna piernas.",
   "Elevación de talones de pie":"Con las puntas de los pies en un escalón, sube el talón lo máximo poniéndote de puntillas, aprieta arriba y baja estirando bien el gemelo.",
-  "Extensión de cuádriceps en máquina":"Sentado en la máquina, engancha los tobillos y estira las rodillas apretando el cuádriceps arriba; baja controlado sin dejar caer el peso.",
+  "Extensión de cuádriceps en máquina":"Antes de empezar, mueve el respaldo hasta que la rodilla quede a la altura del eje de giro y ajusta el rodillo para que apoye justo encima del tobillo, no en el empeine. Elige con el selector de recorrido desde dónde empiezas. Con los muslos paralelos y los pies relajados, estira las piernas despacio hasta tenerlas rectas y baja controlando, sin que choquen las placas.",
   "Dominadas o jalón":"Dominadas: colgado de la barra, tira del pecho hacia ella llevando los codos abajo y atrás, y baja controlado. Si aún no salen, usa el jalón al pecho en polea con la misma técnica.",
   "Aperturas con mancuernas":"Tumbado con mancuernas sobre el pecho y codos algo flexionados, abre los brazos en arco hasta notar estiramiento y ciérralos apretando el pecho, como si abrazaras.",
   "Curl martillo":"Curl con las mancuernas en agarre neutro (palmas enfrentadas). Sube flexionando el codo sin girar la muñeca y baja controlado. Trabaja bíceps y antebrazo.",
@@ -1260,7 +1283,7 @@ const EX_HOW = {
   "Curl femoral tumbado":"Tumbado boca abajo en la máquina, engancha los tobillos y lleva los talones al glúteo apretando el femoral; baja controlado sin despegar la cadera.",
   "Aperturas en polea":"Entre dos poleas a la altura del pecho con los brazos algo flexionados, junta las manos delante en arco apretando el pecho y abre controlando el estiramiento.",
   "Extensión de tríceps en polea":"Polea alta con barra, codos pegados al cuerpo. Estira hacia abajo apretando el tríceps y sube controlando sin mover los codos.",
-  "Curl femoral sentado":"Sentado en la máquina, engancha los tobillos y flexiona las rodillas llevando los talones bajo el asiento apretando el femoral; vuelve controlado.",
+  "Curl femoral sentado":"Mueve el respaldo para que la rodilla quede alineada con el eje de giro y ajusta el rodillo para que quede detrás del tobillo. Elige el recorrido, apoya las piernas en el rodillo, baja la almohadilla de los muslos hasta que te sujete sin apretar y agarra los mangos. Lleva el rodillo hacia abajo doblando las rodillas y vuelve despacio. Al acabar, sube la almohadilla de los muslos para salir.",
   "Zancadas con mancuernas":"Zancadas con una mancuerna en cada mano: paso al frente, baja la rodilla trasera con el tronco erguido y empuja para volver. Alterna piernas.",
   "Plancha con lastre":"Plancha sobre antebrazos con un disco en la espalda alta. Cuerpo en línea recta, abdomen y glúteos apretados, sin hundir la cadera.",
   "Fondos en paralelas lastrados":"Fondos en paralelas con peso añadido (cinturón de lastre). Baja hasta que el hombro llegue al codo y empuja. Solo si dominas los fondos sin peso.",
@@ -1297,7 +1320,7 @@ const EX_HOW = {
   "Press inclinado con barra":"Banco inclinado 30-45°, agarre algo más ancho que los hombros. Baja la barra controlada hasta la parte alta del pecho con los codos a ~45° y empuja arriba sin bloquear de golpe. Omóplatos apretados y pies firmes en el suelo.",
   /* --- Catálogo ampliado (free-exercise-db) --- */
   "Press declinado con barra":"Tumbado en un banco declinado y bien sujeto por los pies, baja la barra controlada hasta la parte baja del pecho con los codos algo recogidos, y empuja arriba sin bloquear de golpe. Pide que te ayuden a sacar y dejar la barra: en declinado cuesta más.",
-  "Contractora de pecho":"Sentado con la espalda pegada al respaldo y los codos a la altura del pecho, junta los brazos delante apretando el pectoral y vuelve despacio hasta notar estiramiento sin forzar el hombro. No dejes que las placas descansen entre repeticiones.",
+  "Contractora de pecho":"Ajusta el asiento para que los codos queden un poco por debajo de los hombros y elige con el tope de cada brazo desde dónde empiezas: cuanto más atrás, más estiramiento. Siéntate con el pecho arriba y los hombros atrás, agarra los mangos verticales con los codos algo doblados y júntalos delante con un movimiento suave. Vuelve despacio, sin dejar que las placas descansen.",
   "Press de pecho en máquina":"Ajusta el asiento para que las asas queden a la altura media del pecho. Empuja hacia delante hasta casi estirar los brazos y vuelve controlando, sin adelantar los hombros ni despegar la espalda del respaldo.",
   "Flexiones declinadas":"Flexión con los pies elevados sobre un banco o cajón: cuanto más alto, más peso llevan los hombros y el pecho alto. Cuerpo en línea recta, abdomen apretado y codos a unos 45°, sin dejar caer la cadera.",
   "Pullover con mancuerna":"Tumbado en el banco, sujeta una mancuerna con las dos manos sobre el pecho con los codos algo flexionados. Llévala por detrás de la cabeza hasta notar el estiramiento en el pecho y el dorsal, y vuelve sin arquear la lumbar.",
@@ -1307,7 +1330,7 @@ const EX_HOW = {
   "Peso muerto parcial":"Peso muerto desde media altura (barra en el rack, a la altura de las rodillas). Empuja la cadera hacia delante manteniendo la espalda recta y la barra pegada a las piernas. Permite más carga: cuida la técnica antes que el peso.",
   "Encogimientos con barra":"De pie con la barra delante o detrás de los muslos y los brazos estirados, sube los hombros hacia las orejas todo lo que puedas y baja despacio. No gires los hombros ni ayudes con los brazos: solo suben y bajan.",
   "Elevación frontal":"De pie con una mancuerna en cada mano delante de los muslos, sube un brazo estirado (codo algo flexionado) hasta la altura del hombro y baja controlado. Sin balancear el cuerpo ni arquear la lumbar; aprieta el abdomen.",
-  "Press de hombro en máquina":"Sentado con la espalda apoyada y las asas a la altura de los hombros, empuja arriba hasta casi estirar los brazos y baja controlado. Ajusta el asiento para no tener que sacar los hombros de sitio al empezar.",
+  "Press de hombro en máquina":"Sube o baja el asiento hasta que los mangos queden a la altura de la parte alta de los hombros. Siéntate con la espalda bien apoyada en el respaldo, el pecho arriba y los hombros atrás. Empuja los mangos hacia arriba hasta casi estirar, sin bloquear los codos, y baja controlando.",
   "Press de hombro en polea":"Sentado entre dos poleas bajas con las asas a la altura de los hombros, empuja hacia arriba y algo hacia dentro, y baja despacio. La polea mantiene la tensión todo el recorrido: no hace falta ir pesado.",
   "Pájaros con mancuernas":"Tumbado boca abajo en un banco inclinado (o con el tronco inclinado hacia delante), abre los brazos a los lados con los codos algo flexionados hasta la altura de los hombros y baja despacio. Lidera con el codo, no con la mano.",
   "Zancada inversa":"De pie con una mancuerna en cada mano, da un paso largo hacia ATRÁS y baja hasta que las dos rodillas queden a ~90°, con el tronco erguido. Empuja con la pierna de delante para volver. Es más amable con la rodilla que la zancada normal.",
@@ -1396,7 +1419,7 @@ const EX_HOW = {
   "Elevación de talones en multipower":"Con la barra guiada sobre los hombros y la punta de los pies sobre un step, sube todo lo que puedas sobre las puntas y baja despacio dejando caer el talón para estirar. La guía permite cargar bien sin problemas de equilibrio.",
   "Gemelos en máquina":"Sentado en la máquina de gemelos con las piernas casi estiradas y la punta de los pies en la plataforma, empuja hasta arriba y baja despacio buscando el estiramiento completo.",
   "Elevación de puntas (tibial)":"Con la barra guiada sobre los hombros y los talones apoyados, sube las puntas de los pies hacia ti y baja despacio. Trabaja el tibial anterior, la cara delantera de la espinilla que casi nadie entrena.",
-  "Curl de bíceps en máquina":"Sentado con la parte alta de los brazos apoyada en el soporte y las axilas pegadas al borde, flexiona los codos hasta arriba y baja despacio sin despegar los brazos. La máquina te fija la postura: por eso permite apretar el bíceps sin ayudarte con la espalda.",
+  "Curl de bíceps en máquina":"Ajusta el asiento para que los codos queden alineados con el eje de giro, asomando apenas por el borde de la almohadilla. Agarra firme los mangos y, sin despegar la parte alta de los brazos de la almohadilla, sube despacio hasta arriba y vuelve a estirar controlando.",
   "Curl predicador en máquina":"Variante con el brazo apoyado en un banco inclinado dentro de la máquina. Sube hasta contraer del todo y baja controlando hasta casi estirar el codo. Cuidado con soltar de golpe abajo: es donde más se resiente el tendón.",
   "Curl martillo en polea":"De pie frente a la polea baja con una cuerda, sube flexionando los codos con las palmas enfrentadas (como si dieras un martillazo) y baja despacio. Trabaja bíceps y braquial, y engorda el antebrazo.",
   "Curl predicador en polea":"Con el banco predicador delante de una polea baja y los brazos apoyados, flexiona los codos hasta arriba y baja controlando casi hasta estirar. La polea mantiene tensión también abajo, donde la barra la pierde.",
@@ -1406,7 +1429,7 @@ const EX_HOW = {
   "Curl inverso en polea":"De pie frente a la polea baja con las palmas hacia abajo, flexiona los codos pegados al cuerpo y baja despacio. Trabaja braquial y antebrazo: necesitarás bastante menos peso del que crees.",
   "Curl en polea a una mano":"De pie de lado a la polea baja con un asa, flexiona el codo sin mover el brazo del sitio y baja controlando hasta estirar. A una mano puedes girar la muñeca al subir y apurar más la contracción.",
   "Extensión de tríceps en máquina":"Sentado con la espalda apoyada y los codos fijos en el soporte, estira los brazos empujando las asas hacia abajo y vuelve controlando. Al estar guiado, el codo no se va: ideal para apurar el tríceps sin comprometer el hombro.",
-  "Fondos en máquina":"Sentado en la máquina de fondos asistidos o de empuje, estira los brazos empujando hacia abajo con los codos pegados al cuerpo y vuelve despacio. Permite ajustar la carga exacta, algo que en los fondos libres no puedes.",
+  "Fondos en máquina":"Sentado, ajusta el asiento para llegar a los mangos con comodidad y gíralos hacia dentro o hacia fuera, como te resulte mejor. Con la espalda apoyada y los codos pegados a los costados, empuja los mangos hacia abajo despacio hasta casi estirar, sin bloquear los codos, y sube controlando. Puedes ajustar el peso exacto, algo que en los fondos libres no se puede.",
   "Tríceps en polea con cuerda":"De pie frente a la polea alta con una cuerda, con los codos pegados al cuerpo, estira los brazos hacia abajo separando las manos al final y vuelve sin dejar que el codo se abra. No eches el cuerpo encima para empujar.",
   "Extensión de tríceps inclinado en polea":"Tumbado en un banco inclinado con la polea detrás de la cabeza, estira los brazos hacia arriba manteniendo los codos quietos y apuntando al techo. El ángulo estira bien la porción larga del tríceps.",
   "Press francés en polea":"Tumbado en un banco con la polea baja detrás de la cabeza, estira los brazos manteniendo los codos fijos apuntando arriba, y vuelve doblando solo el codo. La polea evita el punto muerto de la barra.",
@@ -1460,6 +1483,8 @@ const EX_IMG = {
   "Elevación lateral en máquina": "exercises/Seated_Side_Lateral_Raise/0.jpg",
   "Patada de glúteo en máquina": "exercises/One-Legged_Cable_Kickback/0.jpg",
   "Pulldown en máquina de discos": "exercises/Leverage_High_Row/0.jpg",
+  "Jalón en máquina": "exercises/Leverage_High_Row/0.jpg",
+  "Remo de deltoides posterior en máquina": "exercises/Leverage_Iso_Row/0.jpg",
   "Fondos en paralelas lastrados": "exercises/Parallel_Bar_Dip/0.jpg",
   "Jalón agarre cerrado": "exercises/Close-Grip_Front_Lat_Pulldown/0.jpg",
   "Jalón agarre neutro": "exercises/V-Bar_Pulldown/0.jpg",
@@ -1482,7 +1507,7 @@ const EX_IMG = {
   "Pájaros en polea": "exercises/Cable_Rear_Delt_Fly/0.jpg",
   "Remo con barra": "exercises/Bent_Over_Barbell_Row/0.jpg",
   "Remo con mancuerna": "exercises/One-Arm_Dumbbell_Row/0.jpg",
-  "Remo en máquina": "exercises/Seated_Cable_Rows/0.jpg",
+  "Remo en máquina": "exercises/Leverage_Iso_Row/0.jpg",
   "Plancha lateral": "exercises/Side_Bridge/0.jpg",
   "Rueda abdominal": "exercises/Ab_Roller/0.jpg",
   "Sentadilla": "exercises/Barbell_Squat/0.jpg",
@@ -2674,6 +2699,17 @@ const XP_CONJUNTO = 60;
 const APP_VERSION_CODE = __VERSION_CODE__;
 const APP_VERSION_NAME = __VERSION_NAME__;
 
+/* VERSIÓN ALT: la misma app sin el juego (ni mazmorra, ni héroe, ni XP a la vista,
+   ni estética pixel). Se decide al COMPILAR (`vite build --mode alt`, ver
+   vite.config.js) y sale como otro APK con el mismo paquete y la misma firma: se
+   instala encima del normal y conserva todos los datos, y al revés igual.
+   Por dentro todo sigue contando igual (XP, ramas, llaves...): así quien vuelva a
+   la versión RPG lo encuentra todo como si nunca se hubiera ido, y sus amigos le
+   siguen viendo en la clasificación. Lo que cambia es solo lo que se ENSEÑA. */
+const ALT = __ALT__;
+const CANAL_BUILD = ALT ? "alt" : "rpg";
+const FH = ALT ? "fh alt" : "fh";
+
 /* Claves que entran en la copia de seguridad (todo el progreso del perfil) */
 const BACKUP_KEYS = ["gym:state","gym:log","gym:measures","gym:mealplan","gym:excludes","gym:routines","gym:customdiet","gym:mazmorra"];
 /* El entreno en curso. Con el móvil en el bolsillo Android puede matar la app, y
@@ -2739,6 +2775,36 @@ function useAvisoCerrado(clave){
    ESTILOS
    ========================================================================= */
 
+/* Versión ALT: una app de gimnasio sobria. Grises neutros en vez de los morados de la
+   mazmorra, sin fondo pintado, esquinas redondeadas (el `border-radius:0` de la versión
+   pixel no se emite) e Inter en vez de Jersey 15 también en títulos y botones. Los
+   acentos (--gold, --jade...) se quedan: marcan estados y la app entera depende de ellos. */
+const ALT_CSS = `
+    .fh.alt { --bg:#0E1014; --bg2:#161920; --card:#1A1E26; --card2:#212631; --line:#2A303C; --line2:#3A4252;
+      --txt:#ECEEF2; --muted:#A3AAB8; --faint:#7B8393; --gold:#F0B44C; --amber:#F0A040; }
+    .fh.alt::before { display:none; }
+    .fh.alt::after { background:var(--bg); }
+    .fh.alt h1,.fh.alt h2,.fh.alt h3,.fh.alt .disp,.fh.alt .cinzel,.fh.alt .arcade,.fh.alt .fh-btn,
+    .fh.alt .fh-nav button,.fh.alt select { font-family:'Inter',system-ui,sans-serif; letter-spacing:0; }
+    .fh.alt h1,.fh.alt h2,.fh.alt h3,.fh.alt .disp,.fh.alt .cinzel { font-weight:600; }
+    .fh.alt .fh-card { border-width:1px; border-radius:14px; box-shadow:none; }
+    .fh.alt .fh-card::before,.fh.alt .fh-card::after { display:none; }
+    .fh.alt .fh-framed { background:var(--card); box-shadow:none; }
+    .fh.alt .fh-btn { border-radius:10px; box-shadow:none; transition:filter .15s; }
+    .fh.alt .fh-btn:active { transform:none; box-shadow:none!important; filter:brightness(.9); }
+    .fh.alt .fh-bar { border:none; border-radius:99px; height:8px; }
+    .fh.alt .fh-bar > i { border-radius:99px; transition:width .6s ease; }
+    .fh.alt .fh-bar > i::after,.fh.alt .fh-seg::after { display:none; }
+    .fh.alt .fh-escena { display:none; }
+    .fh.alt .fh-nav { border-top:1px solid var(--line); box-shadow:none; }
+    .fh.alt .fh-nav button { font-size:11px; font-weight:500; }
+    .fh.alt .fh-nav button.on { color:var(--txt); }
+    .fh.alt .fh-nav button.on svg { color:var(--gold); }
+    .fh.alt[data-theme="light"] { --bg:#F4F5F7; --bg2:#FFFFFF; --card:#FFFFFF; --card2:#F0F2F5; --line:#DDE1E7; --line2:#C5CBD5;
+      --txt:#1B1F27; --muted:#5B6372; --faint:#808899; --gold:#B7791F; --amber:#B7791F; }
+    .fh.alt[data-theme="light"] .fh-card,.fh.alt[data-theme="light"] .fh-btn,.fh.alt[data-theme="light"] .fh-framed { box-shadow:none; }
+`;
+
 const StyleTag = () => (
   <style>{`
     /* Fuentes AUTO-ALOJADAS en public/fonts (subconjunto latin). Antes se cargaban por
@@ -2775,7 +2841,7 @@ const StyleTag = () => (
     .fh::after { content:""; position:fixed; top:0; left:0; right:0; height:var(--st); z-index:45; background:#100D1A; pointer-events:none; }
     .fh * { image-rendering:auto; }
     .fh .fh-escena { position:relative; overflow:hidden; background:var(--gym) center 62%/cover no-repeat; image-rendering:pixelated; }
-    .fh *,.fh *::before,.fh *::after { border-radius:0!important; }
+    ${ALT ? "" : ".fh *,.fh *::before,.fh *::after { border-radius:0!important; }"}
     .fh h1 { font-family:'Jersey 15',monospace; letter-spacing:.01em; font-weight:700; }
     .fh .cinzel { font-family:'Jersey 15',monospace; letter-spacing:.02em; }
     .fh h2,.fh h3,.fh .disp { font-family:'Jersey 15',monospace; letter-spacing:.01em; }
@@ -2927,6 +2993,7 @@ const StyleTag = () => (
     .fh[data-theme="light"] .fh-btn { box-shadow:inset 0 -3px 0 rgba(0,0,0,.14),inset 0 2px 0 rgba(255,255,255,.4),0 2px 0 rgba(90,70,30,.25); }
     .fh[data-theme="light"] .fh-framed { box-shadow:0 0 0 2px rgba(90,70,30,.15),0 5px 0 rgba(90,70,30,.2); }
     .fh[data-theme="light"] .fh-framed::after { --r:#7A5A16; }
+    ${ALT ? ALT_CSS : ""}
   `}</style>
 );
 
@@ -2977,6 +3044,7 @@ function FilaPestanas({ tabs, activa, onCambia }){
   );
 }
 function Sprite({ id, size=32, className="", style, titulo }){
+  if(ALT) return null;   // ALT es constante: no rompe el orden de los hooks
   const esc = size/16;
   return <span className={`fh-sprite ${className}`} role={titulo ? "img" : undefined} aria-label={titulo} aria-hidden={titulo ? undefined : true}
     style={{ width:size, height:size, backgroundImage:"url('rpg/tiny-dungeon.png')", backgroundSize:`${192*esc}px ${176*esc}px`,
@@ -3136,6 +3204,7 @@ function useHojaAvatar(av){
   return url;
 }
 function Avatar({ av, escala=2, dir="frente", andar=false, className="", style, titulo }){
+  if(ALT) return null;
   const url = useHojaAvatar(av), s = 64*escala;
   return <span className={`fh-sprite ${andar ? "fh-andar" : ""} ${className}`} role={titulo ? "img" : undefined} aria-label={titulo} aria-hidden={titulo ? undefined : true}
     style={{ width:s, height:s, "--s":`${s}px`, backgroundImage:url ? `url(${url})` : undefined, backgroundSize:`${s*9}px ${s*2}px`,
@@ -3163,8 +3232,8 @@ const REGLAS_EJ = [
   [/[Cc]ontractora/, "m_mariposa"],
   [/Curl de bíceps en m|Curl predicador/, "m_biceps"],
   [/Extensión de tríceps en m|Fondos en m/, "m_triceps"],
-  [/Remo en máquina|Remo alto en m/, "m_remo"],
-  [/Pulldown/, "m_pulldown"],
+  [/Remo en máquina|Remo alto en m|Remo de deltoides posterior/, "m_remo"],
+  [/Pulldown|Jalón en máquina/, "m_pulldown"],
   [/^Jalón/, "m_jalon"],
   [/Elevación lateral en m/, "m_lateral"],
   [/Patada de glúteo en m/, "m_glute"],
@@ -3382,6 +3451,7 @@ async function tiraEjercicio(av, familia, conCarga){
   return res;
 }
 function HeroeEjercicio({ av, nombre }){
+  if(ALT) return null;
   const familia = familiaEjercicio(nombre), conCarga = !isBodyweight(nombre), clave = `${JSON.stringify(av)}|${familia}|${conCarga}`;
   const [tira, setTira] = useState(()=>tirasEj.get(clave) || null), [i, setI] = useState(0);
   useEffect(()=>{ let vivo = true; tiraEjercicio(av, familia, conCarga).then(t=>{ if(vivo){ setTira(t); setI(0); } }); return ()=>{ vivo = false; }; }, [clave]);
@@ -3399,6 +3469,7 @@ function HeroeEjercicio({ av, nombre }){
 }
 /* Solo la cara, para los sitios pequeños. El recuadro de 26 px es donde cae la cabeza. */
 function AvatarCara({ av, size=32, style }){
+  if(ALT) return null;
   const url = useHojaAvatar(av), k = size/26;
   return <span className="fh-sprite" aria-hidden="true" style={{ width:size, height:size, backgroundImage:url ? `url(${url})` : undefined,
     backgroundSize:`${576*k}px ${128*k}px`, backgroundPosition:`${-19*k}px ${-7*k}px`, ...style }}/>;
@@ -4180,8 +4251,8 @@ function MazmorraView({ onVolver, ...juego }){
    que Android mate la app y al volver sigue donde debe. */
 function RestTimer({ hasta, total, onDone, onSaltar, onMas15, isRecomp, juego }){
   const pool = isRecomp ? RECOMP_TIPS : TIPS;
-  const [jugar, setJugar] = useState(true);
-  useEffect(()=>{ loadGlobal("gym:descansoJuego", true).then(setJugar); }, []);
+  const [jugar, setJugar] = useState(!ALT);
+  useEffect(()=>{ if(!ALT) loadGlobal("gym:descansoJuego", true).then(setJugar); }, []);
   const alternarJuego = ()=>{ setJugar(v=>{ saveGlobal("gym:descansoJuego", !v); return !v; }); };
   const [queda, setQueda] = useState(() => Math.max(0, hasta - Date.now()));
   const [tip, setTip] = useState(() => pick(pool));
@@ -4245,7 +4316,7 @@ function RestTimer({ hasta, total, onDone, onSaltar, onMas15, isRecomp, juego })
         )}
         <div style={{ display:"flex", gap:8 }}>
           <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--txt)", padding:"13px 6px", border:"1px solid var(--line2)", whiteSpace:"nowrap" }} onClick={onMas15}>+15 s</button>
-          <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--muted)", padding:13, border:"1px solid var(--line2)" }} onClick={alternarJuego}>{jugar ? "Consejo" : "Jugar"}</button>
+          {!ALT && <button className="fh-btn" style={{ flex:1, background:"var(--card2)", color:"var(--muted)", padding:13, border:"1px solid var(--line2)" }} onClick={alternarJuego}>{jugar ? "Consejo" : "Jugar"}</button>}
           <button className="fh-btn" style={{ flex:1, background:"var(--ember)", color:"#fff", padding:13, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }} onClick={onSaltar}><SkipForward size={16}/> Saltar</button>
         </div>
         {!jugar && <div style={{ fontSize:11, color:"var(--faint)", marginTop:12 }}>Termina o salta el descanso para seguir con el siguiente ejercicio.</div>}
@@ -4317,7 +4388,7 @@ export default function App(){
   const [results, setResults] = useState(null);
   const [efectos, setEfectos] = useState([]);    // cola de pantallas: LEVEL UP, EXTRA LIFE, GAME OVER
   const [sonido, setSonidoState] = useState(true);
-  const lanzarEfecto = (...nuevos)=>setEfectos(q=>[...q, ...nuevos.map(e=>({ ...e, id:Date.now()+Math.random() }))]);
+  const lanzarEfecto = (...nuevos)=>ALT ? undefined : setEfectos(q=>[...q, ...nuevos.map(e=>({ ...e, id:Date.now()+Math.random() }))]);
   const puntos = useMemo(()=>puntosDeRama(log), [log]);
   const avatar = useMemo(()=>state.avatar || avatarPorDefecto(state.profile, puntos), [state.avatar, state.profile?.sex, puntos]);
   function guardarAvatar(av){ const ns = { ...state, avatar:av }; setState(ns); persist(ns); }
@@ -4338,6 +4409,22 @@ export default function App(){
   const [sesionResuelta, setSesionResuelta] = useState(!cloud.cloudEnabled);
   const [perfil, setPerfil] = useState(null);
   const [updateInfo, setUpdateInfo] = useState(null);
+  const [resumen, setResumen] = useState(null);
+  const cerrarResumen = ()=>{ if(resumen) saveGlobal("gym:resumenVisto", resumen.id); setResumen(null); };
+  /* Canal de actualizaciones: "rpg" o "alt". Global (es del móvil, no del perfil) y por
+     defecto el de este build. Elegir el otro hace que el aviso de versión ofrezca su APK. */
+  const [canal, setCanalState] = useState(CANAL_BUILD);
+  const setCanal = async c => {
+    setCanalState(c); saveGlobal("gym:canal", c);
+    const v = await cloud.versionMasNueva(APP_VERSION_CODE, c, CANAL_BUILD);
+    setUpdateInfo(v.ok && v.hayNueva ? v.version : null);
+    return v;
+  };
+  const setResumenIA = async activo => {
+    const r = await cloud.setResumenIA(activo);
+    if(r.ok) setPerfil(p=>p ? { ...p, resumen_ia:activo } : p);
+    return r;
+  };
   const [publicadas, setPublicadas] = useState([]);   // ids de mis rutinas visibles para amigos
   const [quedadas, setQuedadas] = useState([]);
   const [novedades, setNovedades] = useState([]);
@@ -4455,6 +4542,9 @@ export default function App(){
     if(sol.ok) setSolicitudes(sol.solicitudes);
     const env = await cloud.rutinasRecibidas();
     if(env.ok) setEnviosRutina(env.envios);
+    // El resumen quincenal (opt-in). Se enseña hasta que lo cierras; el siguiente sale solo.
+    const rs = await cloud.ultimoResumen();
+    if(rs.ok && rs.resumen && rs.resumen.id !== await loadGlobal("gym:resumenVisto", null)) setResumen(rs.resumen);
     // Registra el dispositivo en FCM. Sin google-services.json el plugin no
     // existe y esto no hace nada: la app funciona igual.
     if(push.pushDisponible()) push.activarPush();
@@ -4473,7 +4563,9 @@ export default function App(){
       setCloudSession(ses);
       setSesionResuelta(true);
       if(ses) await cargarSocial(ses.user?.id);
-      const v = await cloud.versionMasNueva(APP_VERSION_CODE);
+      const can = await loadGlobal("gym:canal", CANAL_BUILD);
+      if(vivo) setCanalState(can);
+      const v = await cloud.versionMasNueva(APP_VERSION_CODE, can, CANAL_BUILD);
       if(vivo && v.ok && v.hayNueva) setUpdateInfo(v.version);
     })();
     const off = cloud.onAuthChange(async(ses)=>{
@@ -5092,7 +5184,7 @@ export default function App(){
     const r = await cloud.unirseSesion(sesion.id);
     if(!r.ok){ showToast({ title:"No se ha podido", sub:r.msg, icon:ShieldAlert }); return; }
     setSesionConjunta({ id:sesion.id, laAbriYo:false, con:sesion.display_name || "@"+sesion.handle });
-    showToast({ title:"Entrenáis juntos", sub:`Al terminar os lleváis ${XP_CONJUNTO} XP extra.`, icon:Users });
+    showToast({ title:"Entrenáis juntos", sub:ALT ? "Ya salís juntos en la lista de amigos." : `Al terminar os lleváis ${XP_CONJUNTO} XP extra.`, icon:Users });
     refrescarEntrenando();
   }
 
@@ -5337,7 +5429,7 @@ export default function App(){
   useEffect(()=>{ try{ window.scrollTo({ top:0, behavior:"auto" }); }catch{ window.scrollTo(0,0); } document.documentElement.scrollTop=0; document.body.scrollTop=0; }, [tab]);
 
   if(loading) return (
-    <div className="fh" data-theme={theme} style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh" }}>
+    <div className={FH} data-theme={theme} style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh" }}>
       <StyleTag/>
       <div style={{ textAlign:"center", color:"var(--muted)" }}><Sprite id={SPR.espada} size={48} className="fh-idle"/><div className="disp" style={{ marginTop:10 }}>Cargando tu progreso…</div></div>
     </div>
@@ -5347,7 +5439,7 @@ export default function App(){
      Con sesión guardada se va directo a Inicio, sin pedir nada. "Seguir sin
      cuenta" deja usar la app entera en local, como siempre. */
   if(cloud.cloudEnabled && sesionResuelta && !cloudSession && !sinCuenta && !needsOnboarding) return (
-    <div className="fh" id="rpgym-root" data-theme={theme}>
+    <div className={FH} id="rpgym-root" data-theme={theme}>
       <StyleTag/>
       <Toast toast={toast}/>
       <div className="fh-shell">
@@ -5360,7 +5452,7 @@ export default function App(){
   );
 
   if(needsOnboarding) return (
-    <div className="fh" data-theme={theme}>
+    <div className={FH} data-theme={theme}>
       <StyleTag/>
       <OnboardingWizard onDone={completeOnboarding} initial={state.profile} importBackup={importBackup}/>
     </div>
@@ -5368,8 +5460,8 @@ export default function App(){
 
   /* Sale al crear el perfil y, a quien ya lo tenía, al abrir la versión que trae el
      avatar. Con un entreno a medias se espera: lo primero es volver a él. */
-  if(!state.avatar && !session) return (
-    <div className="fh" id="rpgym-root" data-theme={theme}>
+  if(!ALT && !state.avatar && !session) return (
+    <div className={FH} id="rpgym-root" data-theme={theme}>
       <StyleTag/>
       <div className="fh-shell" style={{ paddingBottom:"calc(24px + var(--sb))" }}>
         <HeroeView arranque avatar={avatar} puntos={puntos} onCambiar={guardarAvatar} onAhoraNo={()=>guardarAvatar(avatar)}/>
@@ -5378,7 +5470,7 @@ export default function App(){
   );
 
   return (
-    <div className="fh" id="rpgym-root" data-theme={theme}>
+    <div className={FH} id="rpgym-root" data-theme={theme}>
       <StyleTag/>
       <Toast toast={toast}/>
       {efectos[0] && <EfectoPantalla key={efectos[0].id} efecto={efectos[0]} avatar={avatar} onVerEquipo={()=>setTab("heroe")} onFin={()=>setEfectos(q=>q.slice(1))}/>}
@@ -5386,7 +5478,7 @@ export default function App(){
         {tab==="home" && <HomeView {...{ state, avatar, mazmorra, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines,
           cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno, superadoPor,
           copiaNube, onRestaurarNube:restaurarDeNube, onDescartarCopia:()=>{ saveGlobal("gym:copiaDescartada", copiaNube?.updated_at); setCopiaNube(null); },
-          pendientes:solicitudes.length + enviosRutina.length }}/>}
+          pendientes:solicitudes.length + enviosRutina.length, resumen, onCerrarResumen:cerrarResumen }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina, setTab }}/>}
         {tab==="ficha" && <CharacterView {...{ state, avatar, puntos, level, rank, log, customRoutines, setTab,
           onAbrirInforme:lunes=>abrirInforme(lunes, "ficha") }}/>}
@@ -5402,7 +5494,8 @@ export default function App(){
           onSalir:()=>{ if(sesionConjunta){ cloud.dejarSesion({ sessionId:sesionConjunta.id, laAbriYo:sesionConjunta.laAbriYo }); setSesionConjunta(null); } },
           onAbandonar:()=>lanzarEfecto({ tipo:"gameOver", titulo:"Entreno abandonado", nota:"Las series de hoy no cuentan. Tu racha y tu nivel siguen como estaban." }) }}/>}
         {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank, customRoutines, onGuardarCambios:guardarCambiosRutina }}/>}
-        {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines, setTab, quedadas }}/>}
+        {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines, setTab, quedadas,
+          onAbrirInforme:()=>abrirInforme(mondayOf(todayISO()), "progreso") }}/>}
         {tab==="informe" && <InformeSemanalView {...{ state, log, measures, lunes:informeLunes, setLunes:setInformeLunes,
           cloudEnabled:cloud.cloudEnabled, perfil, onVolver:()=>setTab(informeVuelve) }}/>}
         {tab==="amigos" && <AmigosView {...{ perfil, cloudEnabled:cloud.cloudEnabled, setTab, seccion:amigosSeccion, setSeccion:setAmigosSeccion,
@@ -5416,19 +5509,21 @@ export default function App(){
           setVacaciones, terminarVacaciones,
           cloudEnabled:cloud.cloudEnabled, perfil, session:cloudSession,
           onEntrar:entrarCuenta, onRegistrar:registrarCuenta, onVerificar:verificarCuenta,
-          onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle, level }}/>}
+          onSalir:salirCuenta, onCambiarHandle:cambiarMiHandle, level, canal, setCanal, setResumenIA }}/>}
       </div>
 
       {tab!=="workout" && tab!=="results" && tab!=="editor" && tab!=="heroe" && tab!=="mazmorra" && (
         <nav className="fh-nav"><div className="fh-nav-inner">
-          {[{id:"home",spr:SPR.puerta,label:"Inicio"},{id:"rutinas",spr:SPR.espada,label:"Rutinas"},{id:"progreso",cara:true,label:"RPGym"},{id:"logros",spr:SPR.cofre,label:"Logros"},{id:"amigos",gente:true,label:"Amigos",aviso:solicitudes.length}].map(t=>{
+          {(ALT ? NAV_ALT.map(t=>t.id==="amigos" ? { ...t, aviso:solicitudes.length } : t)
+            : [{id:"home",spr:SPR.puerta,label:"Inicio"},{id:"rutinas",spr:SPR.espada,label:"Rutinas"},{id:"progreso",cara:true,label:"RPGym"},{id:"logros",spr:SPR.cofre,label:"Logros"},{id:"amigos",gente:true,label:"Amigos",aviso:solicitudes.length}]).map(t=>{
             // La ficha de un amigo y la dieta cuelgan de una pestaña: que se siga viendo cuál.
             const on = (tab==="amigo" ? "amigos" : tab==="dieta" ? "home" : tab) === t.id;
             return (
               <button key={t.id} className={on?"on":""} onClick={()=>setTab(t.id)} aria-current={on?"page":undefined}
                 aria-label={t.aviso ? `${t.label}: ${t.aviso} sin responder` : undefined}>
                 <span style={{ position:"relative", display:"flex" }}>
-                  {t.cara ? <AvatarCara av={avatar} size={32}/>
+                  {t.icon ? <t.icon size={22}/>
+                    : t.cara ? <AvatarCara av={avatar} size={32}/>
                     : t.gente ? <><Sprite id={SPR.amigo} size={32}/><Sprite id={SPR.amiga} size={32} style={{ marginLeft:-14 }}/></>
                     : <Sprite id={t.spr} size={32}/>}
                   <Contador n={t.aviso}/>
@@ -7130,8 +7225,65 @@ function AccountView({ state, level, setTab, session, perfil, onEntrar, onRegist
 }
 
 /* Aviso de versión nueva: el APK se reparte a mano, así que la app avisa ella. */
+/* Barra de la versión alt: iconos normales, sin sprites ni la cara del héroe. */
+const NAV_ALT = [
+  { id:"home",     icon:Home,       label:"Inicio" },
+  { id:"rutinas",  icon:Dumbbell,   label:"Rutinas" },
+  { id:"progreso", icon:TrendingUp, label:"Progreso" },
+  { id:"amigos",   icon:Users,      label:"Amigos" },
+];
+
+/* El resumen quincenal que escribe Claude (scripts/resumen-quincenal.mjs). Llega como
+   texto plano: los títulos van en una línea en MAYÚSCULAS y las listas con "- ".
+   Plegado de entrada para no empujar Inicio entero hacia abajo. */
+function ResumenCard({ resumen, onCerrar }){
+  const [abierto, setAbierto] = useState(false);
+  if(!resumen) return null;
+  const lineas = resumen.texto.split(/\r?\n/);
+  const visibles = abierto ? lineas : lineas.slice(0, 5);
+  const esTitulo = l => l.length > 3 && l.length < 60 && l === l.toUpperCase() && /[A-ZÁÉÍÓÚÑ]/.test(l);
+  return (
+    <div className="fh-card fh-in" style={{ padding:16, margin:"0 0 12px", borderColor:"var(--violet)" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:8 }}>
+        <Sparkles size={16} color="var(--violet)" style={{ flexShrink:0 }}/>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div className="disp" style={{ fontSize:16, lineHeight:1.2 }}>Tus dos semanas</div>
+          <div style={{ fontSize:11, color:"var(--faint)" }}>Del {fechaCorta(resumen.desde)} al {fechaCorta(resumen.hasta)}</div>
+        </div>
+        <button onClick={onCerrar} aria-label="Cerrar el resumen" style={{ background:"none", border:"none", padding:2, cursor:"pointer", color:"var(--faint)", flexShrink:0 }}><X size={15}/></button>
+      </div>
+      <div style={{ fontSize:12.5, lineHeight:1.55, color:"var(--txt)" }}>
+        {visibles.map((l,i)=> !l.trim() ? <div key={i} style={{ height:6 }}/>
+          : esTitulo(l.trim()) ? <div key={i} style={{ fontSize:11, fontWeight:700, letterSpacing:".08em", color:"var(--violet)", marginTop:i?8:0 }}>{l.trim()}</div>
+          : <div key={i} style={l.startsWith("- ") ? { paddingLeft:12, textIndent:-10 } : undefined}>{l.startsWith("- ") ? "· "+l.slice(2) : l}</div>)}
+      </div>
+      {lineas.length > 5 && (
+        <button onClick={()=>setAbierto(a=>!a)} style={{ background:"none", border:"none", padding:"8px 0 0", color:"var(--violet)", cursor:"pointer", font:"inherit", fontSize:12.5, display:"flex", alignItems:"center", gap:4 }}>
+          {abierto ? "Plegar" : "Leer entero"} <ChevronDown size={14} style={{ transform:abierto ? "rotate(180deg)" : "none" }}/>
+        </button>
+      )}
+      <div style={{ fontSize:10.5, color:"var(--faint)", marginTop:8, lineHeight:1.4 }}>Lo escribe una IA (Claude) a partir de tus entrenos. Orientativo: no sustituye a un profesional.</div>
+    </div>
+  );
+}
+
 function UpdateBanner({ info, onClose }){
   if (!info) return null;
+  if (info.cambio) return (
+    <div className="fh-card" style={{ padding:14, margin:"0 0 12px", borderColor:"var(--sky)", display:"flex", gap:11, alignItems:"flex-start" }}>
+      <GitBranch size={18} color="var(--sky)" style={{ flexShrink:0, marginTop:1 }}/>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ fontSize:12.5, color:"var(--txt)", lineHeight:1.45 }}>
+          Has elegido la versión <b>{info.canal==="alt" ? "sin juego" : "RPG"}</b> ({info.version_name}). Instálala encima de esta: conservas todo tu progreso.
+        </div>
+        <a href={info.download_url} target="_blank" rel="noopener noreferrer" className="fh-btn"
+          style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:9, background:"var(--sky)", color:"#0F131A", padding:"9px 14px", fontSize:12.5, textDecoration:"none" }}>
+          <Download size={14}/> Descargar
+        </a>
+      </div>
+      <button onClick={onClose} aria-label="Cerrar" style={{ background:"none", border:"none", padding:2, cursor:"pointer", color:"var(--faint)", flexShrink:0 }}><X size={15}/></button>
+    </div>
+  );
   return (
     <div className="fh-card" style={{ padding:14, margin:"0 0 12px", borderColor:"var(--sky)", display:"flex", gap:11, alignItems:"flex-start" }}>
       <Download size={18} color="var(--sky)" style={{ flexShrink:0, marginTop:1 }}/>
@@ -7165,8 +7317,10 @@ const SETTINGS_TABS = [
   { id:"privacidad", label:"Privacidad", icon:Lock },
 ];
 
-function SettingsView({ state, log, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, sonido, setSonido, resetProgress, exportBackup, importBackup, setVacaciones, terminarVacaciones, cloudEnabled, perfil, session, level, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle }){
+function SettingsView({ state, log, updateProfile, setReminders, setSub, setCycle, setTab, theme, setTheme, sonido, setSonido, resetProgress, exportBackup, importBackup, setVacaciones, terminarVacaciones, cloudEnabled, perfil, session, level, onEntrar, onRegistrar, onVerificar, onSalir, onCambiarHandle, canal, setCanal, setResumenIA }){
   const [sec, setSec] = useState("perfil");
+  const [msgCanal, setMsgCanal] = useState(null);
+  const [msgIA, setMsgIA] = useState(null);
   const p = state.profile || {};
   const rem = state.reminders || { enabled:false, hour:19, minute:0, days:[1,3,5] };
   const sub = state.sub || { enabled:false, renewalDay:1, price:"" };
@@ -7255,9 +7409,34 @@ function SettingsView({ state, log, updateProfile, setReminders, setSub, setCycl
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:9, fontSize:14, marginTop:14, paddingTop:12, borderTop:"1px solid var(--line)" }}>
           <Volume2 size={16} color="var(--gold)"/>
-          <div style={{ flex:1 }}>Sonidos del juego<div style={{ fontSize:11.5, color:"var(--muted)", marginTop:2 }}>No cortan la música que lleves puesta.</div></div>
+          <div style={{ flex:1 }}>{ALT ? "Sonidos" : "Sonidos del juego"}<div style={{ fontSize:11.5, color:"var(--muted)", marginTop:2 }}>No cortan la música que lleves puesta.</div></div>
           <ToggleSwitch on={sonido} onClick={()=>setSonido(!sonido)}/>
         </div>
+      </div>
+
+      {/* --- Versión de la app (canal de actualizaciones) --- */}
+      <div style={sectionTitle}>VERSIÓN DE LA APP</div>
+      <div className="fh-card" style={{ padding:16 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:9, fontSize:14, marginBottom:6 }}><GitBranch size={16} color="var(--gold)"/> Qué versión quieres recibir</div>
+        <p style={{ fontSize:12, color:"var(--muted)", margin:"0 0 12px", lineHeight:1.5 }}>
+          Las dos son la misma app con los mismos datos. La <b style={{ color:"var(--txt)" }}>sin juego</b> quita la mazmorra, el héroe,
+          la XP y el aspecto pixel: solo entrenos, rutinas y progreso. Puedes cambiar cuando quieras sin perder nada.
+        </p>
+        <div style={{ display:"flex", gap:8 }}>
+          {[{ id:"rpg", label:"RPG" }, { id:"alt", label:"Sin juego" }].map(c=>{
+            const on = canal === c.id;
+            return (
+              <button key={c.id} className="fh-btn" disabled={!cloudEnabled}
+                onClick={async()=>{ setMsgCanal(null); const r = await setCanal(c.id);
+                  setMsgCanal(c.id === CANAL_BUILD ? null : r.ok && r.hayNueva ? "Listo: en Inicio tienes el botón para descargarla." : r.ok ? "Aún no hay una versión publicada en ese canal. Te avisaremos en cuanto la haya." : "No se ha podido comprobar ahora. Lo intentará al abrir la app."); }}
+                style={{ flex:1, background:on?"var(--gold)":"var(--card2)", color:on?"#0F131A":"var(--muted)", border:`1px solid ${on?"var(--gold)":"var(--line2)"}`, padding:12 }}>
+                {c.label}{c.id === CANAL_BUILD ? " · instalada" : ""}
+              </button>
+            );
+          })}
+        </div>
+        {!cloudEnabled && <div style={{ fontSize:11.5, color:"var(--faint)", marginTop:8 }}>Necesita conexión con la nube para saber qué hay publicado.</div>}
+        {msgCanal && <div style={{ fontSize:12, color:"var(--sky)", marginTop:9, lineHeight:1.45 }}>{msgCanal}</div>}
       </div>
 
       {/* --- Perfil --- */}
@@ -7554,6 +7733,23 @@ function SettingsView({ state, log, updateProfile, setReminders, setSub, setCycl
         <p style={{ fontSize:11.5, color:"var(--faint)", margin:0, lineHeight:1.5 }}>
           Puedes borrarlo todo cuando quieras desde <b style={{ color:"var(--muted)" }}>Borrar progreso</b>, o desinstalando la app.
         </p>
+        {/* Opt-in: apagado por defecto. Con él encendido, el script quincenal pasa a Claude
+            lo que ya está en la nube (entrenos y marcas). Nada del ciclo: no está allí. */}
+        {cloudEnabled && perfil && (
+          <div style={{ marginTop:14, paddingTop:12, borderTop:"1px solid var(--line)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:9, fontSize:14 }}>
+              <Sparkles size={16} color="var(--violet)"/>
+              <div style={{ flex:1 }}>Resumen quincenal con IA</div>
+              <ToggleSwitch on={!!perfil.resumen_ia} onClick={async()=>{ setMsgIA(null); const r = await setResumenIA(!perfil.resumen_ia); if(!r.ok) setMsgIA(r.msg || "No se ha podido guardar."); }}/>
+            </div>
+            <p style={{ fontSize:12, color:"var(--muted)", margin:"8px 0 0", lineHeight:1.5 }}>
+              Cada dos semanas, tus entrenos de la nube (ejercicios, pesos, repeticiones y marcas) se envían a
+              <b style={{ color:"var(--txt)" }}> Claude, de Anthropic</b>, que escribe un resumen con recomendaciones de ejercicios y de peso.
+              Te sale en Inicio. Solo si lo activas; el ciclo menstrual no se envía nunca.
+            </p>
+            {msgIA && <div style={{ fontSize:12, color:"var(--crimson)", marginTop:6 }}>{msgIA}</div>}
+          </div>
+        )}
         {PRIVACY_URL && (
           <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer" className="fh-btn"
             style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:7, marginTop:13, textDecoration:"none",
@@ -7725,7 +7921,7 @@ function CyclePhaseCard({ state, setTab }){
   );
 }
 
-function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, copiaNube, onRestaurarNube, onDescartarCopia, pendientes }){
+function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, copiaNube, onRestaurarNube, onDescartarCopia, pendientes, resumen, onCerrarResumen }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const phase=recommendedPhase(state.startDate);
@@ -7782,8 +7978,10 @@ function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminar
         );
       })()}
 
+      <ResumenCard resumen={resumen} onCerrar={onCerrarResumen}/>
+
       {/* Rango + XP */}
-      <div className="fh-card fh-framed" onClick={()=>setTab("ficha")} style={{ padding:0, cursor:"pointer" }}>
+      {!ALT && <div className="fh-card fh-framed" onClick={()=>setTab("ficha")} style={{ padding:0, cursor:"pointer" }}>
         <div className="fh-escena" style={{ height:138, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
           <Avatar av={avatar} escala={2} className="fh-idle" style={{ marginBottom:-4 }} titulo={rank.name}/>
           <div className="arcade" style={{ position:"absolute", top:10, left:10, fontSize:11, color:"#FFF", textShadow:"1px 1px 0 #000" }}>LV {level}</div>
@@ -7798,7 +7996,7 @@ function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminar
           <div className="fh-bar" style={{ marginTop:9 }}><i style={{ width:`${Math.min(100,(xpInto/xpNeed)*100)}%`, background:rank.color }}/></div>
           <div style={{ fontSize:11, color:"var(--faint)", marginTop:8 }}>{state.xp} XP · {state.totalWorkouts} entrenos</div>
         </div>
-      </div>
+      </div>}
 
       {/* Semana y racha, grandes y a la vista: lo que se mira cada vez que se abre la app. */}
       <div style={{ display:"flex", gap:12, marginTop:12 }}>
@@ -7814,17 +8012,17 @@ function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminar
         </div>
       </div>
 
-      <button className="fh-card" onClick={()=>setTab("mazmorra")} style={filaAcceso}>
+      {!ALT && <button className="fh-card" onClick={()=>setTab("mazmorra")} style={filaAcceso}>
         <Sprite id={110} size={32}/>
         <span style={{ flex:1, minWidth:0 }}>
           <span className="disp" style={{ display:"block", fontSize:18, lineHeight:1.15 }}>La mazmorra</span>
           <span style={{ display:"block", fontSize:12, color:"var(--muted)" }}>{mazmorra?.partida && mazmorra.partida.fase!=="fin" ? `Sala ${mazmorra.partida.sala} de ${M.SALAS}` : mazmorra?.gloria ? `${mazmorra.gloria} de Gloria` : "Lleva tu héroe a combatir"} · {mazmorra?.llaves||0} {mazmorra?.llaves===1 ? "llave" : "llaves"} · Impulso {mazmorra?.impulso||0}</span>
         </span>
         <ChevronRight size={16} color="var(--faint)" style={{ flexShrink:0 }}/>
-      </button>
+      </button>}
 
       <button className="fh-card" onClick={()=>setTab("dieta")} style={filaAcceso}>
-        <Sprite id={SPR.pocion} size={32}/>
+        {ALT ? <Utensils size={20} color="var(--jade)"/> : <Sprite id={SPR.pocion} size={32}/>}
         <span style={{ flex:1, minWidth:0 }}>
           <span className="disp" style={{ display:"block", fontSize:18, lineHeight:1.15 }}>Dieta</span>
           <span style={{ display:"block", fontSize:12, color:"var(--muted)" }}>Plan semanal y lista de la compra</span>
@@ -7856,8 +8054,8 @@ function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminar
       {/* Racha (respeta descansos) */}
       <StreakCard log={log} plannedDays={state.reminders?.days} bestStreak={state.bestStreak} setTab={setTab} opts={opts}/>
 
-      {/* Misiones de la semana */}
-      <MissionsCard state={state} log={log}/>
+      {/* Misiones de la semana (dan XP: en la versión alt no se enseñan) */}
+      {!ALT && <MissionsCard state={state} log={log}/>}
 
       {/* Ciclo menstrual (solo si la usuaria lo activó) */}
       <CyclePhaseCard state={state} setTab={setTab}/>
@@ -7902,7 +8100,7 @@ function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminar
             const faltan = Math.max(0, goal - state.weeklyCount);
             if(state.weekGoalMet) return "¡Semana completada! Sigue sumando o descansa sin culpa.";
             if(goal === 0) return "Vuelve cuando quieras: la racha no se rompe.";
-            return `Te ${faltan===1?"falta":"faltan"} ${faltan} ${faltan===1?"sesión":"sesiones"} para +200 XP y un día de descanso. El día lo eliges tú.`;
+            return `Te ${faltan===1?"falta":"faltan"} ${faltan} ${faltan===1?"sesión":"sesiones"} para ${ALT ? "cerrar la semana y ganar" : "+200 XP y"} un día de descanso. El día lo eliges tú.`;
           })()}
         </div>
         {/* Qué días has marcado tú: el objetivo sale de aquí, no de la rutina. */}
@@ -8215,7 +8413,7 @@ function ExercisePicker({ dayName, already, onPick, onRemove, onClose }){
   const term = normTxt(q.trim());
   const groups = EX_POOL_BY_GROUP
     .filter(g => group==="todos" || g.group===group)
-    .map(g => ({ ...g, items:g.items.filter(n => !term || normTxt(n).includes(term)) }))
+    .map(g => ({ ...g, items:g.items.filter(n => !term || normTxt(n + " " + (EX_MAQUINA[n]||"")).includes(term)) }))
     .filter(g => g.items.length);
   const total = groups.reduce((a,g)=>a+g.items.length, 0);
   const target = (typeof document!=="undefined" && document.getElementById("rpgym-root")) || (typeof document!=="undefined" ? document.body : null);
@@ -8270,6 +8468,7 @@ function ExercisePicker({ dayName, already, onPick, onRemove, onClose }){
                           aria-expanded={abierto} aria-label={`Ver ${name}`}
                           style={{ flex:1, minWidth:0, textAlign:"left", padding:"11px 13px", background:"none", border:"none", cursor:"pointer", color:"var(--txt)" }}>
                           <div style={{ fontSize:13.5, fontWeight:600 }}>{name}</div>
+                          {EX_MAQUINA[name] && <div style={{ fontSize:11, color:"var(--gold)", marginTop:2 }}>En la máquina: «{EX_MAQUINA[name]}»</div>}
                           <div style={{ fontSize:11, color:"var(--faint)", marginTop:2, display:"flex", alignItems:"center", gap:5 }}>
                             <Eye size={11}/> {EX_MUSCLE[name]}{isCardio(name) ? " · cardio" : isBodyweight(name) ? " · peso corporal" : ""}
                           </div>
@@ -8954,6 +9153,7 @@ function WorkoutView({ session, setSession, finishWorkout, setTab, log, weekStar
             {howOpen===exI && (
               <div className="fh-in" style={{ background:"var(--bg2)", border:"1px solid var(--line)", borderRadius:11, padding:"11px 13px", marginBottom:12 }}>
                 <ExImage name={ex.name}/>
+                {EX_MAQUINA[ex.name] && <div style={{ fontSize:12, fontWeight:700, color:"var(--gold)", marginBottom:4 }}>En la máquina: «{EX_MAQUINA[ex.name]}»</div>}
                 <div style={{ fontSize:12.5, lineHeight:1.5, color:"var(--muted)" }}>{EX_HOW[ex.name] || "Realiza el movimiento de forma controlada y con buena técnica, sin comprometer la espalda. Si tienes dudas, pide ayuda a un monitor del gimnasio."}</div>
               </div>
             )}
@@ -9144,12 +9344,12 @@ function ResultsView({ results, setTab, level, rank, customRoutines, onGuardarCa
   return (
     <div className="fh-in" style={{ paddingTop:24 }}>
       <div className="fh-pop" style={{ textAlign:"center", marginBottom:18 }}>
-        <Sprite id={SPR.cofre} size={64} className="fh-idle" style={{ marginBottom:8 }}/>
-        <h1 style={{ margin:0, fontSize:26 }}>¡Misión cumplida!</h1>
+        {ALT ? <CheckCircle2 size={44} color="var(--jade)" style={{ marginBottom:8 }}/> : <Sprite id={SPR.cofre} size={64} className="fh-idle" style={{ marginBottom:8 }}/>}
+        <h1 style={{ margin:0, fontSize:26 }}>{ALT ? "Entreno terminado" : "¡Misión cumplida!"}</h1>
         <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>{r.routineName} · {r.dayName}</p>
       </div>
 
-      {r.levelUp && (
+      {!ALT && r.levelUp && (
         <div className="fh-card fh-pop" style={{ padding:16, marginBottom:12, textAlign:"center", borderColor:rank.color, background:"linear-gradient(135deg,var(--card),var(--card2))", animation:"fh-glow 2.4s infinite" }}>
           <Crown size={22} color={rank.color}/>
           <div className="disp" style={{ fontSize:19, fontWeight:700, marginTop:4 }}>¡Subes a nivel {r.levelUp}!</div>
@@ -9159,7 +9359,8 @@ function ResultsView({ results, setTab, level, rank, customRoutines, onGuardarCa
 
       {/* Stats principales */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:12 }}>
-        {[["+"+xpVisto,"XP","var(--gold)"],[r.seriesDone,"series","var(--jade)"],[r.durationMin+" min","duración","var(--sky)"]].map((s,i)=>(
+        {(ALT ? [[r.seriesDone,"series","var(--jade)"],[r.prs.length,r.prs.length===1?"récord":"récords","var(--gold)"],[r.durationMin+" min","duración","var(--sky)"]]
+          : [["+"+xpVisto,"XP","var(--gold)"],[r.seriesDone,"series","var(--jade)"],[r.durationMin+" min","duración","var(--sky)"]]).map((s,i)=>(
           <div key={i} className="fh-card" style={{ padding:14, textAlign:"center" }}>
             <div className="disp" style={{ fontSize:20, fontWeight:700, color:s[2] }}>{s[0]}</div>
             <div style={{ fontSize:10, color:"var(--muted)", marginTop:2 }}>{s[1]}</div>
@@ -9168,7 +9369,7 @@ function ResultsView({ results, setTab, level, rank, customRoutines, onGuardarCa
       </div>
 
       {/* Desglose XP */}
-      <div className="fh-card" style={{ padding:16, marginBottom:12 }}>
+      {!ALT && <div className="fh-card" style={{ padding:16, marginBottom:12 }}>
         <div className="disp" style={{ fontWeight:600, fontSize:15, marginBottom:2 }}>Desglose de XP</div>
         <Row label="Base por completar" val={"+"+r.xpBase}/>
         <Row label={`Series completadas (${r.seriesDone})`} val={"+"+r.xpSets}/>
@@ -9181,7 +9382,7 @@ function ResultsView({ results, setTab, level, rank, customRoutines, onGuardarCa
         <div style={{ display:"flex", justifyContent:"space-between", padding:"9px 0 0", borderTop:"1px solid var(--line2)", marginTop:4 }}>
           <span className="disp" style={{ fontWeight:700 }}>Total</span><span className="mono disp" style={{ fontWeight:700, color:"var(--gold)" }}>+{r.sessionXp} XP</span>
         </div>
-      </div>
+      </div>}
 
       {/* Comparación */}
       {r.seriesDelta!=null && r.seriesDelta!==0 && (
@@ -9238,7 +9439,7 @@ function ResultsView({ results, setTab, level, rank, customRoutines, onGuardarCa
       )}
 
       {/* Misiones completadas */}
-      {r.missionsDone && r.missionsDone.length>0 && (
+      {!ALT && r.missionsDone && r.missionsDone.length>0 && (
         <div className="fh-card" style={{ padding:16, marginBottom:12 }}>
           <div className="disp" style={{ fontWeight:600, fontSize:15, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}><Target size={15} color="var(--arcane)"/> Misiones completadas</div>
           {r.missionsDone.map((m,i)=>{ const I=m.icon; return (
@@ -9266,7 +9467,7 @@ function ResultsView({ results, setTab, level, rank, customRoutines, onGuardarCa
       )}
 
       {/* Logros */}
-      {r.unlocked.length>0 && (
+      {!ALT && r.unlocked.length>0 && (
         <div className="fh-card" style={{ padding:16, marginBottom:12 }}>
           <div className="disp" style={{ fontWeight:600, fontSize:15, marginBottom:8 }}>Logros desbloqueados</div>
           {r.unlocked.map((a,i)=>{ const I=a.icon; return (
@@ -9279,7 +9480,7 @@ function ResultsView({ results, setTab, level, rank, customRoutines, onGuardarCa
         </div>
       )}
 
-      {r.muscleLevelUps && r.muscleLevelUps.length>0 && (
+      {!ALT && r.muscleLevelUps && r.muscleLevelUps.length>0 && (
         <div className="fh-card" style={{ padding:16, marginBottom:12 }}>
           <div className="disp" style={{ fontWeight:600, fontSize:15, marginBottom:8 }}>Tu cuerpo sube de nivel</div>
           {r.muscleLevelUps.map((m,i)=>{ const st=BODY_STATS.find(s=>s.id===m.cat); const I=st?.icon||Dumbbell;
@@ -9340,7 +9541,7 @@ function textoSerie(ej, l){
 }
 function DesgloseEntreno({ rec }){
   const ejercicios = (rec.exercises||[]).filter(e=>e.logs?.length);
-  const datos = [`${seriesDe(rec)} series`, rec.durationMin ? `${rec.durationMin} min` : null, rec.xp ? `+${rec.xp} XP` : null].filter(Boolean);
+  const datos = [`${seriesDe(rec)} series`, rec.durationMin ? `${rec.durationMin} min` : null, !ALT && rec.xp ? `+${rec.xp} XP` : null].filter(Boolean);
   return (
     <div className="fh-in" style={{ padding:"4px 0 8px" }}>
       <div style={{ fontSize:11, color:"var(--muted)", marginBottom:8 }}>{datos.join(" · ")}</div>
@@ -9552,7 +9753,7 @@ function CycleCalendar({ cycle }){
   );
 }
 
-function ProgressView({ state, log, measures, addMeasurement, customRoutines, setTab, quedadas }){
+function ProgressView({ state, log, measures, addMeasurement, customRoutines, setTab, quedadas, onAbrirInforme }){
   const [form, setForm] = useState({ weightKg:"", chest:"", waist:"", arm:"" });
   const volData=log.slice(-12).map((s,i)=>({ name:`S${i+1}`, v:seriesDe(s) }));
   const weightData=measures.map(m=>({ name:m.date.slice(5), v:m.weightKg }));
@@ -9575,9 +9776,16 @@ function ProgressView({ state, log, measures, addMeasurement, customRoutines, se
     <div className="fh-in">
       <header style={{ padding:"22px 2px 8px", display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10 }}>
         <div style={{ flex:1, minWidth:0 }}>
-          <h1 style={{ margin:0, fontSize:22 }}>RPGym</h1>
+          <h1 style={{ margin:0, fontSize:22 }}>{ALT ? "Progreso" : "RPGym"}</h1>
           <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Tu progreso, mes a mes.</p>
         </div>
+        {/* En la versión RPG el informe se abre desde la ficha de personaje, que en la alt no existe. */}
+        {ALT && onAbrirInforme && (
+          <button className="fh-btn" onClick={onAbrirInforme}
+            style={{ flexShrink:0, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:"8px 12px", fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
+            <FileText size={14}/> Informe semanal
+          </button>
+        )}
       </header>
 
       <WorkoutCalendar log={log} sub={state.sub} quedadas={quedadas}/>

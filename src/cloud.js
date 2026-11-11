@@ -292,6 +292,31 @@ export async function subirMazmorra({ gloria, salas, mazmorras, mejorSala }){
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
+/* --- Resumen quincenal con IA --------------------------------------------
+   Opt-in: con `resumen_ia` a false (lo de siempre) nadie manda nada a ninguna IA.
+   El texto lo escribe scripts/resumen-quincenal.mjs; aquí solo se lee. */
+
+export async function setResumenIA(activo){
+  if (!supabase) return sinNube;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok:false, msg:"No hay sesión." };
+    const { error } = await supabase.from("profiles").update({ resumen_ia:!!activo }).eq("id", user.id);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
+export async function ultimoResumen(){
+  if (!supabase) return sinNube;
+  try {
+    const { data, error } = await supabase.from("resumenes")
+      .select("id, desde, hasta, texto, created_at").order("created_at", { ascending:false }).limit(1).maybeSingle();
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, resumen:data || null };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
 /* --- Keep-alive ---------------------------------------------------------- */
 
 /* El plan gratis pausa el proyecto tras ~1 semana sin actividad. Cada apertura
@@ -948,13 +973,20 @@ export async function registrarEntreno({ clientId, day, xp, prs = 0, rutina = ""
 
 /* El APK vive en Supabase Storage (no en la base: 500 MB de límite y los
    backups se inflarían). Aquí solo se consulta si hay una versión más nueva. */
-export async function versionMasNueva(versionCodeActual){
+/* Dos canales con el MISMO paquete y la misma firma: "rpg" (app_versions) y "alt",
+   la versión sin juego (app_versions_alt). Instalar el APK del otro canal encima
+   conserva todos los datos. Si el canal elegido no es el de este build, se ofrece
+   su última versión aunque tenga el mismo número: es justo el cambio de rama. */
+export async function versionMasNueva(versionCodeActual, canal = "rpg", canalDelBuild = "rpg"){
   if (!supabase) return sinNube;
   try {
-    const { data, error } = await supabase.from("app_versions")
+    const tabla = canal === "alt" ? "app_versions_alt" : "app_versions";
+    const { data, error } = await supabase.from(tabla)
       .select("*").order("version_code", { ascending:false }).limit(1).maybeSingle();
     if (error) return { ok:false, msg:traducir(error) };
-    if (!data || Number(data.version_code) <= Number(versionCodeActual)) return { ok:true, hayNueva:false };
-    return { ok:true, hayNueva:true, version:data };
+    const cambio = canal !== canalDelBuild;
+    if (!data || (cambio ? Number(data.version_code) < Number(versionCodeActual)
+                         : Number(data.version_code) <= Number(versionCodeActual))) return { ok:true, hayNueva:false };
+    return { ok:true, hayNueva:true, version:{ ...data, canal, cambio } };
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }

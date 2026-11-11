@@ -12,7 +12,11 @@
     "open:android": "npx cap open android",
     "apk": "npm run build && npx cap sync android && android\\gradlew.bat -p android assembleDebug",
     "apk:release": "npm run build && npx cap sync android && android\\gradlew.bat -p android assembleRelease",
-    "bundle": "npm run build && npx cap sync android && android\\gradlew.bat -p android bundleRelease"
+    "bundle": "npm run build && npx cap sync android && android\\gradlew.bat -p android bundleRelease",
+    "build:alt": "vite build --mode alt",
+    "dev:alt": "vite --mode alt",
+    "apk:ambas": "node scripts/empaquetar.mjs",
+    "resumenes": "node scripts/resumen-quincenal.mjs"
   },
   "dependencies": {
     "@capacitor/local-notifications": "^7.0.7",
@@ -28,6 +32,7 @@
     "@capacitor/cli": "^7.6.8",
     "@capacitor/core": "^7.6.8",
     "@vitejs/plugin-react": "^5.0.0",
+    "pg": "^8.13.1",
     "vite": "^6.4.3"
   },
   "overrides": {

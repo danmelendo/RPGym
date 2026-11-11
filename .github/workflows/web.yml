@@ -42,6 +42,12 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+      # La versión sin juego, en /RPGym/alt/. Mismo origen que la normal, así que
+      # comparten los datos del navegador: cambiar de una a otra no pierde nada.
+      - run: npx vite build --mode alt --outDir dist/alt
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

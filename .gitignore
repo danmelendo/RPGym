@@ -1,5 +1,8 @@
 node_modules/
 dist/
+dist-alt/
+# Los dos APK de cada versión (scripts/empaquetar.mjs): van a GitHub Releases
+releases/
 
 # APK de reparto: es un artefacto de build (se publica en GitHub Releases)
 RPGym.apk

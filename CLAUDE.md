@@ -108,6 +108,7 @@ APK resultante → `android/app/build/outputs/apk/debug/app-debug.apk`
 - **Cardio: el tiempo se MIDE, no se teclea.** El cronómetro de `WorkoutView` cuenta hacia arriba (Comenzar → Detener) y al parar rellena minutos, km y kcal. Las estimaciones salen de `estimarCardio()`, con las ecuaciones metabólicas del ACSM y, para la distancia, física de ciclismo o la fórmula de Concept2 — están todas citadas en el comentario de la función. **La consola de la máquina manda siempre**: lo estimado se pinta en azul y se puede escribir encima, y al tocarlo deja de estar marcado como estimado. La cinta pide **km/h** en vez de "nivel" porque ahí la distancia es exacta.
 - **El entreno en curso se guarda en `gym:entreno` en cada cambio** (`ENTRENO_KEY`) y al abrir se vuelve solo a la pantalla de entreno (`recuperarEntreno`). Antes vivía solo en memoria y, si Android mataba la app con el móvil en el bolsillo, se perdían todas las series. **Todo lo que deba sobrevivir a eso va dentro de `session`**, como el cronómetro de cardio (`session.crono`) y el descanso (`session.descanso = { hasta, total }`): lo que quede en un `useState` de `WorkoutView` se pierde. No va en `BACKUP_KEYS`: es un estado de paso, no progreso. Tres cosas que no se deben romper: `recuperarEntreno` va antes de `setLoading(false)`, o el efecto guarda un `null` encima antes de leerlo; `finishWorkout` borra la clave en la misma línea en que apunta el entreno, o morir ahí lo contaría dos veces; y el informe automático del lunes se salta si hay entreno recuperado, porque desde el informe no hay forma de volver a él. Un hueco de más de 10 minutos (`PAUSA_SIN_CONTAR_MS`) no cuenta como tiempo entrenado, salvo con el cronómetro de cardio en marcha: en la cinta nadie toca el móvil. Limitación conocida: un entreno recuperado otro día se apunta con la fecha del día en que se termina.
 - **Agarres del jalón**: cada serie de `Jalón al pecho` o `Jalón agarre cerrado` lleva `agarre` y su `base`, para intercalarlos. Al cambiar, el peso sale de la última serie con ese agarre o de sus marcas, y el desplegable solo mueve las series del agarre que toca. **`finishWorkout` trabaja con `separarAgarres(session.exercises)`**: cada serie se apunta en su ejercicio y así marcas, progresión e historial siguen yendo por nombre. `cambios` usa `session.exercises`: cambiar de agarre no toca la rutina. El historial agrupa por agarre y no guarda el orden en que se intercalaron.
+- **Rótulos de las máquinas (`EX_MAQUINA`)**: lo que pone en la torre de placas de cada máquina del gimnasio del dueño (Mariposa pectoral, Extensora de hombros, Estirar hacia abajo…), junto al ejercicio que es en la app. El selector busca también por ahí y el selector y el "Cómo" del entreno lo enseñan. La técnica (`EX_HOW`) de esas máquinas sigue los pasos de sus placas, contados con palabras propias. Solo se añade lo que de verdad pone en una máquina.
 - **Asistidos sin kilos**: `Fondos asistidos` y `Dominada asistida` van en `BODYWEIGHT_EX`. El peso de esa máquina ayuda: más kilos es menos esfuerzo, y como marca saldría al revés.
 - **`Sustituir ejercicio`** (botón "Cambiar" en cada tarjeta del entreno): la máquina está ocupada o rota. Ofrece primero los del mismo grupo muscular, **vacía las series** (eran de otro ejercicio) y deja `sustituyeA` para que se vea qué reemplazó a qué. Sin esto la única salida era marcar como hecho algo que no se hizo, y entonces las marcas mienten.
 - **La app CONSULTA sola, no solo al arrancar**: `refrescarSocial()` recarga amigos, solicitudes, rutinas recibidas, quedadas, quién entrena y quién te ha superado. Se llama cada **60 s con la app delante** (`document.visibilityState === "visible"`), al **volver a la app** (`visibilitychange`) y **después de canjear un código**. Sin esto, un amigo recién añadido o una quedada recién propuesta no aparecían hasta cerrar y abrir la app — pasó de verdad. Un `ref` evita solaparse consigo misma. **Si añades datos que mueve otra persona, mételos ahí**, no solo en `cargarSocial()`.
@@ -184,7 +185,7 @@ APK resultante → `android/app/build/outputs/apk/debug/app-debug.apk`
 - **Si RENOMBRAS o FUSIONAS un ejercicio, añádelo a `RENOMBRES`**. Las marcas, la progresión, el historial, los récords de cardio y las rutinas propias se indexan **por nombre**: sin esa entrada, el usuario pierde sus récords al actualizar. `migrarNombres()` lo arrastra todo al cargar el perfil. No borres entradas viejas del mapa. **Pasa siempre por `nombreActual()`**, que sigue las cadenas (`Curl femoral` → `Curl femoral en máquina` → `Curl femoral tumbado`): también lo usan `normalizeCustomRoutine` y `decodeRoutine`, porque una rutina de un amigo sin actualizar llega con nombres viejos, y `recuperarEntreno`. Al fusionar, las marcas se juntan (la mejor en `bests`, la más baja en `firstBests`) y en rutinas propias solo cae el renombrado que choca: repetir un ejercicio a propósito se respeta. Un nombre viejo no puede seguir vivo en el catálogo: `subirRecords` borra del servidor todas las claves de este mapa.
 - **Diccionarios por nombre de ejercicio**: `EX_BASE` (peso base kg), `EX_HOW` (técnica), `EX_IMG` (imagen). Al añadir un ejercicio, completa los **tres** (o `BODYWEIGHT_EX` en vez de `EX_BASE` si no lleva carga) y, si no lo usa ninguna rutina de la app, añade su músculo a `EX_MUSCLE_EXTRA` o no aparecerá en el configurador. Cuidado con las **claves duplicadas**: JS se queda con la última sin avisar (Vite sí avisa en `npm run dev`, no en `npm run build`).
 - **Ejercicios sin carga**: `BODYWEIGHT_EX` (Set de nombres) marca peso corporal / isométricos / cardio (plancha, flexiones, abdominales, mountain climbers…). En `WorkoutView` se les **oculta la columna KG y el selector de peso**: solo se anotan reps o tiempo, con la cabecera `REPS`/`SEG`/`MIN` según `repUnit(reps)`. `startWorkout` les fuerza `base:0` y peso vacío. Las variantes **"lastradas" / "con lastre" NO van en el Set** (sí llevan disco). Al añadir un ejercicio de peso corporal, mételo en `BODYWEIGHT_EX`.
-- **Demostración animada (offline)**: `EX_IMG[name]` apunta a una ruta **local** `/exercises/<Slug>/0.jpg`. Cada ejercicio tiene **2 fotogramas** en [public/exercises/](public/exercises/) (`0.jpg` inicio, `1.jpg` fin), descargados de free-exercise-db (dominio público, Unlicense). El componente `ExImage` alterna inicio↔fin cada ~0,85 s (badge "▶ DEMO"). Como es **contenido** (no decoración), anima siempre; con `prefers-reduced-motion` el cambio es instantáneo (sin fundido) pero sigue mostrando el movimiento. Cae a imagen estática si falta el 2º fotograma. **Al añadir un ejercicio nuevo**: descarga sus dos frames a `public/exercises/<Slug>/` y apunta `EX_IMG` a `/exercises/<Slug>/0.jpg` (el segundo se deriva solo). El catálogo va por **218 ejercicios** en 211 carpetas (algunos comparten demostración) y [public/exercises/](public/exercises/) ocupa ~28 MB, así que el APK ronda los **~33 MB**. Cubre prácticamente todas las **máquinas y poleas** de un gimnasio tipo (Matrix), que es lo que más se usa. Si algún día hiciera falta adelgazarlo, `ffmpeg -i x.jpg -q:v 7` recorta ~20% sin pérdida visible (probado), pero **hoy se deja sin comprimir a propósito**. **Ojo con los nombres de carpeta**: usa solo letras, números, guiones y guiones bajos — los paréntesis del nombre original de free-exercise-db se pierden por el camino en Windows (`Hyperextensions_(Back_Extensions)` acabó como `Hyperextensions_Back_Extensions`). Tras añadir ejercicios, comprueba que **todas** las rutas de `EX_IMG` existen en disco con sus dos fotogramas.
+- **Demostración animada (offline)**: `EX_IMG[name]` apunta a una ruta **local** `/exercises/<Slug>/0.jpg`. Cada ejercicio tiene **2 fotogramas** en [public/exercises/](public/exercises/) (`0.jpg` inicio, `1.jpg` fin), descargados de free-exercise-db (dominio público, Unlicense). El componente `ExImage` alterna inicio↔fin cada ~0,85 s (badge "▶ DEMO"). Como es **contenido** (no decoración), anima siempre; con `prefers-reduced-motion` el cambio es instantáneo (sin fundido) pero sigue mostrando el movimiento. Cae a imagen estática si falta el 2º fotograma. **Al añadir un ejercicio nuevo**: descarga sus dos frames a `public/exercises/<Slug>/` y apunta `EX_IMG` a `/exercises/<Slug>/0.jpg` (el segundo se deriva solo). El catálogo va por **220 ejercicios** en 211 carpetas (algunos comparten demostración) y [public/exercises/](public/exercises/) ocupa ~28 MB, así que el APK ronda los **~33 MB**. Cubre prácticamente todas las **máquinas y poleas** de un gimnasio tipo (Matrix), que es lo que más se usa. Si algún día hiciera falta adelgazarlo, `ffmpeg -i x.jpg -q:v 7` recorta ~20% sin pérdida visible (probado), pero **hoy se deja sin comprimir a propósito**. **Ojo con los nombres de carpeta**: usa solo letras, números, guiones y guiones bajos — los paréntesis del nombre original de free-exercise-db se pierden por el camino en Windows (`Hyperextensions_(Back_Extensions)` acabó como `Hyperextensions_Back_Extensions`). Tras añadir ejercicios, comprueba que **todas** las rutas de `EX_IMG` existen en disco con sus dos fotogramas.
 - **Dieta / bienestar**: la dieta son **ideas de comidas SIN calorías ni macros**. Se quitó la *regla del plato* (y la tarjeta del cheat day, que ahora es un día de descanso y no pinta nada aquí): está pendiente de decidir cómo seguir con las dietas, así que no vuelvas a meter reglas nutricionales sin hablarlo. No des cifras de déficit ni conteos. Mantén el descargo de dietista. Nada que fomente conductas alimentarias no saludables.
 - **Lista de la compra con cantidades**: `PORTION[ingrediente] = [ración, unidad]` (`g` · `ml` · `ud`), y la cantidad final = ración × veces que aparece en el plan × `intakeFactor(profile)` (peso, edad y sexo, acotado a ±40%), ponderado por `GROUP_SENS` (proteína e hidratos escalan 1; verdura 0,35; despensa 0,25). `buyAmount()` redondea a algo comprable y da los huevos en **docenas**. Son cantidades **para comprar**, no un conteo de calorías: no rompe la regla anterior. Al añadir un ingrediente nuevo a `MEALS`, añádelo también a `PORTION` (si falta, la fila cae al viejo `×n`).
 - **Gamificación**:
@@ -316,6 +317,64 @@ se hace por accidente.
 - **Nada de recursos remotos** (fuentes, CDN, analítica, iconos por URL). La app debe seguir siendo 100% offline y sin llamadas a terceros, o la política de privacidad deja de ser cierta. Descarga y sirve desde `public/`.
 
 ---
+
+## Versión alt (sin juego)
+
+La misma app sin mazmorra, héroe, XP a la vista, misiones, logros ni estética pixel:
+solo entrenos, rutinas, progreso, dieta y amigos. **Se decide al compilar**
+(`vite build --mode alt` → `__ALT__` → constante `ALT` en `App.jsx`), no en tiempo de ejecución.
+
+- **Mismo paquete, mismo `versionCode`, misma firma de depuración.** Uno se instala encima
+  del otro y conserva todos los datos. Por dentro todo sigue contando (XP, ramas, llaves):
+  quien vuelva a la RPG lo encuentra como lo dejó y sus amigos le ven en la clasificación.
+  **Lo que cambia es solo lo que se enseña.** No metas lógica distinta según `ALT`.
+- Cómo se apaga el juego: `Sprite`, `Avatar`, `AvatarCara` y `HeroeEjercicio` devuelven
+  `null`; `lanzarEfecto` no hace nada; no hay puerta de `HeroeView`; `RestTimer` va sin
+  partida; la barra usa `NAV_ALT` (sin Logros) y `ALT_CSS` cambia tipografía, colores y
+  esquinas (el `border-radius:0!important` de la pixel no se emite). Inicio quita la tarjeta
+  del héroe, la mazmorra y las misiones; Resultados quita XP, niveles y logros. El informe
+  semanal se abre desde Progreso. **Si añades algo del juego en una vista común, ponle `!ALT`.**
+- **Canales de actualización**: `app_versions` (RPG, la de siempre) y `app_versions_alt`.
+  Tabla aparte a propósito: las versiones ≤ 1.0.25 piden la fila más alta sin filtrar y
+  podrían recibir el APK alt. Cada uno elige canal en `Ajustes → Perfil → Versión de la app`
+  (`gym:canal`, global); si no es el del build, `versionMasNueva` ofrece la última de ese
+  canal **aunque tenga el mismo número** (es el cambio de rama).
+- **Empaquetar**: `npm run apk:ambas` deja `releases/RPGym-<v>.apk` y
+  `releases/RPGym-Alt-<v>.apk`. Se suben los dos a la release y la migración de publicar
+  versión lleva **dos inserts**:
+
+  ```sql
+  insert into public.app_versions (version_code, version_name, download_url, notes, mandatory)
+  values (27, '1.0.26', 'https://github.com/danmelendo/RPGym/releases/download/v1.0.26/RPGym-1.0.26.apk', '…', false)
+  on conflict (version_code) do update set version_name=excluded.version_name, download_url=excluded.download_url, notes=excluded.notes, mandatory=excluded.mandatory;
+  insert into public.app_versions_alt (version_code, version_name, download_url, notes, mandatory)
+  values (27, '1.0.26', 'https://github.com/danmelendo/RPGym/releases/download/v1.0.26/RPGym-Alt-1.0.26.apk', '…', false)
+  on conflict (version_code) do update set version_name=excluded.version_name, download_url=excluded.download_url, notes=excluded.notes, mandatory=excluded.mandatory;
+  ```
+- **Web**: el workflow publica la alt en `/RPGym/alt/`. Mismo origen que la normal, así que
+  comparten `localStorage`. Para probar en local: `npm run dev:alt`.
+
+## Resumen quincenal con IA
+
+[scripts/resumen-quincenal.mjs](scripts/resumen-quincenal.mjs) lee de la base los entrenos
+(`workout_points.detalle`) y marcas de cada persona con `profiles.resumen_ia = true`, se los
+pasa a **`claude -p` sin herramientas** (modelo `sonnet`, cambiable con `RESUMEN_MODELO`) y
+guarda el texto en `resumenes`. La app lo enseña en Inicio (`ResumenCard`) hasta que se cierra
+(`gym:resumenVisto`).
+
+- **Opt-in** en `Ajustes → Privacidad`. Sin él no se manda nada. Está en la política de
+  privacidad: si cambias lo que se envía, cámbiala también. Nunca el ciclo menstrual.
+- Lo lanza [.github/workflows/resumenes.yml](.github/workflows/resumenes.yml) cada lunes; la
+  regla de "13 días desde el último" lo deja en uno cada dos semanas por persona. Necesita los
+  secrets `SUPABASE_DB_URL` y `CLAUDE_CODE_OAUTH_TOKEN` (de `claude setup-token`) o
+  `ANTHROPIC_API_KEY`.
+- **El repo es público y los logs de Actions también**: el script solo imprime recuentos. No
+  añadas trazas con datos.
+- Probar sin guardar nada (en local, con `.env` cargado):
+  `node scripts/resumen-quincenal.mjs --solo <handle> --prueba --salida <fichero>`.
+  Con `--solo` y `--prueba` no exige el opt-in: es para probártelo a ti mismo.
+- El prompt lleva el catálogo de la app (claves de `EX_HOW`) para que recomiende ejercicios
+  que existen, y las mismas reglas que la app: nada de dieta ni cifras de calorías.
 
 ## Versión web (PWA) para quien no tiene Android
 

@@ -31,11 +31,13 @@ function serveApk() {
 // Capacitor empaqueta dentro de la app. Sin esto, la app se llevaría dentro una copia
 // de sí misma (+14 MB en cada APK y en cada subida a Google Play).
 function stripApkFromBuild() {
+  let outDir = "dist";
   return {
     name: "strip-apk-from-build",
     apply: "build",
+    configResolved(c) { outDir = c.build.outDir; },
     closeBundle() {
-      const f = path.resolve(process.cwd(), "dist/RPGym.apk");
+      const f = path.resolve(process.cwd(), outDir, "RPGym.apk");
       if (fs.existsSync(f)) {
         fs.rmSync(f);
         console.log("[strip-apk] RPGym.apk excluido del build (no se empaqueta en la app)");
@@ -61,8 +63,15 @@ const leerVersion = k => {
   return v;
 };
 
-export default defineConfig({
+/* Versión ALT (sin juego): `vite build --mode alt`. Misma app y mismos datos; la
+   bandera solo cambia lo que se enseña. Ver ALT en src/App.jsx y
+   scripts/empaquetar.mjs, que saca los dos APK de cada versión. */
+export default defineConfig(({ mode }) => {
+  const alt = mode === "alt";
+  if (alt) console.log("[alt] build de la versión sin juego");
+  return {
   define: {
+    __ALT__: JSON.stringify(alt),
     __PUSH_CONFIGURADO__: JSON.stringify(pushConfigurado),
     __VERSION_CODE__: JSON.stringify(Number(leerVersion("versionCode"))),
     __VERSION_NAME__: JSON.stringify(leerVersion("versionName")),
@@ -75,4 +84,5 @@ export default defineConfig({
     host: true,          // escucha en 0.0.0.0 (accesible por IP de red / túnel)
     allowedHosts: true,  // acepta cualquier Host (necesario para túneles tipo trycloudflare/loca.lt)
   },
+  };
 });
