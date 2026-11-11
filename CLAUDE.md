@@ -371,6 +371,21 @@ guarda el texto en `resumenes`. La app lo enseña en Inicio (`ResumenCard`) hast
   desde el último" lo deja en uno cada dos semanas por persona. Registro en
   `%LOCALAPPDATA%\RPGym\resumenes.log`. A mano: `npm run resumenes` (carga `.env` con `--env-file`).
 - El script solo imprime recuentos. No añadas trazas con datos.
+- **Mira la trayectoria entera, no solo la quincena**: manda todo el historial condensado
+  (sesiones y series por grupo cada mes, y la mejor serie de cada mes por ejercicio), el detalle
+  serie a serie de las últimas 6 semanas y los 3 resúmenes anteriores, para que siga lo que
+  recomendó. Unos 6.000 tokens con dos meses y medio de historial.
+- **Respeta el rango de cada ejercicio** (el `objetivo` de su rutina, o el de `defaultReps` por
+  tipo, que el script lee de `REPS_PEQUENO`/`REPS_COMPUESTO` en `App.jsx`). Nada de "12 para todo".
+- **Los resúmenes no se borran: son el histórico.** `ResumenesView` (`tab==="resumenes"`, título
+  "Informe quincenal") los lista desde la ficha de personaje, desde Progreso y desde "Anteriores"
+  en la tarjeta de Inicio. Solo con cuenta.
+- Rehacer el último de alguien tras cambiar el prompt: `--solo <handle> --reemplazar` (borra el
+  último y mete el nuevo en una transacción; no lo usa como resumen anterior). Revisar antes:
+  `--prueba --volcar <fichero>` guarda el prompt.
+- **Rangos por defecto (`defaultReps`)**: multiarticulares 6-10, aislamiento 8-12, músculos
+  pequeños 12-15, peso corporal 12-15. Antes era 10-12 para todo y la doble progresión pedía 12
+  en un jalón pesado. Las rutinas propias ya guardadas no se tocan.
 - Probar sin guardar nada (en local, con `.env` cargado):
   `node scripts/resumen-quincenal.mjs --solo <handle> --prueba --salida <fichero>`.
   Con `--solo` y `--prueba` no exige el opt-in: es para probártelo a ti mismo.

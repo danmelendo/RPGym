@@ -317,6 +317,18 @@ export async function ultimoResumen(){
   } catch (e) { return { ok:false, msg:traducir(e) }; }
 }
 
+/* Todos los tuyos, del más nuevo al más viejo: nunca se borran (salvo que lo hagas
+   tú), así que esto es el histórico. 60 son más de dos años a uno por quincena. */
+export async function listarResumenes(){
+  if (!supabase) return sinNube;
+  try {
+    const { data, error } = await supabase.from("resumenes")
+      .select("id, desde, hasta, texto, created_at").order("created_at", { ascending:false }).limit(60);
+    if (error) return { ok:false, msg:traducir(error) };
+    return { ok:true, resumenes:data || [] };
+  } catch (e) { return { ok:false, msg:traducir(e) }; }
+}
+
 /* --- Keep-alive ---------------------------------------------------------- */
 
 /* El plan gratis pausa el proyecto tras ~1 semana sin actividad. Cada apertura

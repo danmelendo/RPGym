@@ -1216,11 +1216,26 @@ const tracksTime = ex => isCardio(ex.name) && repUnit(ex.reps) === "MIN";
    El cardio continuo arranca en 0: no hay descanso entre series que valga. */
 const REST_BY_MUSCLE = { Pierna:120, Femoral:100, Espalda:100, Pecho:100, Hombro:75, Gemelo:45, Bíceps:45, Tríceps:45, Core:45, Cardio:0 };
 function defaultRest(name){ const r = REST_BY_MUSCLE[EX_MUSCLE[name]]; return r == null ? 60 : r; }
+/* Rango por TIPO de ejercicio, no uno para todo. Con 10-12 en todos (lo de antes),
+   la doble progresión pedía 12 repeticiones también en un press o un jalón pesados,
+   y ahí el peso se estanca. Lo que hace crecer es acercarse al fallo en casi
+   cualquier rango; el rango solo decide qué es cómodo de cargar:
+     - multiarticulares (press, remo, jalón, sentadilla, prensa, peso muerto…): 6-10,
+     - aislamiento (curl, extensión, aperturas…): 8-12,
+     - músculos pequeños y estabilizadores (laterales, face pull, gemelo…): 12-15.
+   Ancho a propósito: sube el peso al llegar arriba y vuelve a empezar desde abajo.
+   Lo usan el configurador, añadir y sustituir en el entreno. Las rutinas de la app
+   traen su propio rango y las propias ya guardadas no se tocan. */
+const REPS_PEQUENO = /lateral|elevaci[oó]n frontal|face pull|p[aá]jaros|deltoides posterior|rotaci[oó]n|encogimiento|gemelo|talones|puntas|abductor|aductor|mu[ñn]eca|pallof|le[ñn]ador|crunch|giro ruso|russian|flexi[oó]n lateral|patada de gl[uú]teo/i;
+const REPS_COMPUESTO = /^(press(?! franc[eé]s| pallof)|remo(?! al (ment[oó]n|cuello)| de deltoides)|jal[oó]n|pulldown|dominada|sentadilla|prensa|peso muerto|hip thrust|zancada|good morning|subida al caj[oó]n|pull through|fondos|elevaci[oó]n de cadera)/i;
 function defaultReps(name){
   if(isCardio(name)) return "20 min";                        // cardio: se anota tiempo, no repeticiones
   if(/plancha/i.test(name)) return "45 s";                   // isométricos: segundos, también con lastre
   if(name === "Mountain climbers") return "30 s";            // como en las rutinas de la app
-  return isBodyweight(name) ? "12-15" : "10-12";
+  if(isBodyweight(name)) return "12-15";
+  if(REPS_PEQUENO.test(name)) return "12-15";
+  if(REPS_COMPUESTO.test(name)) return "6-10";
+  return "8-12";
 }
 /* El cardio continuo es una sola tirada, no tres series. */
 function defaultSets(name){ return isCardio(name) ? 1 : 3; }
@@ -4401,6 +4416,7 @@ export default function App(){
      salir (sale solo el lunes y también desde la ficha: hay que volver al de antes). */
   const [informeLunes, setInformeLunes] = useState(()=>mondayOf(todayISO()));
   const [informeVuelve, setInformeVuelve] = useState("home");
+  const [resumenesVuelve, setResumenesVuelve] = useState("home");
   /* --- Nube (opcional). Si no hay credenciales, todo esto se queda a null y la
      app va 100% local, exactamente como antes. Ver ROADMAP-SOCIAL.md. --- */
   const [cloudSession, setCloudSession] = useState(null);
@@ -5050,6 +5066,7 @@ export default function App(){
      te haya mandado. Antes había que cerrar la app para verlo. */
   async function refrescarAmigos(){ return refrescarSocial(); }
   function abrirAmigo(a){ setAmigoAbierto(a); setTab("amigo"); }
+  function abrirResumenes(desde){ setResumenesVuelve(desde || "home"); setTab("resumenes"); }
   function abrirInforme(lunes, desde){ setInformeLunes(lunes || mondayOf(todayISO())); setInformeVuelve(desde || "home"); setTab("informe"); }
   function cerrarAmigo(){ setAmigoAbierto(null); setTab("amigos"); }
 
@@ -5478,10 +5495,11 @@ export default function App(){
         {tab==="home" && <HomeView {...{ state, avatar, mazmorra, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines,
           cloudEnabled:cloud.cloudEnabled, perfil, updateInfo, onCloseUpdate:()=>setUpdateInfo(null), novedades, onCerrarNovedades:()=>setNovedades([]), entrenando, onUnirme:unirmeAlEntreno, superadoPor,
           copiaNube, onRestaurarNube:restaurarDeNube, onDescartarCopia:()=>{ saveGlobal("gym:copiaDescartada", copiaNube?.updated_at); setCopiaNube(null); },
-          pendientes:solicitudes.length + enviosRutina.length, resumen, onCerrarResumen:cerrarResumen }}/>}
+          pendientes:solicitudes.length + enviosRutina.length, resumen, onCerrarResumen:cerrarResumen, onAbrirResumenes:()=>abrirResumenes("home") }}/>}
         {tab==="rutinas" && <RoutinesView {...{ state, level, setActiveRoutine, startWorkout, customRoutines, editRoutine, deleteCustomRoutine, importRoutine, perfil, publicadas, onPublicar:publicarRutina, setTab }}/>}
         {tab==="ficha" && <CharacterView {...{ state, avatar, puntos, level, rank, log, customRoutines, setTab,
-          onAbrirInforme:lunes=>abrirInforme(lunes, "ficha") }}/>}
+          onAbrirInforme:lunes=>abrirInforme(lunes, "ficha"),
+          onAbrirResumenes:cloud.cloudEnabled && perfil ? ()=>abrirResumenes("ficha") : null }}/>}
         {tab==="mazmorra" && <MazmorraView {...juego} mz={mazmorra} onVolver={()=>setTab("home")}/>}
         {tab==="heroe" && <HeroeView avatar={avatar} puntos={puntos} onCambiar={guardarAvatar} onVolver={()=>setTab("ficha")}/>}
         {tab==="avisos" && <AvisosView {...{ solicitudes, envios:enviosRutina,
@@ -5495,7 +5513,9 @@ export default function App(){
           onAbandonar:()=>lanzarEfecto({ tipo:"gameOver", titulo:"Entreno abandonado", nota:"Las series de hoy no cuentan. Tu racha y tu nivel siguen como estaban." }) }}/>}
         {tab==="results" && <ResultsView {...{ results:results && { ...results, adelantados }, setTab, level, rank, customRoutines, onGuardarCambios:guardarCambiosRutina }}/>}
         {tab==="progreso" && <ProgressView {...{ state, log, measures, addMeasurement, customRoutines, setTab, quedadas,
-          onAbrirInforme:()=>abrirInforme(mondayOf(todayISO()), "progreso") }}/>}
+          onAbrirInforme:()=>abrirInforme(mondayOf(todayISO()), "progreso"),
+          onAbrirResumenes:cloud.cloudEnabled && perfil ? ()=>abrirResumenes("progreso") : null }}/>}
+        {tab==="resumenes" && <ResumenesView onVolver={()=>setTab(resumenesVuelve)}/>}
         {tab==="informe" && <InformeSemanalView {...{ state, log, measures, lunes:informeLunes, setLunes:setInformeLunes,
           cloudEnabled:cloud.cloudEnabled, perfil, onVolver:()=>setTab(informeVuelve) }}/>}
         {tab==="amigos" && <AmigosView {...{ perfil, cloudEnabled:cloud.cloudEnabled, setTab, seccion:amigosSeccion, setSeccion:setAmigosSeccion,
@@ -7236,12 +7256,28 @@ const NAV_ALT = [
 /* El resumen quincenal que escribe Claude (scripts/resumen-quincenal.mjs). Llega como
    texto plano: los títulos van en una línea en MAYÚSCULAS y las listas con "- ".
    Plegado de entrada para no empujar Inicio entero hacia abajo. */
-function ResumenCard({ resumen, onCerrar }){
-  const [abierto, setAbierto] = useState(false);
-  if(!resumen) return null;
-  const lineas = resumen.texto.split(/\r?\n/);
+function TextoResumen({ texto, abiertoDeEntrada=false }){
+  const [abierto, setAbierto] = useState(abiertoDeEntrada);
+  const lineas = texto.split(/\r?\n/);
   const visibles = abierto ? lineas : lineas.slice(0, 5);
   const esTitulo = l => l.length > 3 && l.length < 60 && l === l.toUpperCase() && /[A-ZÁÉÍÓÚÑ]/.test(l);
+  return (<>
+    <div style={{ fontSize:12.5, lineHeight:1.55, color:"var(--txt)" }}>
+      {visibles.map((l,i)=> !l.trim() ? <div key={i} style={{ height:6 }}/>
+        : esTitulo(l.trim()) ? <div key={i} style={{ fontSize:11, fontWeight:700, letterSpacing:".08em", color:"var(--violet)", marginTop:i?8:0 }}>{l.trim()}</div>
+        : <div key={i} style={l.startsWith("- ") ? { paddingLeft:12, textIndent:-10 } : undefined}>{l.startsWith("- ") ? "· "+l.slice(2) : l}</div>)}
+    </div>
+    {lineas.length > 5 && (
+      <button onClick={()=>setAbierto(a=>!a)} style={{ background:"none", border:"none", padding:"8px 0 0", color:"var(--violet)", cursor:"pointer", font:"inherit", fontSize:12.5, display:"flex", alignItems:"center", gap:4 }}>
+        {abierto ? "Plegar" : "Leer entero"} <ChevronDown size={14} style={{ transform:abierto ? "rotate(180deg)" : "none" }}/>
+      </button>
+    )}
+  </>);
+}
+const AVISO_RESUMEN_IA = "Lo escribe una IA (Claude) a partir de tus entrenos. Orientativo: no sustituye a un profesional.";
+
+function ResumenCard({ resumen, onCerrar, onVerTodos }){
+  if(!resumen) return null;
   return (
     <div className="fh-card fh-in" style={{ padding:16, margin:"0 0 12px", borderColor:"var(--violet)" }}>
       <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:8 }}>
@@ -7252,17 +7288,54 @@ function ResumenCard({ resumen, onCerrar }){
         </div>
         <button onClick={onCerrar} aria-label="Cerrar el resumen" style={{ background:"none", border:"none", padding:2, cursor:"pointer", color:"var(--faint)", flexShrink:0 }}><X size={15}/></button>
       </div>
-      <div style={{ fontSize:12.5, lineHeight:1.55, color:"var(--txt)" }}>
-        {visibles.map((l,i)=> !l.trim() ? <div key={i} style={{ height:6 }}/>
-          : esTitulo(l.trim()) ? <div key={i} style={{ fontSize:11, fontWeight:700, letterSpacing:".08em", color:"var(--violet)", marginTop:i?8:0 }}>{l.trim()}</div>
-          : <div key={i} style={l.startsWith("- ") ? { paddingLeft:12, textIndent:-10 } : undefined}>{l.startsWith("- ") ? "· "+l.slice(2) : l}</div>)}
+      <TextoResumen texto={resumen.texto}/>
+      <div style={{ display:"flex", alignItems:"flex-end", gap:10, marginTop:8 }}>
+        <div style={{ flex:1, fontSize:10.5, color:"var(--faint)", lineHeight:1.4 }}>{AVISO_RESUMEN_IA}</div>
+        {onVerTodos && <button onClick={onVerTodos} style={{ background:"none", border:"none", padding:0, color:"var(--violet)", cursor:"pointer", font:"inherit", fontSize:12, flexShrink:0 }}>Anteriores</button>}
       </div>
-      {lineas.length > 5 && (
-        <button onClick={()=>setAbierto(a=>!a)} style={{ background:"none", border:"none", padding:"8px 0 0", color:"var(--violet)", cursor:"pointer", font:"inherit", fontSize:12.5, display:"flex", alignItems:"center", gap:4 }}>
-          {abierto ? "Plegar" : "Leer entero"} <ChevronDown size={14} style={{ transform:abierto ? "rotate(180deg)" : "none" }}/>
-        </button>
+    </div>
+  );
+}
+
+/* Histórico de resúmenes (tab==="resumenes"). Se leen de la nube cada vez que se
+   abre: son pocos y así no hay copia local que se quede vieja. Se entra desde
+   Progreso y desde la tarjeta de Inicio; se sale con el botón de volver. */
+function ResumenesView({ onVolver }){
+  const [lista, setLista] = useState(null);      // null mientras carga
+  const [fallo, setFallo] = useState(null);
+  useEffect(()=>{
+    let vivo = true;
+    cloud.listarResumenes().then(r=>{ if(!vivo) return; if(r.ok) setLista(r.resumenes); else { setFallo(r.msg || "No se han podido cargar."); setLista([]); } });
+    return ()=>{ vivo = false; };
+  }, []);
+  return (
+    <div className="fh-in" style={{ paddingBottom:24 }}>
+      <header style={{ padding:"22px 2px 12px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={onVolver} aria-label="Volver"
+          style={{ background:"var(--card)", border:"1px solid var(--line)", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"var(--muted)", flexShrink:0 }}><ChevronLeft size={18}/></button>
+        <div style={{ minWidth:0 }}>
+          <h1 style={{ margin:0, fontSize:22 }}>Informe quincenal</h1>
+          <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Lo escribe Claude cada dos semanas. Aquí están todos.</p>
+        </div>
+      </header>
+      {lista === null && <div style={{ fontSize:13, color:"var(--muted)", padding:"12px 2px" }}>Cargando…</div>}
+      {fallo && <div className="fh-card" style={{ padding:14, fontSize:12.5, color:"var(--muted)" }}>{fallo}</div>}
+      {lista && !fallo && !lista.length && (
+        <div className="fh-card" style={{ padding:16, fontSize:12.5, color:"var(--muted)", lineHeight:1.5 }}>
+          Todavía no tienes ninguno. Se activan en <b>Ajustes → Privacidad</b> y llegan cada dos semanas si has entrenado.
+        </div>
       )}
-      <div style={{ fontSize:10.5, color:"var(--faint)", marginTop:8, lineHeight:1.4 }}>Lo escribe una IA (Claude) a partir de tus entrenos. Orientativo: no sustituye a un profesional.</div>
+      {(lista||[]).map((r,i)=>(
+        <div key={r.id} className="fh-card" style={{ padding:16, marginBottom:12, borderColor:i ? undefined : "var(--violet)" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+            <Sparkles size={14} color="var(--violet)" style={{ flexShrink:0 }}/>
+            <div className="disp" style={{ fontSize:15, flex:1 }}>Del {fechaCorta(r.desde)} al {fechaCorta(r.hasta)}</div>
+            {i===0 && <span className="fh-chip" style={{ fontSize:10 }}>ÚLTIMO</span>}
+          </div>
+          <TextoResumen texto={r.texto} abiertoDeEntrada={i===0}/>
+        </div>
+      ))}
+      {lista && lista.length > 0 && <div style={{ fontSize:10.5, color:"var(--faint)", lineHeight:1.4, padding:"0 2px" }}>{AVISO_RESUMEN_IA}</div>}
     </div>
   );
 }
@@ -7921,7 +7994,7 @@ function CyclePhaseCard({ state, setTab }){
   );
 }
 
-function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, copiaNube, onRestaurarNube, onDescartarCopia, pendientes, resumen, onCerrarResumen }){
+function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminarVacaciones, setTab, setActiveRoutine, customRoutines, cloudEnabled, perfil, updateInfo, onCloseUpdate, novedades, onCerrarNovedades, entrenando, onUnirme, superadoPor, copiaNube, onRestaurarNube, onDescartarCopia, pendientes, resumen, onCerrarResumen, onAbrirResumenes }){
   const xpInto=state.xp-cumXpForLevel(level), xpNeed=cumXpForLevel(level+1)-cumXpForLevel(level);
   const routine=findRoutine(state.activeRoutine, customRoutines); const goal=weeklyGoalFor(state, routine);
   const phase=recommendedPhase(state.startDate);
@@ -7978,7 +8051,7 @@ function HomeView({ state, avatar, mazmorra, level, rank, log, useRest, terminar
         );
       })()}
 
-      <ResumenCard resumen={resumen} onCerrar={onCerrarResumen}/>
+      <ResumenCard resumen={resumen} onCerrar={onCerrarResumen} onVerTodos={onAbrirResumenes}/>
 
       {/* Rango + XP */}
       {!ALT && <div className="fh-card fh-framed" onClick={()=>setTab("ficha")} style={{ padding:0, cursor:"pointer" }}>
@@ -9753,7 +9826,7 @@ function CycleCalendar({ cycle }){
   );
 }
 
-function ProgressView({ state, log, measures, addMeasurement, customRoutines, setTab, quedadas, onAbrirInforme }){
+function ProgressView({ state, log, measures, addMeasurement, customRoutines, setTab, quedadas, onAbrirInforme, onAbrirResumenes }){
   const [form, setForm] = useState({ weightKg:"", chest:"", waist:"", arm:"" });
   const volData=log.slice(-12).map((s,i)=>({ name:`S${i+1}`, v:seriesDe(s) }));
   const weightData=measures.map(m=>({ name:m.date.slice(5), v:m.weightKg }));
@@ -9780,12 +9853,21 @@ function ProgressView({ state, log, measures, addMeasurement, customRoutines, se
           <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--muted)" }}>Tu progreso, mes a mes.</p>
         </div>
         {/* En la versión RPG el informe se abre desde la ficha de personaje, que en la alt no existe. */}
-        {ALT && onAbrirInforme && (
-          <button className="fh-btn" onClick={onAbrirInforme}
-            style={{ flexShrink:0, background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:"8px 12px", fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
-            <FileText size={14}/> Informe semanal
-          </button>
-        )}
+        <div style={{ display:"flex", flexDirection:"column", gap:6, flexShrink:0 }}>
+          {ALT && onAbrirInforme && (
+            <button className="fh-btn" onClick={onAbrirInforme}
+              style={{ background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:"8px 12px", fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
+              <FileText size={14}/> Informe semanal
+            </button>
+          )}
+          {/* Solo con cuenta: los resúmenes viven en la nube. */}
+          {onAbrirResumenes && (
+            <button className="fh-btn" onClick={onAbrirResumenes}
+              style={{ background:"var(--card2)", color:"var(--txt)", border:"1px solid var(--line2)", padding:"8px 12px", fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
+              <Sparkles size={14} color="var(--violet)"/> Informe quincenal
+            </button>
+          )}
+        </div>
       </header>
 
       <WorkoutCalendar log={log} sub={state.sub} quedadas={quedadas}/>
@@ -10473,7 +10555,7 @@ function HeroeView({ avatar, puntos, onCambiar, onVolver, arranque, onAhoraNo })
   );
 }
 
-function CharacterView({ state, avatar, puntos, level, rank, log, customRoutines, setTab, onAbrirInforme }){
+function CharacterView({ state, avatar, puntos, level, rank, log, customRoutines, setTab, onAbrirInforme, onAbrirResumenes }){
   const [openStat, setOpenStat] = useState(null);
   const [openEx, setOpenEx] = useState(null);   // ejercicio recomendado desplegado
   const weekSets=weeklySetsByGroup(log, state.weekStart);
@@ -10548,6 +10630,20 @@ function CharacterView({ state, avatar, puntos, level, rank, log, customRoutines
         </div>
         <ChevronRight size={16} color="var(--faint)" style={{ flexShrink:0 }}/>
       </button>
+
+      {/* Su pareja: el que escribe Claude cada dos semanas (ResumenesView). Solo con
+          cuenta, porque vive en la nube. */}
+      {onAbrirResumenes && (
+        <button className="fh-card" onClick={onAbrirResumenes}
+          style={{ width:"100%", padding:14, marginTop:12, display:"flex", alignItems:"center", gap:11, cursor:"pointer", textAlign:"left" }}>
+          <Sparkles size={17} color="var(--violet)" style={{ flexShrink:0 }}/>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div className="disp" style={{ fontWeight:600, fontSize:14.5 }}>Informe quincenal</div>
+            <div style={{ fontSize:11.5, color:"var(--muted)", marginTop:2 }}>Tu trayectoria y qué subir, escrito por Claude. Todos guardados.</div>
+          </div>
+          <ChevronRight size={16} color="var(--faint)" style={{ flexShrink:0 }}/>
+        </button>
+      )}
 
       {/* Poder total explicado (suma de niveles de los 7 atributos) */}
       <div className="fh-card" style={{ padding:"14px 16px", marginTop:12 }}>
