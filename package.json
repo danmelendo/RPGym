@@ -16,7 +16,7 @@
     "build:alt": "vite build --mode alt",
     "dev:alt": "vite --mode alt",
     "apk:ambas": "node scripts/empaquetar.mjs",
-    "resumenes": "node scripts/resumen-quincenal.mjs"
+    "resumenes": "node --env-file=.env scripts/resumen-quincenal.mjs"
   },
   "dependencies": {
     "@capacitor/local-notifications": "^7.0.7",

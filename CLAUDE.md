@@ -364,12 +364,13 @@ guarda el texto en `resumenes`. La app lo enseña en Inicio (`ResumenCard`) hast
 
 - **Opt-in** en `Ajustes → Privacidad`. Sin él no se manda nada. Está en la política de
   privacidad: si cambias lo que se envía, cámbiala también. Nunca el ciclo menstrual.
-- Lo lanza [.github/workflows/resumenes.yml](.github/workflows/resumenes.yml) cada lunes; la
-  regla de "13 días desde el último" lo deja en uno cada dos semanas por persona. Necesita los
-  secrets `SUPABASE_DB_URL` y `CLAUDE_CODE_OAUTH_TOKEN` (de `claude setup-token`) o
-  `ANTHROPIC_API_KEY`.
-- **El repo es público y los logs de Actions también**: el script solo imprime recuentos. No
-  añadas trazas con datos.
+- **Corre en el PC del dueño, con su sesión de Claude (la suscripción). Nada de API key ni de
+  GitHub Actions**: lo pidió así para no tener gasto aparte del plan. Una tarea programada de
+  Windows ("RPGym resumenes", la crea [scripts/programar-resumenes.ps1](scripts/programar-resumenes.ps1))
+  lo lanza cada lunes a las 10:00, o al encender el PC si estaba apagado; la regla de "13 días
+  desde el último" lo deja en uno cada dos semanas por persona. Registro en
+  `%LOCALAPPDATA%\RPGym\resumenes.log`. A mano: `npm run resumenes` (carga `.env` con `--env-file`).
+- El script solo imprime recuentos. No añadas trazas con datos.
 - Probar sin guardar nada (en local, con `.env` cargado):
   `node scripts/resumen-quincenal.mjs --solo <handle> --prueba --salida <fichero>`.
   Con `--solo` y `--prueba` no exige el opt-in: es para probártelo a ti mismo.

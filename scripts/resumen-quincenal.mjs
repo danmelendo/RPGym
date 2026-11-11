@@ -21,11 +21,12 @@
    Credenciales (nunca se imprimen):
      SUPABASE_DB_URL                     o bien
      SUPABASE_PROJECT_REF + SUPABASE_DB_PASSWORD (como en .env)
-     CLAUDE_CODE_OAUTH_TOKEN o ANTHROPIC_API_KEY (los lee `claude` solo; en local
-     vale la sesión que ya tengas iniciada)
+     Claude: la sesión que ya tengas iniciada en este PC (tu suscripción). A
+     propósito NO se usa API key: sería gasto aparte del plan.
 
-   EL REPOSITORIO ES PÚBLICO y los registros de Actions también: este script no
-   escribe en la salida nada personal, solo recuentos.
+   Se ejecuta en el PC del dueño con una tarea programada de Windows
+   (scripts/programar-resumenes.ps1 la crea): `node --env-file=.env …`.
+   No escribe en la salida nada personal, solo recuentos.
    ============================================================================= */
 import fs from "node:fs";
 import os from "node:os";
