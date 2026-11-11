@@ -371,6 +371,11 @@ guarda el texto en `resumenes`. La app lo enseña en Inicio (`ResumenCard`) hast
   desde el último" lo deja en uno cada dos semanas por persona. Registro en
   `%LOCALAPPDATA%\RPGym\resumenes.log`. A mano: `npm run resumenes` (carga `.env` con `--env-file`).
 - El script solo imprime recuentos. No añadas trazas con datos.
+- **El tono es para MOTIVAR, no para evaluar** (lo pidió el dueño: el primero parecía juzgar).
+  Más de la mitad sobre lo que va bien, retos alcanzables en vez de "estancado", y una lista de
+  palabras prohibidas en el prompt. **Respeta sus decisiones**: si casi no entrena un grupo (el
+  dueño prioriza tren superior por falta de tiempo) se da por elegido y no se le pide meterlo, ni
+  más días. Las ideas de ejercicios son variantes opcionales para los días que ya entrena.
 - **Mira la trayectoria entera, no solo la quincena**: manda todo el historial condensado
   (sesiones y series por grupo cada mes, y la mejor serie de cada mes por ejercicio), el detalle
   serie a serie de las últimas 6 semanas y los 3 resúmenes anteriores, para que siga lo que
